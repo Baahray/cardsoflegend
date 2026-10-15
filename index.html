@@ -1648,6 +1648,9 @@ function famScreen(){$("#nav").innerHTML="";$("#v").innerHTML=`<div class="bx c"
   const go=async()=>{const v=$("#fcode").value;if(v.trim().length<4){$("#fmsg").textContent="Make it at least 4 letters.";return}famSet(await famHash(v));if(db)shell();else startDb()};
   $("#fbk").onclick=()=>{try{localStorage.removeItem("role")}catch(e){}role=null;shell()};$("#fgo").onclick=go;$("#fcode").onkeydown=e=>{if(e.key==="Enter")go()}}
 
+/* start again: wipes this family's coins, cards, posts, comments, games and saved media (Dad only) */
+async function famReset(){const fs=webFs();for(const c of["posts","cm","re","media","games","players"]){const q=await FB.getDocs(FB.collection(fs,FAM+"/"+c));await Promise.all(q.docs.map(d=>FB.deleteDoc(d.ref)))}}
+
 function IC(n,z){return'<span class="ico ico-'+n+'" style="width:'+z+'px;height:'+z+'px"></span>'}
 
 let role=null,db=null,as=null,tab="today",g=null,P={},posts=[],T=null,RA=null,RS=null,reveal=null,wob=false,tick=null,sel=-1,bt=null,msg="",rec=null,lp=0,ls=0,lw=0,scored={};
@@ -1724,12 +1727,12 @@ function sndIcon(){const e=$("#snd");if(e)e.innerHTML=SND||MUSV>0?IC("horn",28):
 function sndPanel(){let p=$("#sndp");if(p){p.remove();return}p=document.createElement("div");p.id="sndp";
   p.innerHTML=`<div class="sp-row"><b>MUSIC</b><span id="mvn">${Math.round(MUSV*100)}%</span></div><input type="range" id="mvs" min="0" max="100" step="5" value="${Math.round(MUSV*100)}" aria-label="Music volume">
   <div class="sp-row" style="margin-top:14px"><b>SOUND EFFECTS</b><button class="sp-tg ${SND?"on":""}" id="sfxt" aria-pressed="${SND}"><i></i></button></div>
-  <div class="sp-row" style="margin-top:16px;padding-top:12px;border-top:1px solid var(--ln)"><b>PLAYING AS ${PNM(role).toUpperCase()}</b><button class="b d" id="lgo" style="padding:8px 12px;font-size:11px">LOG OUT</button></div>`;
+  <div class="sp-row" style="margin-top:16px;padding-top:12px;border-top:1px solid var(--ln)"><b>PLAYING AS ${PNM(role).toUpperCase()}</b><button class="b d" id="lgo" style="padding:8px 12px;font-size:11px">LOG OUT</button></div>`+(role==="parent"?`<div class="sp-row" style="margin-top:12px"><b>START AGAIN</b><button class="b r" id="rst" style="padding:8px 12px;font-size:11px">RESET APP</button></div>`:"")+``;
   document.body.appendChild(p);const r=$("#snd").getBoundingClientRect();p.style.top=(r.bottom+8)+"px";
   const sl=$("#mvs"),fill=()=>sl.style.setProperty("--v",sl.value+"%");fill();
   sl.oninput=()=>{MUSV=sl.value/100;$("#mvn").textContent=sl.value+"%";fill();try{localStorage.setItem("musv2",MUSV)}catch(e){}sndIcon();if(MUSV<=0)musSync();
     clearTimeout(sl.h);sl.h=setTimeout(()=>{if(Math.abs(MUSLV-MUSV)>.001)musLevel();musSync()},180)};sl.onchange=()=>{clearTimeout(sl.h);if(Math.abs(MUSLV-MUSV)>.001)musLevel();musSync()};
-  if($("#lgo"))$("#lgo").onclick=logOut;$("#sfxt").onclick=e=>{e.stopPropagation();SND=!SND;try{localStorage.setItem("sfxon",SND?"1":"0")}catch(_){}const b=$("#sfxt");b.classList.toggle("on",SND);b.setAttribute("aria-pressed",SND);sndIcon();sfx("tap")}}
+  if($("#lgo"))$("#lgo").onclick=logOut;if($("#rst"))$("#rst").onclick=resetAll;$("#sfxt").onclick=e=>{e.stopPropagation();SND=!SND;try{localStorage.setItem("sfxon",SND?"1":"0")}catch(_){}const b=$("#sfxt");b.classList.toggle("on",SND);b.setAttribute("aria-pressed",SND);sndIcon();sfx("tap")}}
 document.addEventListener("pointerdown",e=>{const p=$("#sndp");if(p&&!p.contains(e.target)&&!e.target.closest("#snd"))p.remove()},true);
 function sfxNoise(){if(!sfxNoise.b){const L=AC.sampleRate*2,b=AC.createBuffer(1,L,AC.sampleRate),c=b.getChannelData(0);for(let i=0;i<L;i++)c[i]=Math.random()*2-1;sfxNoise.b=b}return sfxNoise.b}
 function sfx(t,K=1){if(!SND)return;try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.state!=="running")AC.resume();const n=AC.currentTime;
@@ -1815,7 +1818,7 @@ const gameHint=()=>{const n=upToday();return n>=2?"Win a game to earn 2 "+COIN(1
 /* big message banner */
 function toast(t,keep){let e=$("#toast");if(!t){if(e)e.classList.remove("on");return}
   if(!e){e=document.createElement("div");e.id="toast";document.body.appendChild(e)}
-  const up=/^Uploading|^Getting/.test(t);e.innerHTML=(up?'<i class="tspin"></i>':"")+'<span></span>';e.querySelector("span").textContent=t;e.classList.add("on");
+  const up=/^Uploading|^Getting|^Resetting/.test(t);e.innerHTML=(up?'<i class="tspin"></i>':"")+'<span></span>';e.querySelector("span").textContent=t;e.classList.add("on");
   clearTimeout(toast.h);if(!up&&!keep)toast.h=setTimeout(()=>e.classList.remove("on"),4200)}
 /* a big friendly yes/no box */
 function askYN(text,yes){return new Promise(ok=>{const d=document.createElement("div");d.className="yn";d.innerHTML=`<div class="ynb"><p></p><div class="row ctr"><button class="b d" data-yn="0">CANCEL</button><button class="b r" data-yn="1"></button></div></div>`;
@@ -1876,6 +1879,14 @@ async function logOut(){if(!await askYN("Log out? You'll pick CASS or DAD again.
 document.addEventListener("focusout",e=>{if(e.target&&e.target.classList&&e.target.classList.contains("cmi")&&refreshHold.p){refreshHold.p=0;setTimeout(()=>{if(!refreshHold())view()},50)}},true);
 ["pause","ended"].forEach(ev=>document.addEventListener(ev,()=>{if(refreshHold.p&&!refreshHold()){refreshHold.p=0;view()}},true));
 function refreshHold(){if(tab!=="today")return false;const a=document.activeElement;if(a&&a.classList&&a.classList.contains("cmi"))return true;return[...document.querySelectorAll(".post video,.post audio")].some(m=>!m.paused&&!m.ended)}
+
+/* Dad only: wipe everything for both of you and start fresh */
+async function resetAll(){const p=$("#sndp");if(p)p.remove();
+  if(!await askYN("Reset the whole app? Coins, cards, photos, videos, voice notes, drawings, comments and games are all deleted for BOTH Dad and Cass. This can't be undone.","RESET"))return;
+  if(!await askYN("Are you really sure? Everything goes.","YES, RESET"))return;
+  msg="Resetting everything...";view();
+  try{if(typeof famReset==="function")await famReset();else{location.reload();return}posts=[];CM=[];RE=[];msg="All reset! Fresh start.";tab="today";g=null;view()}
+  catch(e){msg="The reset didn't finish. Check the internet and try again.";view()}}
 
 const B_ON=()=>ON().toUpperCase()+"'S CARDS";
 function vToday(){
