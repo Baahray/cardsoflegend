@@ -337,8 +337,8 @@ body.dfon{overflow:hidden}
 @keyframes ssb{50%{transform:translateY(-8px)}}@keyframes ssp{50%{transform:scale(1.06)}}
 
 #toast{position:fixed;left:50%;top:calc(86px + env(safe-area-inset-top,0px));transform:translate(-50%,-260%);z-index:150;max-width:min(92vw,440px);display:flex;align-items:center;gap:12px;
- background:#1d1840;border:2px solid var(--gd);color:#fff;font:800 17px/1.3 "Outfit",sans-serif;padding:14px 18px;border-radius:18px;box-shadow:0 12px 34px rgba(0,0,0,.6);transition:transform .35s cubic-bezier(.2,1.3,.4,1);pointer-events:none}
-#toast.on{transform:translate(-50%,0)}
+ background:#1d1840;border:2px solid var(--gd);color:#fff;font:800 17px/1.3 "Outfit",sans-serif;padding:14px 18px;border-radius:18px;box-shadow:0 12px 34px rgba(0,0,0,.6);transition:transform .35s cubic-bezier(.2,1.3,.4,1),opacity .3s,visibility 0s linear .35s;pointer-events:none}
+#toast{opacity:0;visibility:hidden}#toast.on{transition:transform .35s cubic-bezier(.2,1.3,.4,1),opacity .2s;transform:translate(-50%,0);opacity:1;visibility:visible}
 .tspin{width:22px;height:22px;flex:none;border-radius:50%;border:3px solid rgba(255,255,255,.25);border-top-color:var(--gd);animation:tsp .8s linear infinite}@keyframes tsp{to{transform:rotate(360deg)}}
 .post .ph{display:flex;align-items:center;gap:8px;margin-bottom:8px}.post .ph b{font-size:15px}.post .ph .mut{font-size:12px;flex:1;min-width:0}
 .av{width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;color:#fff;flex:none}.av.child{background:linear-gradient(135deg,#ff7a2f,#ff3d77)}.av.parent{background:linear-gradient(135deg,#5b7cff,#8a4dff)}
@@ -348,6 +348,7 @@ body.dfon{overflow:hidden}
 .cms{margin-top:10px;display:flex;flex-direction:column;gap:6px}.cm{font-size:15px;line-height:1.35;background:rgba(255,255,255,.05);border-radius:12px;padding:7px 10px;position:relative;padding-right:30px;word-break:break-word}.cm b{color:var(--gd)}
 .cdel{position:absolute;right:6px;top:6px;background:none;border:0;color:var(--mut);font-size:13px}
 .cmr{display:flex;gap:8px;margin-top:10px}.cmi{flex:1;min-width:0;font:600 16px "Outfit",sans-serif;padding:10px 14px;border-radius:99px;border:1px solid var(--ln);background:rgba(0,0,0,.3);color:#fff}.cmsend{padding:8px 14px;font-size:12px;min-height:0}
+.yn{position:fixed;inset:0;z-index:200;background:rgba(5,4,20,.65);display:flex;align-items:center;justify-content:center;padding:20px}.ynb{background:#1d1840;border:2px solid var(--ln);border-radius:22px;padding:20px;max-width:340px;width:100%;text-align:center}.ynb p{font:700 18px/1.35 'Outfit',sans-serif;margin:0 0 16px}
 .mh{margin:16px 0 8px}.mdays{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .mday{position:relative;aspect-ratio:1;border-radius:16px;overflow:hidden;border:1px solid var(--ln);background:linear-gradient(135deg,#2a2160,#3d2a7a);padding:0;color:#fff}
 .mday img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.75}.mday .mdi{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:24px;opacity:.8}
@@ -1652,7 +1653,7 @@ function IC(n,z){return'<span class="ico ico-'+n+'" style="width:'+z+'px;height:
 let role=null,db=null,as=null,tab="today",g=null,P={},posts=[],T=null,RA=null,RS=null,reveal=null,wob=false,tick=null,sel=-1,bt=null,msg="",rec=null,lp=0,ls=0,lw=0,scored={};
 try{role=localStorage.getItem("role")}catch(e){}
 const $=s=>document.querySelector(s),er=()=>{};
-const me=()=>role==="parent"?"X":"O",ot=()=>role==="parent"?"child":"parent",today=()=>new Date().toISOString().slice(0,10);
+const me=()=>role==="parent"?"X":"O",ot=()=>role==="parent"?"child":"parent",today=()=>(t=>{const d=new Date(t);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")})(Date.now());
 const pk=a=>a[Math.floor(Math.random()*a.length)],R=n=>1+Math.floor(Math.random()*n);
 const norm=p=>{p={pts:0,cr:[],dd:"",dp:0,ub:false,dt:[],...(p||{})};if(p.dd!==today()){p.dd=today();p.dp=0;p.ub=false;p.dt=[];p.eb=0}return p};
 const mine=()=>norm(P[role]),theirs=()=>norm(P[ot()]);
@@ -1799,6 +1800,7 @@ async function voice(){
   catch(e){voice.wait=0;rec=null;try{localStorage.setItem("nomic","1")}catch(_){}
     msg="No problem! Tap VOICE NOTE again. The camera will open: record a short clip and only the sound gets sent.";view()}
 }
+const SH=m=>Math.min(4,((m&&m.dt)||[]).length);
 /* ---- Sharing, like Instagram: names, reactions, comments, delete, Memories (by month and day), big messages ---- */
 const PNM=r=>r==="child"?"Cass":r==="parent"?"Dad":"?",ON=()=>PNM(ot());
 let CM=[],RE=[];
@@ -1815,6 +1817,10 @@ function toast(t,keep){let e=$("#toast");if(!t){if(e)e.classList.remove("on");re
   if(!e){e=document.createElement("div");e.id="toast";document.body.appendChild(e)}
   const up=/^Uploading|^Getting/.test(t);e.innerHTML=(up?'<i class="tspin"></i>':"")+'<span></span>';e.querySelector("span").textContent=t;e.classList.add("on");
   clearTimeout(toast.h);if(!up&&!keep)toast.h=setTimeout(()=>e.classList.remove("on"),4200)}
+/* a big friendly yes/no box */
+function askYN(text,yes){return new Promise(ok=>{const d=document.createElement("div");d.className="yn";d.innerHTML=`<div class="ynb"><p></p><div class="row ctr"><button class="b d" data-yn="0">CANCEL</button><button class="b r" data-yn="1"></button></div></div>`;
+  d.querySelector("p").textContent=text;d.querySelector('[data-yn="1"]').textContent=yes||"YES";document.body.appendChild(d);
+  d.addEventListener("click",e=>{const b=e.target.closest("[data-yn]");if(!b&&e.target!==d)return;e.stopPropagation();d.remove();ok(!!b&&b.dataset.yn==="1")})})}
 /* one post card: who, when, picture/video/sound, reactions, comments */
 const REMO=["❤️","😂","😮","👍","🔥","🎉"],TYI2={photo:"📸",draw:"🎨",voice:"🎙️",video:"🎬"};
 function postRx(k){const rs=RE.filter(r=>r.k===k),myR=rs.find(r=>r.from===role);
@@ -1836,17 +1842,19 @@ const esc=t=>String(t||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&g
 function postWire(){}
 async function sendCm(k){const i=document.getElementById("cmi-"+k);if(!i)return;const t=(i.value||"").trim();if(!t)return;i.value="";i.blur();sfx("tap");await db.collection("cm").add({k,t,from:role,ts:Date.now()}).catch(er)}
 /* deleting on the same day takes back that day's coin and tick (if it was the only one of its kind that day) */
-async function unPost(p){if(dayKey(p.ts)!==dayKey(nowT()))return;const left=posts.filter(x=>x._id!==p._id&&x.from===p.from&&x.type===p.type&&dayKey(x.ts)===dayKey(nowT()));if(left.length)return;
-  const ref=db.doc("players/"+p.from),s=await ref.get(),q=norm(s.exists?s.data():null);if(!q.dt.includes(p.type))return;
-  q.dt=q.dt.filter(t=>t!==p.type);q.pts=Math.max(0,q.pts-1);q.dp=Math.max(0,q.dp-1);await ref.set(q)}
+/* deleting on the same day: the tick and coin for a type go only when NO uploads of that type are left today */
+async function unPost(p){if(dayKey(p.ts)!==dayKey(nowT()))return;const keep=[...new Set(posts.filter(x=>x._id!==p._id&&x.from===p.from&&dayKey(x.ts)===dayKey(nowT())).map(x=>x.type))];
+  const ref=db.doc("players/"+p.from),s=await ref.get(),q=norm(s.exists?s.data():null),lost=q.dt.filter(t=>!keep.includes(t));if(!lost.length)return;
+  q.dt=q.dt.filter(t=>keep.includes(t));q.pts=Math.max(0,q.pts-lost.length);q.dp=Math.max(0,q.dp-lost.length);await ref.set(q)}
 document.addEventListener("click",async ev=>{const t=ev.target.closest&&ev.target.closest("[data-rx],[data-cm],[data-cdel],[data-del]");if(!t)return;
   if(t.dataset.rx){const k=t.dataset.rx,e=t.dataset.e,mineR=RE.filter(r=>r.k===k&&r.from===role);sfx("tap");
     RE=RE.filter(r=>!(r.k===k&&r.from===role));if(!mineR.some(r=>r.e===e))RE=[...RE,{k,e,from:role,ts:Date.now(),_id:"tmp"}];postsPatch();
     for(const r of mineR)await db.doc("re/"+r._id).delete().catch(er);if(!mineR.some(r=>r.e===e))await db.collection("re").add({k,e,from:role,ts:Date.now()}).catch(er);return}
   if(t.dataset.cm){sendCm(t.dataset.cm);return}
-  if(t.dataset.cdel){if(!confirm("Delete this comment?"))return;await db.doc("cm/"+t.dataset.cdel).delete().catch(er);return}
+  if(t.dataset.cdel){if(!await askYN("Delete this comment?","DELETE"))return;await db.doc("cm/"+t.dataset.cdel).delete().catch(er);return}
   if(t.dataset.del){const k=t.dataset.del,p=posts.find(x=>x._id===k);if(!p)return;
-    if(!confirm("Delete this "+({photo:"photo",draw:"drawing",voice:"voice note",video:"video"}[p.type]||"post")+"? It can't be brought back."+(dayKey(p.ts)===dayKey(nowT())?" Today's coin for it goes too.":"")))return;
+    if(!await askYN("Delete this "+({photo:"photo",draw:"drawing",voice:"voice note",video:"video"}[p.type]||"post")+"? It can't be brought back."+(dayKey(p.ts)===dayKey(nowT())?" If it's your only one today, its coin goes too.":""),"DELETE"))return;
+    posts=posts.filter(x=>x._id!==k);const el=document.querySelector('.post[data-k="'+k+'"]');if(el)el.remove();
     try{await unPost(p)}catch(e){}
     await db.doc("posts/"+k).delete().catch(er);try{if(as.remove)await as.remove(p.url)}catch(e){}
     for(const c of CM.filter(c=>c.k===k))db.doc("cm/"+c._id).delete().catch(er);for(const r of RE.filter(r=>r.k===k))db.doc("re/"+r._id).delete().catch(er);toast("Deleted.")}});
@@ -1863,7 +1871,7 @@ function vMemo(){const by={};posts.forEach(p=>{(by[dayKey(p.ts)]=by[dayKey(p.ts)
      return`<button class="mday" data-day="${k}">${pic?`<img src="${MS(pic.url)}" data-m="${pic.url}" alt="">`:`<span class="mdi">${ic}</span>`}<b>${dd.getDate()}</b><small>${dd.toLocaleDateString([],{weekday:"short"})} · ${ps.length}</small></button>`}).join("")}</div>`}).join(""):`<div class="mut">Nothing shared yet.</div>`);
   wb();document.querySelectorAll("[data-day]").forEach(b=>b.onclick=()=>{MDAY=b.dataset.day;view();window.scrollTo(0,0)})}
 /* log out (pick Cass or Dad again) */
-function logOut(){if(!confirm("Log out? You'll pick CASS or DAD again."))return;try{localStorage.removeItem("role")}catch(e){}role=null;tab="today";g=null;const p=$("#sndp");if(p)p.remove();shell()}
+async function logOut(){if(!await askYN("Log out? You'll pick CASS or DAD again.","LOG OUT"))return;try{localStorage.removeItem("role")}catch(e){}role=null;tab="today";g=null;const p=$("#sndp");if(p)p.remove();shell()}
 /* don't redraw the feed while someone is typing a comment or playing a video */
 document.addEventListener("focusout",e=>{if(e.target&&e.target.classList&&e.target.classList.contains("cmi")&&refreshHold.p){refreshHold.p=0;setTimeout(()=>{if(!refreshHold())view()},50)}},true);
 ["pause","ended"].forEach(ev=>document.addEventListener(ev,()=>{if(refreshHold.p&&!refreshHold()){refreshHold.p=0;view()}},true));
@@ -1873,8 +1881,8 @@ const B_ON=()=>ON().toUpperCase()+"'S CARDS";
 function vToday(){
   const m=mine(),o=theirs(),T4=[["photo",IC("camera",46),"TAKE PHOTO"],["draw",IC("palette",46),"DRAW"],["voice",IC("mic",46),rec?"STOP":"VOICE NOTE"],["video",IC("video",46),"VIDEO"]];
   if(g==="draw")return vDraw();if(g==="memo")return vMemo();
-  $("#v").innerHTML=`<div class="bx"><div class="row" style="justify-content:space-between"><h2 class="px" style="margin:0">TODAY ${Math.min(4,m.dp)}/4</h2><span class="mut">🪙 You ${m.pts} · ${ON()} ${o.pts}</span></div><div class="bar"><i style="width:${Math.min(100,m.dp*25)}%"></i></div>
-  <div class="mut" style="margin-top:6px">${m.ub?"Today's treasure chest opened ✔":m.dp>=4?"Go to Cards to open today's treasure chest!":"Get 4 coins to open today's treasure chest"}</div></div>
+  $("#v").innerHTML=`<div class="bx"><div class="row" style="justify-content:space-between"><h2 class="px" style="margin:0">TODAY ${SH(m)}/4</h2><span class="mut">🪙 You ${m.pts} · ${ON()} ${o.pts}</span></div><div class="bar"><i style="width:${SH(m)*25}%"></i></div>
+  <div class="mut" style="margin-top:6px">${m.ub?"Today's treasure chest opened ✔":SH(m)>=4?"Go to Cards to open today's treasure chest!":"Share a photo, a drawing, a voice note and a video to open today's treasure chest"}</div></div>
   <div class="grid">${T4.map(([k,i,l])=>`<button class="b act ${m.dt.includes(k)?"":"bl"}" data-a="${k}" style="${m.dt.includes(k)?"":""}"><span>${i}</span>${l}${m.dt.includes(k)?" ✔":""}</button>`).join("")}</div>
   <p class="mut c">Share what you're up to! 1 coin per type each day. Winning games gives 2.</p>
   <div class="row" style="justify-content:space-between;align-items:center;margin-top:14px"><h2 class="px" style="margin:0">WHAT WE'RE UP TO</h2><button class="b d" id="memo" style="padding:8px 14px;font-size:12px">📅 MEMORIES</button></div>${posts.length?posts.slice(0,12).map(postH).join("")+(posts.length>12?`<div class="row ctr"><button class="b d" id="memo2">SEE EVERYTHING IN MEMORIES</button></div>`:""):`<div class="mut">Nothing yet. Post the first one!</div>`}`;
@@ -2567,13 +2575,13 @@ function slot2(k){const m=CAT[k],rc=RCOL[m.r];
 function detH(c){const w=c.w||0;return`<div class="ov" id="dov"><div class="flip">${cardH(c,-1,0,1)}</div><div class="mut" style="margin:12px 0;position:relative">${(c.lv||1)>=5?"MAX LEVEL! "+IC("maxlevel",22):"Win battles with this card: "+w+"/3 to level up"}</div><div class="row ctr"><button class="b r" id="uf">⚔ USE AS FIGHTER</button><button class="b d" id="dc">CLOSE</button></div></div>`}
 function vCards(){
   if(g==="battle")return vBattle();if(g==="earn")return vEarn();
-  const m=mine(),own=album(m),oo=album(theirs()),ks=Object.keys(own).map(Number),can=m.dp>=4&&!m.ub,c=cs||(can?"pack":"mine"),
+  const m=mine(),own=album(m),oo=album(theirs()),ks=Object.keys(own).map(Number),can=SH(m)>=4&&!m.ub,c=cs||(can?"pack":"mine"),
    pw=o=>Object.keys(o).map(Number).sort((a,b)=>tot2(o[b])-tot2(o[a])),srt=pw(own),ok=pw(oo),
    nsh=ks.filter(k=>CAT[k].t<5).length,nex=ks.length-nsh,mx=CAT.filter(x=>x.own===role||(role==="child"&&x.own)).length;
   if(!own[sel])sel=srt[0]??-1;
   BN=Math.max(1,Math.min(BN,3,ks.length||1));TEAM=TEAM.filter(k=>own[k]).slice(0,BN);if(!TEAM.length&&srt.length)TEAM=[srt[0]];
   const seg=`<div class="seg">${[["pack",IC("chesttab",30),"COLLECT"],["mine",IC("card",30),"MY CARDS"],["album",IC("book",30),"ALBUM"],["battle",IC("swords",30),"BATTLE"]].map(([k,i,l])=>`<button data-s="${k}" class="${c===k?"on":""}"><span style="font-size:20px">${i}</span><br>${l}</button>`).join("")}</div>`;let h="";
-  if(c==="pack")h=`<div class="bx c">${can?`<div class="box ${wob?"shake":""}" id="mb">${CHEST(170)}</div><div class="px" style="font-size:12px">${wob?"OPENING...":"TODAY'S TREASURE CHEST! TAP!"}</div>`:`<div class="box" style="opacity:.35;animation:none">${CHEST(170)}</div><div class="px" style="font-size:11px">${m.ub?"COME BACK TOMORROW FOR A NEW CARD":"GET 4 COINS TODAY TO OPEN THE CHEST ("+Math.min(4,m.dp)+"/4)"}</div>`}</div>
+  if(c==="pack")h=`<div class="bx c">${can?`<div class="box ${wob?"shake":""}" id="mb">${CHEST(170)}</div><div class="px" style="font-size:12px">${wob?"OPENING...":"TODAY'S TREASURE CHEST! TAP!"}</div>`:`<div class="box" style="opacity:.35;animation:none">${CHEST(170)}</div><div class="px" style="font-size:11px">${m.ub?"COME BACK TOMORROW FOR A NEW CARD":"SHARE ALL 4 KINDS TODAY TO OPEN THE CHEST ("+SH(m)+"/4)"}</div>`}</div>
    <div class="bx c"><div class="px" style="font-size:11px">COLLECTED ${nsh}/${NM}</div><div class="bar"><i style="width:${nsh/NM*100}%"></i></div><div class="mut" style="margin-top:8px">${role==="child"?"Specials: "+nex+"/"+mx+" · you can find every one!":"Your specials: "+nex+"/"+mx}</div></div>`.replace('<div class="bx c"><div class="px" style="font-size:11px">COLLECTED',earnBox(m)+'<div class="bx c"><div class="px" style="font-size:11px">COLLECTED');
   else if(c==="mine")h=`<div class="bx"><h2 class="px" style="margin:0">MY CARDS (${ks.length})</h2><span class="mut">Strongest first. Tap a card for details.</span></div>${ks.length?`<div class="cards">${srt.slice(0,PG.mine).map(k=>cardH(own[k],k,sel===k)).join("")}</div>${more("mine",srt.length,PG.mine)}`:`<div class="mut c">No cards yet. Open today's pack!</div>`}`;
   else if(c==="album"){const ids=[...CAT.keys()].filter(inF),chip=(a,v,l,cur)=>`<button data-af="${a}:${v}" class="${cur===v?"on":""}">${l}</button>`;
@@ -2641,9 +2649,9 @@ const EBMAX=3,ECC=[["#ff4f7b","Red"],["#ffd23f","Yellow"],["#2ef2c5","Green"],["
 let EC=null;
 let ecQ=Promise.resolve();const ecUpd=fn=>(ecQ=ecQ.then(()=>upd(fn)).catch(er));
 const ecLv=()=>Math.min(2,(mine().eb||0)+(role=="parent"?1:0)),ecR=n=>Math.floor(Math.random()*n),ecArt=()=>window.ART_URLS||{};
-function earnBox(m){const left=EBMAX-(m.eb||0),st=Math.min(4,m.dp);
+function earnBox(m){const left=EBMAX-(m.eb||0),st=SH(m);
   if(m.pb&&m.pb.length)return`<div class="bx c ebx"><div class="ebi">${IC("gift",64)}</div><h2 class="px">YOUR CARDS ARE WAITING!</h2><p class="ebp">${m.pb[0].t==="lvp"?"Pick a card to level up.":"Pick 1 of 4 cards."}</p><button class="b y ebb" data-ec="open">OPEN</button></div>`;
-  if(m.dp<4)return`<div class="bx c ebx lock"><div class="ebi">${IC("lock",64)}</div><h2 class="px">EARN MORE CARDS</h2><p class="ebp"><b>First get your 4 coins today!</b></p><div class="ebs">${[0,1,2,3].map(i=>COIN(44).replace('class="coin"','class="coin '+(i<st?"on":"")+'"')).join("")}</div><p class="ebp">You have ${st} of 4. Share something in TODAY or win a game in PLAY to get more.</p></div>`;
+  if(SH(m)<4)return`<div class="bx c ebx lock"><div class="ebi">${IC("lock",64)}</div><h2 class="px">EARN MORE CARDS</h2><p class="ebp"><b>First share all 4 today!</b></p><div class="ebs">${[0,1,2,3].map(i=>COIN(44).replace('class="coin"','class="coin '+(i<st?"on":"")+'"')).join("")}</div><p class="ebp">You have shared ${st} of 4. Share a photo, a drawing, a voice note and a video in TODAY.</p></div>`;
   if(left<=0)return`<div class="bx c ebx"><div class="ebi">${IC("done",64)}</div><h2 class="px">EARN MORE CARDS</h2><p class="ebp"><b>You earned all ${EBMAX} today!</b></p><p class="ebp">Come back tomorrow for more.</p></div>`;
   return`<div class="bx c ebx"><div class="ebi">${IC("gift",64)}</div><h2 class="px">EARN MORE CARDS</h2><p class="ebp">Win a challenge. Then pick 1 of 4 cards!</p><div class="ebr"><button class="b bl ebb" data-ec="quiz"><span>${IC("question",36)}</span>QUESTION</button><button class="b o ebb" data-ec="game"><span>${IC("puzzle",36)}</span>PUZZLE</button></div><p class="ebp sm">${left} left today</p></div>`}
 const ecSh=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=ecR(i+1);[a[i],a[j]]=[a[j],a[i]]}return a};
@@ -2669,7 +2677,7 @@ function ecTile(){const A=ecArt(),own=Object.keys(album(mine())).map(Number).fil
   return{k:"tile",n,p,img:A[pk(pool)],sel:-1,mv:0,max:[20,16,14][lv],end:0}}
 function ecPat(){const lv=ecLv(),n=lv===2?4:3,c=ecSh([...Array(n*n).keys()]).slice(0,[3,4,5][lv]);return{k:"pat",n,cells:c,sel:[],bad:[],lives:2,show:1,end:0}}
 function ecNew(k){if(k==="quiz")return ecQuiz();const f=[ecCode,ecTile,ecPat];let e=null;for(let i=0;!e&&i<9;i++)e=pk(f)();return e}
-function ecStart(k){const m=mine();if(k==="open"){EC=m.pb[0].t==="lvp"?{k:"lvp"}:{k:"bundle",items:m.pb,pick:-1}}else{if(m.dp<4||(m.eb||0)>=EBMAX)return;EC=ecNew(k);EC.src=k}g="earn";sfx("tap");view()}
+function ecStart(k){const m=mine();if(k==="open"){EC=m.pb[0].t==="lvp"?{k:"lvp"}:{k:"bundle",items:m.pb,pick:-1}}else{if(SH(m)<4||(m.eb||0)>=EBMAX)return;EC=ecNew(k);EC.src=k}g="earn";sfx("tap");view()}
 function ecItems(){const m=mine(),own=album(m),K=role==="child",out=[],seen={};
   for(let i=0;i<4;i++){let c,t=0;do{c=draw(own,role);if(K){const d=draw(own,role);if(CAT[d.k].r>CAT[c.k].r)c=d}}while(seen[c.k]&&++t<14);seen[c.k]=1;out.push({t:"card",k:c.k,f:c.f})}
   if(m.cr.some(x=>(x.lv||1)<5)&&Math.random()<.4)out[ecR(4)]={t:"lv"};return out}
