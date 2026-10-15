@@ -342,7 +342,7 @@ body.dfon{overflow:hidden}
 .tspin{width:22px;height:22px;flex:none;border-radius:50%;border:3px solid rgba(255,255,255,.25);border-top-color:var(--gd);animation:tsp .8s linear infinite}@keyframes tsp{to{transform:rotate(360deg)}}
 .post .ph{display:flex;align-items:center;gap:8px;margin-bottom:8px}.post .ph b{font-size:15px}.post .ph .mut{font-size:12px;flex:1;min-width:0}
 .av{width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;color:#fff;flex:none}.av.child{background:linear-gradient(135deg,#ff7a2f,#ff3d77)}.av.parent{background:linear-gradient(135deg,#5b7cff,#8a4dff)}
-.pdel{background:none;border:0;font-size:18px;padding:4px 6px;opacity:.75}
+.pdel{background:rgba(255,79,123,.12);border:1px solid rgba(255,79,123,.45);border-radius:50%;width:38px;height:38px;padding:0;display:flex;align-items:center;justify-content:center;flex:none}
 .rx{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}.rxb{border:1px solid var(--ln);background:rgba(255,255,255,.06);border-radius:99px;padding:6px 10px;font-size:18px;line-height:1;display:inline-flex;align-items:center;gap:4px;color:#fff}
 .rxb.on{background:rgba(255,210,63,.22);border-color:var(--gd)}.rxb small{font:800 11px "Outfit",sans-serif;color:var(--gd)}
 .cms{margin-top:10px;display:flex;flex-direction:column;gap:6px}.cm{font-size:15px;line-height:1.35;background:rgba(255,255,255,.05);border-radius:12px;padding:7px 10px;position:relative;padding-right:30px;word-break:break-word}.cm b{color:var(--gd)}
@@ -1669,8 +1669,8 @@ async function startDb(){
   db.doc("games/rps").onSnapshot(s=>{RS=s.exists?s.data():null;refresh()},er);
   db.doc("games/mem").onSnapshot(s=>{M=s.exists?s.data():null;refresh()},er);db.doc("games/rx").onSnapshot(s=>{RX=s.exists?s.data():null;refresh()},er);db.doc("games/gw").onSnapshot(s=>{GW=s.exists?s.data():null;refresh()},er);
   db.collection("posts").onSnapshot(s=>{posts=s.docs.map(d=>({...d.data(),_id:d.id})).sort((a,b)=>b.ts-a.ts);if(tab==="today")refresh()},er);
-  db.collection("cm").onSnapshot(s=>{CM=s.docs.map(d=>({...d.data(),_id:d.id}));if(tab==="today")refresh()},er);
-  db.collection("re").onSnapshot(s=>{RE=s.docs.map(d=>({...d.data(),_id:d.id}));if(tab==="today")refresh()},er);
+  db.collection("cm").onSnapshot(s=>{CM=s.docs.map(d=>({...d.data(),_id:d.id}));postsPatch()},er);
+  db.collection("re").onSnapshot(s=>{RE=s.docs.map(d=>({...d.data(),_id:d.id}));postsPatch()},er);
 }
 startDb();
 
@@ -1681,7 +1681,7 @@ function shell(){
   $("#nav").innerHTML=[["today",IC("camera",30),"Today"],["cards",IC("cards",30),"Cards"],["play",IC("play",30),"Play"]].map(([k,i,l])=>`<button data-t="${k}" class="${tab===k?"on":""}"><span>${i}</span>${l}</button>`).join("");
   document.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{tab=b.dataset.t;g=null;reveal=null;bt=null;shell()});view();
 }
-function view(){clearInterval(tick);if(PENDC&&!["battle","draw","earn"].includes(g)){const n=PENDC;PENDC=0;setTimeout(()=>coinFly(n),300)}setPot();({today:vToday,cards:vCards,play:vPlay})[tab]();document.querySelectorAll(".tc.big").forEach(tilt);if(msg!==view.lm){view.lm=msg;toast(msg)}}
+function view(){clearInterval(tick);if(PENDC&&!["battle","draw","earn"].includes(g)){const n=PENDC;PENDC=0;setTimeout(()=>coinFly(n),300)}setPot();const vk=tab+"|"+g+"|"+(typeof MDAY!=="undefined"?MDAY:""),vy=window.scrollY;({today:vToday,cards:vCards,play:vPlay})[tab]();if(vk===view.vk&&vy)window.scrollTo(0,vy);view.vk=vk;document.querySelectorAll(".tc.big").forEach(tilt);if(msg!==view.lm){view.lm=msg;toast(msg)}}
 const back=`<button class="b d" id="bk" style="margin-bottom:10px;display:inline-flex;align-items:center;gap:6px">${IC("back",24)}BACK</button>`,wb=()=>{$("#bk").onclick=()=>{g=null;view()}};
 
 let SND=true,AC=null;
@@ -1817,26 +1817,40 @@ function toast(t,keep){let e=$("#toast");if(!t){if(e)e.classList.remove("on");re
   clearTimeout(toast.h);if(!up&&!keep)toast.h=setTimeout(()=>e.classList.remove("on"),4200)}
 /* one post card: who, when, picture/video/sound, reactions, comments */
 const REMO=["❤️","😂","😮","👍","🔥","🎉"],TYI2={photo:"📸",draw:"🎨",voice:"🎙️",video:"🎬"};
-function postH(p){const k=p._id||"",mine=p.from===role,canDel=mine||role==="parent",rs=RE.filter(r=>r.k===k),cms=CM.filter(c=>c.k===k).sort((a,b)=>a.ts-b.ts),myR=rs.find(r=>r.from===role);
+function postRx(k){const rs=RE.filter(r=>r.k===k),myR=rs.find(r=>r.from===role);
+  return REMO.map(e=>{const who=rs.filter(r=>r.e===e);return`<button class="rxb ${myR&&myR.e===e?"on":""}" data-rx="${k}" data-e="${e}">${e}${who.length?`<small>${who.map(r=>PNM(r.from)[0]).join("")}</small>`:""}</button>`}).join("")}
+function postCm(k){const cms=CM.filter(c=>c.k===k).sort((a,b)=>a.ts-b.ts);
+  return cms.length?`<div class="cms">${cms.map(c=>`<div class="cm"><b>${PNM(c.from)}</b> ${esc(c.t)}${c.from===role||role==="parent"?`<button class="cdel" data-cdel="${c._id}" aria-label="Delete comment">✕</button>`:""}</div>`).join("")}</div>`:""}
+function postH(p){const k=p._id||"",mine=p.from===role,canDel=mine||role==="parent";
   const when=new Date(p.ts).toLocaleString([],{weekday:"short",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
   const media=p.type==="photo"||p.type==="draw"?`<img src="${MS(p.url)}" data-m="${p.url}" alt="">`:(p.type==="voice"?`<audio controls preload="metadata" src="${MS(p.url)}" data-m="${p.url}" style="width:100%;margin-top:6px"></audio>`:`<video controls playsinline src="${MS(p.url)}" data-m="${p.url}"></video>`);
-  return`<div class="post" data-k="${k}"><div class="ph"><span class="av ${p.from}">${PNM(p.from)[0]}</span><b>${mine?"You":PNM(p.from)}</b><span class="mut">${when} · ${TYI2[p.type]||""}</span>${canDel&&k?`<button class="pdel" data-del="${k}" aria-label="Delete">🗑</button>`:""}</div>
+  return`<div class="post" data-k="${k}"><div class="ph"><span class="av ${p.from}">${PNM(p.from)[0]}</span><b>${mine?"You":PNM(p.from)}</b><span class="mut">${when} · ${TYI2[p.type]||""}</span>${canDel&&k?`<button class="pdel" data-del="${k}" aria-label="Delete">${IC("notin",26)}</button>`:""}</div>
   ${media}
-  <div class="rx">${REMO.map(e=>{const who=rs.filter(r=>r.e===e);return`<button class="rxb ${myR&&myR.e===e?"on":""}" data-rx="${k}" data-e="${e}">${e}${who.length?`<small>${who.map(r=>PNM(r.from)[0]).join("")}</small>`:""}</button>`}).join("")}</div>
-  ${cms.length?`<div class="cms">${cms.map(c=>`<div class="cm"><b>${PNM(c.from)}</b> ${esc(c.t)}${c.from===role||role==="parent"?`<button class="cdel" data-cdel="${c._id}" aria-label="Delete comment">✕</button>`:""}</div>`).join("")}</div>`:""}
+  <div class="rx" id="rx-${k}">${postRx(k)}</div><div id="cmw-${k}">${postCm(k)}</div>
   ${k?`<div class="cmr"><input class="cmi" id="cmi-${k}" type="text" maxlength="200" placeholder="Add a comment..." autocomplete="off"><button class="b y cmsend" data-cm="${k}">SEND</button></div>`:""}</div>`}
+/* reactions and comments update just their own post, so the page never jumps */
+function postsPatch(){document.querySelectorAll(".post[data-k]").forEach(el=>{const k=el.dataset.k,a=document.getElementById("rx-"+k),b=document.getElementById("cmw-"+k);
+  if(a){const h=postRx(k);if(a.innerHTML!==h)a.innerHTML=h}if(b){const h=postCm(k);if(b.innerHTML!==h)b.innerHTML=h}})}
 const MS=u=>typeof msrc==="function"?msrc(u):u;
 const esc=t=>String(t||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-function postWire(){
-  document.querySelectorAll("[data-rx]").forEach(b=>b.onclick=async()=>{const k=b.dataset.rx,e=b.dataset.e,mineR=RE.filter(r=>r.k===k&&r.from===role);sfx("tap");
-    for(const r of mineR)await db.doc("re/"+r._id).delete().catch(er);if(!mineR.some(r=>r.e===e))await db.collection("re").add({k,e,from:role,ts:Date.now()}).catch(er)});
-  document.querySelectorAll("[data-cm]").forEach(b=>{const k=b.dataset.cm,i=$("#cmi-"+k),send=async()=>{const t=(i.value||"").trim();if(!t)return;i.value="";i.blur();sfx("tap");await db.collection("cm").add({k,t,from:role,ts:Date.now()}).catch(er)};
-    b.onclick=send;if(i)i.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();send()}}});
-  document.querySelectorAll("[data-cdel]").forEach(b=>b.onclick=async()=>{if(!confirm("Delete this comment?"))return;await db.doc("cm/"+b.dataset.cdel).delete().catch(er)});
-  document.querySelectorAll("[data-del]").forEach(b=>b.onclick=async()=>{const k=b.dataset.del,p=posts.find(x=>x._id===k);if(!p)return;
-    if(!confirm("Delete this "+({photo:"photo",draw:"drawing",voice:"voice note",video:"video"}[p.type]||"post")+"? It can't be brought back."))return;
+function postWire(){}
+async function sendCm(k){const i=document.getElementById("cmi-"+k);if(!i)return;const t=(i.value||"").trim();if(!t)return;i.value="";i.blur();sfx("tap");await db.collection("cm").add({k,t,from:role,ts:Date.now()}).catch(er)}
+/* deleting on the same day takes back that day's coin and tick (if it was the only one of its kind that day) */
+async function unPost(p){if(dayKey(p.ts)!==dayKey(nowT()))return;const left=posts.filter(x=>x._id!==p._id&&x.from===p.from&&x.type===p.type&&dayKey(x.ts)===dayKey(nowT()));if(left.length)return;
+  const ref=db.doc("players/"+p.from),s=await ref.get(),q=norm(s.exists?s.data():null);if(!q.dt.includes(p.type))return;
+  q.dt=q.dt.filter(t=>t!==p.type);q.pts=Math.max(0,q.pts-1);q.dp=Math.max(0,q.dp-1);await ref.set(q)}
+document.addEventListener("click",async ev=>{const t=ev.target.closest&&ev.target.closest("[data-rx],[data-cm],[data-cdel],[data-del]");if(!t)return;
+  if(t.dataset.rx){const k=t.dataset.rx,e=t.dataset.e,mineR=RE.filter(r=>r.k===k&&r.from===role);sfx("tap");
+    RE=RE.filter(r=>!(r.k===k&&r.from===role));if(!mineR.some(r=>r.e===e))RE=[...RE,{k,e,from:role,ts:Date.now(),_id:"tmp"}];postsPatch();
+    for(const r of mineR)await db.doc("re/"+r._id).delete().catch(er);if(!mineR.some(r=>r.e===e))await db.collection("re").add({k,e,from:role,ts:Date.now()}).catch(er);return}
+  if(t.dataset.cm){sendCm(t.dataset.cm);return}
+  if(t.dataset.cdel){if(!confirm("Delete this comment?"))return;await db.doc("cm/"+t.dataset.cdel).delete().catch(er);return}
+  if(t.dataset.del){const k=t.dataset.del,p=posts.find(x=>x._id===k);if(!p)return;
+    if(!confirm("Delete this "+({photo:"photo",draw:"drawing",voice:"voice note",video:"video"}[p.type]||"post")+"? It can't be brought back."+(dayKey(p.ts)===dayKey(nowT())?" Today's coin for it goes too.":"")))return;
+    try{await unPost(p)}catch(e){}
     await db.doc("posts/"+k).delete().catch(er);try{if(as.remove)await as.remove(p.url)}catch(e){}
-    for(const c of CM.filter(c=>c.k===k))db.doc("cm/"+c._id).delete().catch(er);for(const r of RE.filter(r=>r.k===k))db.doc("re/"+r._id).delete().catch(er);toast("Deleted.")})}
+    for(const c of CM.filter(c=>c.k===k))db.doc("cm/"+c._id).delete().catch(er);for(const r of RE.filter(r=>r.k===k))db.doc("re/"+r._id).delete().catch(er);toast("Deleted.")}});
+document.addEventListener("keydown",e=>{const t=e.target;if(e.key==="Enter"&&t&&t.classList&&t.classList.contains("cmi")){e.preventDefault();sendCm(t.id.slice(4))}});
 /* Memories: every month, every day, everything you both shared */
 let MDAY=null;
 function vMemo(){const by={};posts.forEach(p=>{(by[dayKey(p.ts)]=by[dayKey(p.ts)]||[]).push(p)});const days=Object.keys(by).sort().reverse();
