@@ -1610,7 +1610,11 @@ async function shrinkImg(b){try{const u=URL.createObjectURL(b),im=await new Prom
 async function mediaPut(base,blob){const fs=webFs();if((blob.type||"").startsWith("image/"))blob=await shrinkImg(blob);
   if(blob.size>MMAX){const e=new Error("too big");e.kid="That one's too long to send. Try a shorter one (about 15 seconds).";throw e}
   const id=Date.now().toString(36)+Math.random().toString(36).slice(2,8),u=new Uint8Array(await blob.arrayBuffer()),n=Math.max(1,Math.ceil(u.length/MCH));
-  for(let i=0;i<n;i+=4)await Promise.all([...Array(Math.min(4,n-i)).keys()].map(j=>FB.setDoc(FB.doc(fs,base+"/media/"+id+"_"+(i+j)),{d:FB.Bytes.fromUint8Array(u.subarray((i+j)*MCH,(i+j+1)*MCH))})));
+  /* each piece is retried up to 3 times; a piece that takes over 40 seconds counts as failed */
+  const put=async k=>{for(let t=0;;t++){try{await Promise.race([FB.setDoc(FB.doc(fs,base+"/media/"+id+"_"+k),{d:FB.Bytes.fromUint8Array(u.subarray(k*MCH,(k+1)*MCH))}),
+      new Promise((_,no)=>setTimeout(()=>no(new Error("slow")),40000))]);return}catch(e){if(t>=2){const x=new Error("upload");x.kid="The upload didn't finish. Check the internet and try again.";throw x}await new Promise(ok=>setTimeout(ok,1500))}}};
+  let done=0;const prog=()=>{if(n>1&&typeof msg!=="undefined"){msg="Uploading... "+Math.round(done/n*100)+"%";if(!g&&tab==="today")view()}};prog();
+  for(let i=0;i<n;i+=3)await Promise.all([...Array(Math.min(3,n-i)).keys()].map(async j=>{await put(i+j);done++;prog()}));
   return{url:"fbm:"+id+":"+n+":"+encodeURIComponent(blob.type||"application/octet-stream")}}
 const MCACHE={},BLANK="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
 function msrc(u){if(!u||!u.startsWith("fbm:"))return u||"";const c=MCACHE[u];if(c&&c.url)return c.url;
@@ -1684,7 +1688,7 @@ function musLevel(){if(!MUS||!MUSPCM||MUSV<=0)return;const k=(MUSV*MUSV)/(MUS0*M
   const u=URL.createObjectURL(musWav(k));if(MUSURL)setTimeout(((x)=>()=>URL.revokeObjectURL(x))(MUSURL),2000);MUSURL=u;MUSLV=MUSV;
   MUS.src=u;const go=()=>{try{MUS.currentTime=t%(MUS.duration||1e9)}catch(e){}if(was&&musWant()){const p=MUS.play();if(p&&p.catch)p.catch(()=>{musSync.on=null})}};
   if(MUS.readyState>=1)go();else MUS.addEventListener("loadedmetadata",go,{once:true});if(was&&musWant()){const p=MUS.play();if(p&&p.catch)p.catch(()=>{})}}
-const musWant=()=>MUSV>0&&g!=="battle"&&!rec&&!document.hidden;
+const musWant=()=>MUSV>0&&g!=="battle"&&!rec&&!voice.wait&&!document.hidden;
 function musSync(){if(!MUS)return;const on=musWant();musSync.on=on;if(AC&&AC.state!=="running")try{AC.resume()}catch(e){}
   if(on){if(MUS.paused){const p=MUS.play();if(p&&p.catch)p.catch(()=>{musSync.on=null})}}else if(!MUS.paused)MUS.pause()}
 ["touchend","click","keydown"].forEach(ev=>document.addEventListener(ev,audUnlock,true));
@@ -1739,7 +1743,10 @@ function sfx(t,K=1){if(!SND)return;try{AC=AC||new(window.AudioContext||window.we
    b_lose:()=>{br(392,.4,.05);br(370,.4,.05,.42);br(349,.9,.05,.84)},rev:()=>A([784,988,1175],.32,.045,.07),epic:()=>A([523,659,784,1047,1319],.5,.05,.09)}[t]||(()=>{}))()}catch(e){}}
 function tilt(el){el.onpointermove=e=>{const r=el.getBoundingClientRect(),x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;el.style.transform=`perspective(700px) rotateY(${x*20}deg) rotateX(${-y*20}deg)`};el.onpointerleave=()=>el.style.transform=""}
 /* ---- Today: share + points ---- */
-function pick(acc,cap,type){const i=document.createElement("input");i.type="file";i.accept=acc;if(cap)i.capture="environment";i.onchange=()=>i.files[0]&&share(i.files[0],type);i.click()}
+/* the picker has to be part of the page, or iPhones (home-screen apps) can lose the first photo */
+function pick(acc,cap,type){let i=document.getElementById("pkin");if(i)i.remove();i=document.createElement("input");i.id="pkin";i.type="file";i.accept=acc;if(cap)i.setAttribute("capture","environment");
+  i.style.cssText="position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0";document.body.appendChild(i);
+  const go=()=>{const f=i.files&&i.files[0];if(f&&!i._done){i._done=1;share(f,type)}};i.addEventListener("change",go);i.addEventListener("input",go);i.click()}
 async function share(blob,type){
   msg="Uploading...";if(!g)view();
   try{const r=await as.upload(blob);await db.collection("posts").add({from:role,type,url:r.url,ts:Date.now()});
@@ -1748,12 +1755,19 @@ async function share(blob,type){
   g=null;view();
 }
 async function voice(){
-  if(rec){rec.stop();return}
-  try{const s=await navigator.mediaDevices.getUserMedia({audio:true}),mr=new MediaRecorder(s),ch=[];rec=mr;
-    mr.ondataavailable=e=>ch.push(e.data);
-    mr.onstop=()=>{s.getTracks().forEach(t=>t.stop());rec=null;const mp=(mr.mimeType||"").includes("mp4");share(new Blob(ch,{type:mp?"video/mp4":"video/webm"}),"voice")};
-    mr.start();setTimeout(()=>rec&&rec.stop(),30000);msg="Recording... tap again to stop";view()}
-  catch(e){pick("audio/*,video/*",false,"voice")}
+  if(rec){try{rec.stop()}catch(e){}return}
+  if(voice.wait)return;
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||!window.MediaRecorder){msg="This phone can't record in the app. Pick a recording instead.";view();pick("audio/*",false,"voice");return}
+  msg="Getting the microphone ready... (tap Allow if it asks)";voice.wait=1;view();
+  try{const s=await Promise.race([navigator.mediaDevices.getUserMedia({audio:true}),new Promise((_,no)=>setTimeout(()=>{const e=new Error("slow");e.name="Timeout";no(e)},15000))]);
+    let mt="";try{for(const t of["audio/mp4","audio/webm;codecs=opus","audio/webm"])if(MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(t)){mt=t;break}}catch(e){}
+    const mr=mt?new MediaRecorder(s,{mimeType:mt}):new MediaRecorder(s),ch=[];rec=mr;voice.wait=0;
+    mr.ondataavailable=e=>{if(e.data&&e.data.size)ch.push(e.data)};
+    mr.onstop=()=>{s.getTracks().forEach(t=>t.stop());rec=null;const ty=((mr.mimeType||mt||"audio/mp4").split(";")[0])||"audio/mp4";
+      if(!ch.length){msg="Nothing was recorded. Try again.";view();return}share(new Blob(ch,{type:ty}),"voice")};
+    mr.start(1000);setTimeout(()=>{if(rec===mr)mr.stop()},30000);msg="Recording... tap STOP when you're done (30 seconds max)";view()}
+  catch(e){voice.wait=0;rec=null;const n=e&&e.name;
+    msg=n==="NotAllowedError"?"The microphone wasn't allowed. Tap VOICE NOTE again and choose Allow.":n==="Timeout"?"The microphone didn't start. Close the app fully, open it again and try once more.":"Couldn't use the microphone ("+(n||"error")+"). Try again.";view()}
 }
 function vToday(){
   const m=mine(),o=theirs(),T4=[["photo",IC("camera",46),"TAKE PHOTO"],["draw",IC("palette",46),"DRAW"],["voice",IC("mic",46),rec?"STOP":"VOICE NOTE"],["video",IC("video",46),"VIDEO"]];
