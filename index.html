@@ -1743,11 +1743,19 @@ function sfx(t,K=1){if(!SND)return;try{AC=AC||new(window.AudioContext||window.we
    b_lose:()=>{br(392,.4,.05);br(370,.4,.05,.42);br(349,.9,.05,.84)},rev:()=>A([784,988,1175],.32,.045,.07),epic:()=>A([523,659,784,1047,1319],.5,.05,.09)}[t]||(()=>{}))()}catch(e){}}
 function tilt(el){el.onpointermove=e=>{const r=el.getBoundingClientRect(),x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;el.style.transform=`perspective(700px) rotateY(${x*20}deg) rotateX(${-y*20}deg)`};el.onpointerleave=()=>el.style.transform=""}
 /* ---- Today: share + points ---- */
-/* the picker has to be part of the page, or iPhones (home-screen apps) can lose the first photo */
-function pick(acc,cap,type){let i=document.getElementById("pkin");if(i)i.remove();i=document.createElement("input");i.id="pkin";i.type="file";i.accept=acc;if(cap)i.setAttribute("capture","environment");
+function pick(acc,cap,type){let i=document.getElementById("pkin");if(i)i.remove();i=document.createElement("input");i.id="pkin";i.type="file";i.accept=acc;if(cap)i.setAttribute("capture",cap===true?"environment":cap);
   i.style.cssText="position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0";document.body.appendChild(i);
   const go=()=>{const f=i.files&&i.files[0];if(f&&!i._done){i._done=1;share(f,type)}};i.addEventListener("change",go);i.addEventListener("input",go);i.click()}
+/* keep only the sound of a camera clip: 16 kHz mono, up to 30 seconds (about 1 MB), evened out in loudness */
+async function vidToVoice(f){try{const ab=await f.arrayBuffer(),O=window.OfflineAudioContext||window.webkitOfflineAudioContext,oc=new O(1,16000,16000);
+  const b=await new Promise((ok,no)=>{const q=oc.decodeAudioData(ab,ok,no);if(q&&q.then)q.then(ok,no)});const d=b.getChannelData(0),n=Math.min(d.length,16000*30);
+  const buf=new ArrayBuffer(44+n*2),v=new DataView(buf),w=(o,t)=>{for(let i=0;i<t.length;i++)v.setUint8(o+i,t.charCodeAt(i))};
+  w(0,"RIFF");v.setUint32(4,36+n*2,true);w(8,"WAVE");w(12,"fmt ");v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,16000,true);v.setUint32(28,32000,true);v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,"data");v.setUint32(40,n*2,true);
+  let pk=0;for(let i=0;i<n;i++)pk=Math.max(pk,Math.abs(d[i]));const k=pk>.01?Math.min(4,.9/pk):1,o=new Int16Array(buf,44,n);
+  for(let i=0;i<n;i++){const x=d[i]*k*32767;o[i]=x>32767?32767:x<-32768?-32768:x}
+  return new Blob([buf],{type:"audio/wav"})}catch(e){return f}}
 async function share(blob,type){
+  if(type==="voicecam"){msg="Getting the sound from your clip...";if(!g)view();blob=await vidToVoice(blob);type="voice"}
   msg="Uploading...";if(!g)view();
   try{const r=await as.upload(blob);await db.collection("posts").add({from:role,type,url:r.url,ts:Date.now()});
     if(!mine().dt.includes(type)){await addPts(1,type);msg="Posted! +1 coin 🪙"}else msg="Posted! (1 coin per type each day)"}
@@ -1757,8 +1765,9 @@ async function share(blob,type){
 async function voice(){
   if(rec){try{rec.stop()}catch(e){}return}
   if(voice.wait)return;
-  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||!window.MediaRecorder){msg="This phone can't record in the app. Pick a recording instead.";view();pick("audio/*",false,"voice");return}
-  msg="Getting the microphone ready... (tap Allow if it asks)";voice.wait=1;view();
+  let nomic=0;try{nomic=localStorage.getItem("nomic")==="1"}catch(e){}
+  if(nomic||!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||!window.MediaRecorder){msg="";pick("video/*","user","voicecam");return}
+  msg="Getting the microphone ready...";voice.wait=1;view();
   try{const s=await Promise.race([navigator.mediaDevices.getUserMedia({audio:true}),new Promise((_,no)=>setTimeout(()=>{const e=new Error("slow");e.name="Timeout";no(e)},15000))]);
     let mt="";try{for(const t of["audio/mp4","audio/webm;codecs=opus","audio/webm"])if(MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(t)){mt=t;break}}catch(e){}
     const mr=mt?new MediaRecorder(s,{mimeType:mt}):new MediaRecorder(s),ch=[];rec=mr;voice.wait=0;
@@ -1766,8 +1775,8 @@ async function voice(){
     mr.onstop=()=>{s.getTracks().forEach(t=>t.stop());rec=null;const ty=((mr.mimeType||mt||"audio/mp4").split(";")[0])||"audio/mp4";
       if(!ch.length){msg="Nothing was recorded. Try again.";view();return}share(new Blob(ch,{type:ty}),"voice")};
     mr.start(1000);setTimeout(()=>{if(rec===mr)mr.stop()},30000);msg="Recording... tap STOP when you're done (30 seconds max)";view()}
-  catch(e){voice.wait=0;rec=null;const n=e&&e.name;
-    msg=n==="NotAllowedError"?"The microphone wasn't allowed. Tap VOICE NOTE again and choose Allow.":n==="Timeout"?"The microphone didn't start. Close the app fully, open it again and try once more.":"Couldn't use the microphone ("+(n||"error")+"). Try again.";view()}
+  catch(e){voice.wait=0;rec=null;try{localStorage.setItem("nomic","1")}catch(_){}
+    msg="No problem! Tap VOICE NOTE again. The camera will open: record a short clip and only the sound gets sent.";view()}
 }
 function vToday(){
   const m=mine(),o=theirs(),T4=[["photo",IC("camera",46),"TAKE PHOTO"],["draw",IC("palette",46),"DRAW"],["voice",IC("mic",46),rec?"STOP":"VOICE NOTE"],["video",IC("video",46),"VIDEO"]];
@@ -1777,7 +1786,7 @@ function vToday(){
   <div class="grid">${T4.map(([k,i,l])=>`<button class="b act ${m.dt.includes(k)?"":"bl"}" data-a="${k}" style="${m.dt.includes(k)?"":""}"><span>${i}</span>${l}${m.dt.includes(k)?" ✔":""}</button>`).join("")}</div>
   <p class="mut c">Share what you're up to! 1 coin per type each day. Winning games gives 2.</p>${msg?`<div class="px c" style="font-size:9px;color:var(--gd);margin:8px 0">${msg}</div>`:""}
   <h2 class="px" style="margin-top:14px">WHAT WE'RE UP TO</h2>${posts.length?posts.slice(0,15).map(p=>`<div class="post"><span class="mut">${p.from===role?"You":"Them"} · ${new Date(p.ts).toLocaleString([], {weekday:"short",hour:"2-digit",minute:"2-digit"})} · ${{photo:"📸",draw:"🎨",voice:"🎙️",video:"🎬"}[p.type]}</span>
-  ${p.type==="photo"||p.type==="draw"?`<img src="${msrc(p.url)}" data-m="${p.url}" alt="">`:`<video controls playsinline src="${msrc(p.url)}" data-m="${p.url}" style="${p.type==="voice"?"height:54px":""}"></video>`}</div>`).join(""):`<div class="mut">Nothing yet. Post the first one!</div>`}`;
+  ${p.type==="photo"||p.type==="draw"?`<img src="${msrc(p.url)}" data-m="${p.url}" alt="">`:(p.type==="voice"?`<audio controls preload="metadata" src="${msrc(p.url)}" data-m="${p.url}" style="width:100%;margin-top:6px"></audio>`:`<video controls playsinline src="${msrc(p.url)}" data-m="${p.url}"></video>`)}</div>`).join(""):`<div class="mut">Nothing yet. Post the first one!</div>`}`;
   document.querySelectorAll("[data-a]").forEach(b=>b.onclick=()=>{const k=b.dataset.a;msg="";
     if(k==="photo")pick("image/*",true,"photo");else if(k==="video")pick("video/*",false,"video");else if(k==="voice")voice();else{g="draw";view()}});
 }
