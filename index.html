@@ -2299,6 +2299,70 @@ for(let st=1;st<=3;st++)LN4.forEach((L,l)=>{const c={st,ln:l,t:0,el:-1,nm:L[0].s
 SX4.forEach(([nm,own,src,mv,ty,x])=>{const c={st:4,ln:-1,t:5,el:-1,own,nm,bi:TY4[ty],r:5};
  if(typeof src==="string"){const a=EXL.find(e=>e[0]===src);c.g=mkS(a,4);c.P=a[2];c.Q=a[3]}else c.g=src;
  Object.assign(c,x||{});mvP(mv,c);CAT.push(c)});
+/* Cards 101-200: the second hundred. 27 evolution lines (81 cards) and 19 specials, all humanoid warriors or huge legendary beasts.
+   Same format as cat4.js. They get ids 100-199, after the first hundred, so nobody's saved cards change.
+   A card only shows up in packs and the album once its picture has been added. */
+const LN5=[
+/* strength */
+["Orc|Orc Warrior|Orc Warlord","Goblin","S",0,"War Paint:S Axe Chop:b|Iron Armour:H Tusk Charge:b|Warlord Rage:S War Cry:s"],
+["Barbarian|Berserker|Barbarian King","Squire","S",1,"Wild Fury:S Big Swing:b|Berserk:S Rage Strike:b|Battle Fury:S Earth Splitter:s"],
+["Viking|Viking Raider|Viking King","Squire","S",0,"Round Shield:H Axe Throw:b|Raider Charge:S Shield Wall:s|Thunder Horn:S Viking Fury:b"],
+["Dwarf|Dwarf Axeman|Dwarf King","Troll","S",0,"Stone Beard:H Hammer Hit:b|Axe Master:S Rune Axe:b|Mountain Crown:H Earth Hammer:s"],
+["Gladiator|Champion|Arena King","Squire","S",0,"Net and Trident:P Net Throw:s|Arena Armour:H Champion Strike:b|Golden Helm:S Arena Smash:b"],
+["Zombie|Zombie Giant|Zombie King","Troll","S",0,"Undead:H Grave Grab:r|Rotten Fists:S Zombie Bite:r|Undead Army:S Grave Rise:h"],
+["Cyclops|Cyclops Brute|Cyclops King","Troll","S",1,"One Eye:S Rock Throw:b|Giant Club:S Ground Smash:s|Cyclops Rage:S Eye Beam:b"],
+["Fire Walker|Lava Warrior|Magma Lord","Pebble","S",1,"Burning Skin:H Ember Punch:b|Lava Fists:S Magma Slam:b|Magma Core:S Volcano Burst:s","#c2410c","#ffd23f"],
+["Gargoyle|Night Gargoyle|Gargoyle King","Pebble","S",0,"Stone Skin:H Claw Dive:d|Night Wings:P Stone Slam:b|Stone Crown:H Gargoyle Storm:s","#475569","#a5b4fc"],
+/* magic */
+["Fire Mage|Fire Sorcerer|Fire Lord","Fairy","M",0,"Fire Spark:M Fireball:b|Flame Robes:M Fire Wall:s|Fire Crown:M Meteor:b","#c2410c","#ffd23f"],
+["Storm Mage|Thunder Mage|Storm Lord","Fairy","M",0,"Static:M Zap Bolt:s|Thunder Staff:M Chain Lightning:b|Storm Eye:M Thunderstorm:s","#1e3a8a","#7dd3fc"],
+["Bone Mage|Grave Lord|Death King","Fairy","M",1,"Bone Staff:M Bone Curse:r|Grave Magic:M Soul Drain:r|Death Crown:M Army of Bones:s","#14532d","#86efac"],
+["Witch|Dark Witch|Witch Queen","Fairy","M",0,"Witch Brew:M Hex:s|Dark Spell:M Curse Bolt:r|Witch Crown:M Nightmare:s","#4c1d95","#a3e635"],
+["Mummy|Mummy Priest|Mummy King","Troll","M",0,"Wrappings:H Sand Curse:s|Tomb Magic:M Sand Storm:b|Pharaoh Gold:M Sand Tomb:r","#92400e","#fde68a"],
+["Demon|Shadow Demon|Demon King","Troll","M",1,"Dark Horns:S Flame Claw:b|Shadow Fire:M Demon Blast:b|Demon Crown:M Black Flame:r","#7f1d1d","#f97316"],
+["Gorgon|Medusa|Gorgon Queen","Snake","M",1,"Snake Hair:M Stone Gaze:s|Medusa Eyes:M Venom Arrow:r|Gorgon Crown:M Stone Curse:s"],
+["Paladin|War Paladin|Sun King","Squire","M",0,"Holy Shield:H Light Strike:b|Sun Blessing:M Sun Heal:h|Sun Crown:M Sun Hammer:b","#b45309","#fef3c7"],
+["Dragon Guard|Dragon Knight|Dragon Emperor","Squire","M",1,"Dragon Scale:H Fire Spear:b|Dragon Blood:M Dragon Blade:b|Dragon Crown:M Dragon Storm:s","#991b1b","#fbbf24"],
+/* speed */
+["Howler|Werewolf|Werewolf King","Dark Pup","P",1,"Night Hunter:P Claw Slash:d|Moon Blood:S Savage Bite:r|Alpha Howl:P Moon Rage:b","#334155","#cbd5e1"],
+["Ronin|Samurai|Samurai Lord","Squire","P",0,"Swift Blade:P Quick Draw:d|Samurai Armour:H Katana Strike:b|Master Blade:P Thousand Cuts:b","#991b1b","#fecaca"],
+["Elf Archer|Elf Ranger|Elf Lord","Fairy","P",0,"Sharp Eyes:P Twin Arrows:b|Forest Cloak:P Arrow Rain:s|Elf Magic:M Starlight Arrow:b","#166534","#d9f99d"],
+["Thief|Assassin|Master Assassin","Squire","P",0,"Sneak:P Dagger Throw:d|Shadow Cloak:P Poison Blade:r|Master Thief:P Shadow Strike:d","#1f2937","#a78bfa"],
+["Pirate|Pirate Captain|Ghost Pirate","Squire","P",1,"Sea Legs:P Cutlass Slash:b|Captain Coat:H Sword Storm:b|Ghost Ship:M Cursed Gold:r","#0f766e","#99f6e4"],
+["Lizard Scout|Lizard Hunter|Lizard King","Snake","P",0,"Quick Tail:P Spear Jab:b|Hard Scales:H Venom Spear:r|Lizard Crown:P Swamp Strike:s"],
+["Centaur|War Centaur|Centaur King","Baby Minotaur","P",0,"Hooves:P Spear Throw:b|War Bow:P Arrow Storm:s|Centaur Crown:S Thunder Hooves:b","#78350f","#fde68a"],
+["Shield Maiden|Valkyrie|Valkyrie Queen","Fairy","P",1,"Shield Up:H Spear Thrust:b|Sky Wings:P Valkyrie Dive:d|Golden Wings:P Sky Spear:b","#1e40af","#fde68a"],
+["Monk|Battle Monk|Grand Master","Squire","P",1,"Iron Fist:S Palm Strike:b|Inner Calm:H Spinning Kick:d|Master Spirit:P Dragon Fist:s","#c2410c","#fde68a"]];
+const SX5=[
+/* anyone can get these */
+["Frost Dragon","parent","Skull Dragon","Ice Scales:H Frost Breath:s","M",{P:"#1e3a8a",Q:"#bae6fd"}],
+["Hydra","parent","Skull Dragon","Many Heads:S Hydra Fury:b","S",{P:"#14532d",Q:"#86efac"}],
+["Death Knight","parent","Doom Knight","Cursed Blade:S Death Strike:r","S"],
+["Fire Giant","parent","Lava Titan","Burning Fists:S Volcano Smash:b","S"],
+["Shadow Dragon","parent","Skull Dragon","Shadow Wings:P Dark Breath:r","P",{P:"#1f1147",Q:"#a78bfa"}],
+["Chaos Lord","parent","Void Wizard","Chaos Magic:M Chaos Storm:s","M"],
+["Bone Giant","parent","War Giant","Bone Armour:H Grave Quake:s","S",{P:"#44403c",Q:"#86efac"}],
+["Sea Titan","parent","War Giant","Tidal Power:M Great Flood:b","M",{P:"#0e7490",Q:"#a5f3fc"}],
+["Iron Titan","parent","War Giant","Iron Skin:H Iron Hammer:b","S",{P:"#334155",Q:"#e2e8f0"}],
+["Dark Emperor","parent","Shadow Reaper","Dark Throne:M Shadow Crush:r","M"],
+/* Cass only */
+["Golden Dragon","child","Rainbow Dragon","Gold Scales:H Sun Breath:b","M",{P:"#b45309",Q:"#fde68a"}],
+["Dragon Rider","child","Hero Knight","Dragon Wings:P Sky Dive:d","P",{P:"#991b1b",Q:"#fbbf24"}],
+["Sun Titan","child","Thunder King","Sun Armour:H Solar Smash:b","S",{P:"#b45309",Q:"#fef3c7"}],
+["Storm Dragon","child","Rainbow Dragon","Storm Wings:P Lightning Breath:s","P",{P:"#1e3a8a",Q:"#7dd3fc"}],
+["Phoenix Knight","child","Hero Knight","Phoenix Fire:M Rising Flame:h","M",{P:"#c2410c",Q:"#ffd23f"}],
+["Dragon Slayer","child","Hero Knight","Slayer Sword:S Dragon Bane:b","S",{P:"#475569",Q:"#fbbf24"}],
+["Star Knight","child","Hero Knight","Star Armour:H Starfall:b","M",{P:"#312e81",Q:"#e0e7ff"}],
+["Moon Archer","child","Hero Knight","Moon Bow:P Moon Arrow:s","P",{P:"#1e1b4b",Q:"#c7d2fe"}],
+["Blade King","child","Hero Knight","Twin Blades:P Blade Storm:d","P",{P:"#7f1d1d",Q:"#fecaca"}]];
+
+if(CAT.length!==100)throw new Error("first hundred changed: "+CAT.length);
+for(let st=1;st<=3;st++)LN5.forEach((L,l)=>{const c={st,ln:NL+l,t:0,el:-1,nm:L[0].split("|")[st-1],bi:TY4[L[2]]},a=GL.find(x=>x[0]===L[1]);
+ c.g=mkS(a,5);c.P=a[3];c.Q=a[4];if(L[5]){c.P=L[5];c.Q=L[6]}mvP(L[4].split("|")[st-1],c);c.r=st===1?0:st===2?1:L[3]?3:2;CAT.push(c)});
+SX5.forEach(([nm,own,src,mv,ty,x])=>{const c={st:4,ln:-1,t:5,el:-1,own,nm,bi:TY4[ty],r:5},a=EXL.find(e=>e[0]===src);
+ c.g=mkS(a,4);c.P=a[2];c.Q=a[3];Object.assign(c,x||{});mvP(mv,c);CAT.push(c)});
+/* a card is visible once it has a picture (the first hundred always are) */
+const VIS=k=>k<100||!!(window.ART_URLS||{})[k],NMV=()=>CAT.filter((c,k)=>c.t!==5&&VIS(k)).length;
 const CH=[],X=[];
 /* Power by rarity: the three stats add up to these totals. The biggest stat is the card's type. Cass's own specials are quietly a bit stronger. */
 const TOT={0:18,1:27,2:36,3:45,5:55};
@@ -2545,7 +2609,7 @@ function CR(sp,st){
   const sc=[.84,.94,1][st-1];return `<g transform="translate(60 114) scale(${sc}) translate(-60 -114)">${s}</g>`}
 }
 
-const REL=()=>{const a=Object.keys(window.ART_URLS||{}).map(Number).filter(k=>CAT[k]);return a.length?a:[...CAT.keys()]},RELS=st=>REL().filter(k=>k<NM&&(!st||CAT[k].st===st));
+const REL=()=>{const a=Object.keys(window.ART_URLS||{}).map(Number).filter(k=>CAT[k]);return a.length?a:[...CAT.keys()].filter(k=>k<100)},RELS=st=>REL().filter(k=>CAT[k].t!==5&&(!st||CAT[k].st===st));
 const SPD={burst:"22 big damage",stun:"11 damage, they miss a turn",heal:"heal 20 HP",dodge:"11 damage + dodge their next attack",drain:"14 damage + heal 14"};
 const AT={str:"+3 Strength moves",mag:"+3 Magic moves",spd:"+3 Speed moves",shield:"Takes 2 less damage"};
 const CK=c=>c.k==null?{...c,k:(c.id||0)%14}:c;
@@ -2588,15 +2652,15 @@ function vCards(){
   if(g==="battle")return vBattle();if(g==="earn")return vEarn();
   const m=mine(),own=album(m),oo=album(theirs()),ks=Object.keys(own).map(Number),can=SH(m)>=4&&!m.ub,c=cs||(can?"pack":"mine"),
    pw=o=>Object.keys(o).map(Number).sort((a,b)=>tot2(o[b])-tot2(o[a])),srt=pw(own),ok=pw(oo),
-   nsh=ks.filter(k=>CAT[k].t<5).length,nex=ks.length-nsh,mx=CAT.filter(x=>x.own===role||(role==="child"&&x.own)).length;
+   nsh=ks.filter(k=>CAT[k].t<5).length,nex=ks.length-nsh,mx=CAT.filter((x,k)=>VIS(k)&&(x.own===role||(role==="child"&&x.own))).length;
   if(!own[sel])sel=srt[0]??-1;
   BN=Math.max(1,Math.min(BN,3,ks.length||1));TEAM=TEAM.filter(k=>own[k]).slice(0,BN);if(!TEAM.length&&srt.length)TEAM=[srt[0]];
   const seg=`<div class="seg">${[["pack",IC("chesttab",30),"COLLECT"],["mine",IC("card",30),"MY CARDS"],["album",IC("book",30),"ALBUM"],["battle",IC("swords",30),"BATTLE"]].map(([k,i,l])=>`<button data-s="${k}" class="${c===k?"on":""}"><span style="font-size:20px">${i}</span><br>${l}</button>`).join("")}</div>`;let h="";
   if(c==="pack")h=`<div class="bx c">${can?`<div class="box ${wob?"shake":""}" id="mb">${CHEST(170)}</div><div class="px" style="font-size:12px">${wob?"OPENING...":"TODAY'S TREASURE CHEST! TAP!"}</div>`:`<div class="box" style="opacity:.35;animation:none">${CHEST(170)}</div><div class="px" style="font-size:11px">${m.ub?"COME BACK TOMORROW FOR A NEW CARD":"SHARE ALL 4 KINDS TODAY TO OPEN THE CHEST ("+SH(m)+"/4)"}</div>`}</div>
-   <div class="bx c"><div class="px" style="font-size:11px">COLLECTED ${nsh}/${NM}</div><div class="bar"><i style="width:${nsh/NM*100}%"></i></div><div class="mut" style="margin-top:8px">${role==="child"?"Specials: "+nex+"/"+mx+" · you can find every one!":"Your specials: "+nex+"/"+mx}</div></div>`.replace('<div class="bx c"><div class="px" style="font-size:11px">COLLECTED',earnBox(m)+'<div class="bx c"><div class="px" style="font-size:11px">COLLECTED');
+   <div class="bx c"><div class="px" style="font-size:11px">COLLECTED ${nsh}/${NMV()}</div><div class="bar"><i style="width:${nsh/NMV()*100}%"></i></div><div class="mut" style="margin-top:8px">${role==="child"?"Specials: "+nex+"/"+mx+" · you can find every one!":"Your specials: "+nex+"/"+mx}</div></div>`.replace('<div class="bx c"><div class="px" style="font-size:11px">COLLECTED',earnBox(m)+'<div class="bx c"><div class="px" style="font-size:11px">COLLECTED');
   else if(c==="mine")h=`<div class="bx"><h2 class="px" style="margin:0">MY CARDS (${ks.length})</h2><span class="mut">Strongest first. Tap a card for details.</span></div>${ks.length?`<div class="cards">${srt.slice(0,PG.mine).map(k=>cardH(own[k],k,sel===k)).join("")}</div>${more("mine",srt.length,PG.mine)}`:`<div class="mut c">No cards yet. Open today's pack!</div>`}`;
-  else if(c==="album"){const ids=[...CAT.keys()].filter(inF),chip=(a,v,l,cur)=>`<button data-af="${a}:${v}" class="${cur===v?"on":""}">${l}</button>`;
-   h=`<div class="bx"><div class="row" style="justify-content:space-between"><h2 class="px" style="margin:0">ALBUM ${nsh}/${NM}</h2><span class="mut">+ ${nex}/${mx} specials</span></div><div class="bar"><i style="width:${nsh/NM*100}%"></i></div></div>
+  else if(c==="album"){const ids=[...CAT.keys()].filter(k=>VIS(k)&&inF(k)),chip=(a,v,l,cur)=>`<button data-af="${a}:${v}" class="${cur===v?"on":""}">${l}</button>`;
+   h=`<div class="bx"><div class="row" style="justify-content:space-between"><h2 class="px" style="margin:0">ALBUM ${nsh}/${NMV()}</h2><span class="mut">+ ${nex}/${mx} specials</span></div><div class="bar"><i style="width:${nsh/NMV()*100}%"></i></div></div>
    <div class="chips">${chip("t","all","ALL",AF.t)}${[["1","STAGE 1"],["2","STAGE 2"],["3","STAGE 3"],["x","SPECIAL"]].map(([v,n])=>chip("t",v,n,AF.t)).join("")}</div>
    
    <div class="mut" style="margin:6px 0">${ids.filter(k=>own[k]).length} of ${ids.length} found</div>
