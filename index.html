@@ -1642,20 +1642,42 @@ function msrc(u){if(!u||!u.startsWith("fbm:"))return u||"";const c=MCACHE[u];if(
 async function webDb(){const h=famGet();if(!h||h.length!==64||!window.FB_CONFIG)return null;FAM="fam/"+h;try{FB.setDoc(FB.doc(webFs(),FAM+"/meta/ok"),{t:Date.now()},{merge:true}).catch(()=>{})}catch(e){}return{db:webDbFor(FAM),as:{upload:b=>mediaPut(FAM,b),remove:async u=>{if(!u||!u.startsWith("fbm:"))return;const[,id,n]=u.split(":"),fs=webFs();
   await Promise.all([...Array(+n).keys()].map(i=>FB.deleteDoc(FB.doc(fs,FAM+"/media/"+id+"_"+i)).catch(()=>{})))}}}}
 /* the password is right if that family already exists (a signed-in phone has marked it, or it has players) */
-async function famKnown(h){const fs=webFs(),b="fam/"+h;const m=await FB.getDoc(FB.doc(fs,b+"/meta/ok"));if(m.exists())return true;
-  const q=await FB.getDocs(FB.collection(fs,b+"/players"));return q.docs.length>0}
+/* returns where the game lives for this password, or null if it's wrong.
+   A changed password is a "link" pointing at the game; the old word stops working once Dad has set a new one. */
+async function famKnown(h){const fs=webFs(),b="fam/"+h;
+  const l=await FB.getDoc(FB.doc(fs,b+"/meta/link"));if(l.exists()&&l.data().to&&l.data().to.length===64)return l.data().to;
+  const m=await FB.getDoc(FB.doc(fs,b+"/meta/ok"));if(m.exists())return m.data().pw&&m.data().pw!==h?null:h;
+  const q=await FB.getDocs(FB.collection(fs,b+"/players"));return q.docs.length>0?h:null}
 function famScreen(){$("#nav").innerHTML="";$("#v").innerHTML=`<div class="bx c"><h2 class="px">PASSWORD</h2>
   <p class="mut" style="margin:6px 0 12px">Type the password to open the game.</p>
   <input id="fcode" type="password" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="password" style="width:100%;font:700 20px 'Outfit',sans-serif;padding:14px 16px;border-radius:16px;border:2px solid var(--ln);background:rgba(0,0,0,.35);color:#fff;text-align:center">
   <div class="row ctr" style="margin-top:12px"><button class="b d" id="fbk" style="display:inline-flex;align-items:center;gap:6px">${IC("back",22)}BACK</button><button class="b y" id="fgo">LET'S GO!</button></div><div class="mut" id="fmsg" style="margin-top:8px;font-size:16px"></div></div>`;
   let busy=0;const say=t=>{$("#fmsg").textContent=t};
   const go=async()=>{if(busy)return;const v=$("#fcode").value;if(!v.trim()){say("Type the password first.");return}
-    busy=1;say("Checking...");let h,ok=false;
+    busy=1;say("Checking...");let h,ok=null;
     try{h=await famHash(v);ok=await Promise.race([famKnown(h),new Promise((_,no)=>setTimeout(()=>no(new Error("slow")),15000))])}
     catch(e){busy=0;say("Couldn't check the password. Check the internet and try again.");return}
     busy=0;if(!ok){say("That's not the right password. Try again.");$("#fcode").value="";$("#fcode").focus();return}
-    famSet(h);if(db)shell();else startDb()};
+    famSet(ok);if(db)shell();else startDb()};
   $("#fbk").onclick=()=>{try{localStorage.removeItem("role")}catch(e){}role=null;shell()};$("#fgo").onclick=go;$("#fcode").onkeydown=e=>{if(e.key==="Enter")go()}}
+
+/* Dad only: choose a new password. Phones already signed in stay signed in. */
+function chPw(){const p=$("#sndp");if(p)p.remove();const d=document.createElement("div");d.className="yn";
+  d.innerHTML=`<div class="ynb"><p style="font-weight:800;font-size:18px">NEW PASSWORD</p><p class="mut" style="font-size:14px;margin:4px 0 10px">Cass types this to open the game. The old password stops working. Phones that are already signed in stay signed in.</p>
+  <input id="npw" type="text" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="new password" style="width:100%;font:700 20px 'Outfit',sans-serif;padding:12px 14px;border-radius:14px;border:2px solid var(--ln);background:rgba(0,0,0,.35);color:#fff;text-align:center">
+  <div class="row ctr" style="margin-top:12px"><button class="b d" id="npc">CANCEL</button><button class="b y" id="nps">SAVE</button></div><div class="mut" id="npm" style="margin-top:8px"></div></div>`;
+  document.body.appendChild(d);const say=t=>{d.querySelector("#npm").textContent=t};let busy=0;
+  d.querySelector("#npc").onclick=()=>d.remove();
+  d.querySelector("#nps").onclick=async()=>{if(busy)return;const v=d.querySelector("#npw").value;if(v.trim().length<3){say("Make it at least 3 letters.");return}
+    busy=1;say("Saving...");try{const fs=webFs(),cur=FAM.slice(4),h2=await famHash(v);
+      if(h2!==cur){const x=await FB.getDoc(FB.doc(fs,"fam/"+h2+"/meta/ok"));if(x.exists()){busy=0;say("Pick a different word.");return}}
+      const okd=await FB.getDoc(FB.doc(fs,FAM+"/meta/ok")),old=okd.exists()?okd.data().pw:null;
+      if(h2!==cur)await FB.setDoc(FB.doc(fs,"fam/"+h2+"/meta/link"),{to:cur});
+      if(old&&old!==h2)await FB.deleteDoc(FB.doc(fs,"fam/"+old+"/meta/link")).catch(()=>{});
+      await FB.setDoc(FB.doc(fs,FAM+"/meta/ok"),{pw:h2,t:Date.now()},{merge:true});
+      d.remove();if(typeof toast==="function")toast("Password changed!")}
+    catch(e){busy=0;say("Couldn't save. Check the internet and try again.")}};
+  setTimeout(()=>{const i=d.querySelector("#npw");if(i)i.focus()},50)}
 
 /* start again: wipes this family's coins, cards, posts, comments, games and saved media (Dad only) */
 async function famReset(){const fs=webFs();for(const c of["posts","cm","re","media","games","players"]){const q=await FB.getDocs(FB.collection(fs,FAM+"/"+c));await Promise.all(q.docs.map(d=>FB.deleteDoc(d.ref)))}}
@@ -1736,12 +1758,12 @@ function sndIcon(){const e=$("#snd");if(e)e.innerHTML=SND||MUSV>0?IC("horn",28):
 function sndPanel(){let p=$("#sndp");if(p){p.remove();return}p=document.createElement("div");p.id="sndp";
   p.innerHTML=`<div class="sp-row"><b>MUSIC</b><span id="mvn">${Math.round(MUSV*100)}%</span></div><input type="range" id="mvs" min="0" max="100" step="5" value="${Math.round(MUSV*100)}" aria-label="Music volume">
   <div class="sp-row" style="margin-top:14px"><b>SOUND EFFECTS</b><button class="sp-tg ${SND?"on":""}" id="sfxt" aria-pressed="${SND}"><i></i></button></div>
-  <div class="sp-row" style="margin-top:16px;padding-top:12px;border-top:1px solid var(--ln)"><b>PLAYING AS ${PNM(role).toUpperCase()}</b><button class="b d" id="lgo" style="padding:8px 12px;font-size:11px">LOG OUT</button></div>`+(role==="parent"?`<div class="sp-row" style="margin-top:12px"><b>START AGAIN</b><button class="b r" id="rst" style="padding:8px 12px;font-size:11px">RESET APP</button></div>`:"")+``;
+  <div class="sp-row" style="margin-top:16px;padding-top:12px;border-top:1px solid var(--ln)"><b>PLAYING AS ${PNM(role).toUpperCase()}</b><button class="b d" id="lgo" style="padding:8px 12px;font-size:11px">LOG OUT</button></div>`+(role==="parent"?`<div class="sp-row" style="margin-top:12px"><b>START AGAIN</b><button class="b r" id="rst" style="padding:8px 12px;font-size:11px">RESET APP</button></div>`+(typeof chPw==="function"?`<div class="sp-row" style="margin-top:12px"><b>PASSWORD</b><button class="b bl" id="cpw" style="padding:8px 12px;font-size:11px">CHANGE</button></div>`:""):"")+``;
   document.body.appendChild(p);const r=$("#snd").getBoundingClientRect();p.style.top=(r.bottom+8)+"px";
   const sl=$("#mvs"),fill=()=>sl.style.setProperty("--v",sl.value+"%");fill();
   sl.oninput=()=>{MUSV=sl.value/100;$("#mvn").textContent=sl.value+"%";fill();try{localStorage.setItem("musv2",MUSV)}catch(e){}sndIcon();if(MUSV<=0)musSync();
     clearTimeout(sl.h);sl.h=setTimeout(()=>{if(Math.abs(MUSLV-MUSV)>.001)musLevel();musSync()},180)};sl.onchange=()=>{clearTimeout(sl.h);if(Math.abs(MUSLV-MUSV)>.001)musLevel();musSync()};
-  if($("#lgo"))$("#lgo").onclick=logOut;if($("#rst"))$("#rst").onclick=resetAll;$("#sfxt").onclick=e=>{e.stopPropagation();SND=!SND;try{localStorage.setItem("sfxon",SND?"1":"0")}catch(_){}const b=$("#sfxt");b.classList.toggle("on",SND);b.setAttribute("aria-pressed",SND);sndIcon();sfx("tap")}}
+  if($("#lgo"))$("#lgo").onclick=logOut;if($("#rst"))$("#rst").onclick=resetAll;if($("#cpw"))$("#cpw").onclick=chPw;$("#sfxt").onclick=e=>{e.stopPropagation();SND=!SND;try{localStorage.setItem("sfxon",SND?"1":"0")}catch(_){}const b=$("#sfxt");b.classList.toggle("on",SND);b.setAttribute("aria-pressed",SND);sndIcon();sfx("tap")}}
 document.addEventListener("pointerdown",e=>{const p=$("#sndp");if(p&&!p.contains(e.target)&&!e.target.closest("#snd"))p.remove()},true);
 function sfxNoise(){if(!sfxNoise.b){const L=AC.sampleRate*2,b=AC.createBuffer(1,L,AC.sampleRate),c=b.getChannelData(0);for(let i=0;i<L;i++)c[i]=Math.random()*2-1;sfxNoise.b=b}return sfxNoise.b}
 function sfx(t,K=1){if(!SND)return;try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.state!=="running")AC.resume();const n=AC.currentTime;
