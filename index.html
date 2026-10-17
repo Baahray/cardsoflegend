@@ -1639,7 +1639,14 @@ function msrc(u){if(!u||!u.startsWith("fbm:"))return u||"";const c=MCACHE[u];if(
   if(!c){MCACHE[u]={};(async()=>{const[,id,n,t]=u.split(":"),fs=webFs(),parts=await Promise.all([...Array(+n).keys()].map(async i=>{const s=await FB.getDoc(FB.doc(fs,FAM+"/media/"+id+"_"+i));return s.exists()?s.data().d.toUint8Array():new Uint8Array(0)}));
     const url=URL.createObjectURL(new Blob(parts,{type:decodeURIComponent(t)}));MCACHE[u].url=url;document.querySelectorAll('[data-m="'+u+'"]').forEach(e=>e.src=url)})().catch(()=>{delete MCACHE[u]})}
   return u.includes("image")?BLANK:""}
-async function webDb(){const h=famGet();if(!h||h.length!==64||!window.FB_CONFIG)return null;FAM="fam/"+h;try{FB.setDoc(FB.doc(webFs(),FAM+"/meta/ok"),{t:Date.now()},{merge:true}).catch(()=>{})}catch(e){}return{db:webDbFor(FAM),as:{upload:b=>mediaPut(FAM,b),remove:async u=>{if(!u||!u.startsWith("fbm:"))return;const[,id,n]=u.split(":"),fs=webFs();
+/* No password: every phone opens the same game. The game's address is kept in a fixed "home" spot, which the
+   first phone that was already signed in fills in. */
+async function famHome(){if(!window.FB_CONFIG)return famGet();const fs=webFs(),home=await famHash("__home__"),r=FB.doc(fs,"fam/"+home+"/meta/link"),mine=famGet();
+  try{const s=await Promise.race([FB.getDoc(r),new Promise((_,no)=>setTimeout(()=>no(new Error("slow")),10000))]);
+    if(s.exists()&&s.data().to&&s.data().to.length===64){const to=s.data().to;if(to!==mine)famSet(to);return to}
+    if(mine&&mine.length===64){await FB.setDoc(r,{to:mine});return mine}}catch(e){}
+  return mine}
+async function webDb(){const h=await famHome();if(!h||h.length!==64||!window.FB_CONFIG)return null;FAM="fam/"+h;try{FB.setDoc(FB.doc(webFs(),FAM+"/meta/ok"),{t:Date.now()},{merge:true}).catch(()=>{})}catch(e){}return{db:webDbFor(FAM),as:{upload:b=>mediaPut(FAM,b),remove:async u=>{if(!u||!u.startsWith("fbm:"))return;const[,id,n]=u.split(":"),fs=webFs();
   await Promise.all([...Array(+n).keys()].map(i=>FB.deleteDoc(FB.doc(fs,FAM+"/media/"+id+"_"+i)).catch(()=>{})))}}}}
 /* the password is right if that family already exists (a signed-in phone has marked it, or it has players) */
 /* returns where the game lives for this password, or null if it's wrong.
@@ -1660,24 +1667,6 @@ function famScreen(){$("#nav").innerHTML="";$("#v").innerHTML=`<div class="bx c"
     busy=0;if(!ok){say("That's not the right password. Try again.");$("#fcode").value="";$("#fcode").focus();return}
     famSet(ok);if(db)shell();else startDb()};
   $("#fbk").onclick=()=>{try{localStorage.removeItem("role")}catch(e){}role=null;shell()};$("#fgo").onclick=go;$("#fcode").onkeydown=e=>{if(e.key==="Enter")go()}}
-
-/* Dad only: choose a new password. Phones already signed in stay signed in. */
-function chPw(){const p=$("#sndp");if(p)p.remove();const d=document.createElement("div");d.className="yn";
-  d.innerHTML=`<div class="ynb"><p style="font-weight:800;font-size:18px">NEW PASSWORD</p><p class="mut" style="font-size:14px;margin:4px 0 10px">Cass types this to open the game. The old password stops working. Phones that are already signed in stay signed in.</p>
-  <input id="npw" type="text" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="new password" style="width:100%;font:700 20px 'Outfit',sans-serif;padding:12px 14px;border-radius:14px;border:2px solid var(--ln);background:rgba(0,0,0,.35);color:#fff;text-align:center">
-  <div class="row ctr" style="margin-top:12px"><button class="b d" id="npc">CANCEL</button><button class="b y" id="nps">SAVE</button></div><div class="mut" id="npm" style="margin-top:8px"></div></div>`;
-  document.body.appendChild(d);const say=t=>{d.querySelector("#npm").textContent=t};let busy=0;
-  d.querySelector("#npc").onclick=()=>d.remove();
-  d.querySelector("#nps").onclick=async()=>{if(busy)return;const v=d.querySelector("#npw").value;if(v.trim().length<3){say("Make it at least 3 letters.");return}
-    busy=1;say("Saving...");try{const fs=webFs(),cur=FAM.slice(4),h2=await famHash(v);
-      if(h2!==cur){const x=await FB.getDoc(FB.doc(fs,"fam/"+h2+"/meta/ok"));if(x.exists()){busy=0;say("Pick a different word.");return}}
-      const okd=await FB.getDoc(FB.doc(fs,FAM+"/meta/ok")),old=okd.exists()?okd.data().pw:null;
-      if(h2!==cur)await FB.setDoc(FB.doc(fs,"fam/"+h2+"/meta/link"),{to:cur});
-      if(old&&old!==h2)await FB.deleteDoc(FB.doc(fs,"fam/"+old+"/meta/link")).catch(()=>{});
-      await FB.setDoc(FB.doc(fs,FAM+"/meta/ok"),{pw:h2,t:Date.now()},{merge:true});
-      d.remove();if(typeof toast==="function")toast("Password changed!")}
-    catch(e){busy=0;say("Couldn't save. Check the internet and try again.")}};
-  setTimeout(()=>{const i=d.querySelector("#npw");if(i)i.focus()},50)}
 
 /* start again: wipes this family's coins, cards, posts, comments, games and saved media (Dad only) */
 async function famReset(){const fs=webFs();for(const c of["posts","cm","re","media","games","players"]){const q=await FB.getDocs(FB.collection(fs,FAM+"/"+c));await Promise.all(q.docs.map(d=>FB.deleteDoc(d.ref)))}}
