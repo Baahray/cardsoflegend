@@ -1639,13 +1639,22 @@ function msrc(u){if(!u||!u.startsWith("fbm:"))return u||"";const c=MCACHE[u];if(
   if(!c){MCACHE[u]={};(async()=>{const[,id,n,t]=u.split(":"),fs=webFs(),parts=await Promise.all([...Array(+n).keys()].map(async i=>{const s=await FB.getDoc(FB.doc(fs,FAM+"/media/"+id+"_"+i));return s.exists()?s.data().d.toUint8Array():new Uint8Array(0)}));
     const url=URL.createObjectURL(new Blob(parts,{type:decodeURIComponent(t)}));MCACHE[u].url=url;document.querySelectorAll('[data-m="'+u+'"]').forEach(e=>e.src=url)})().catch(()=>{delete MCACHE[u]})}
   return u.includes("image")?BLANK:""}
-async function webDb(){const h=famGet();if(!h||h.length!==64||!window.FB_CONFIG)return null;FAM="fam/"+h;return{db:webDbFor(FAM),as:{upload:b=>mediaPut(FAM,b),remove:async u=>{if(!u||!u.startsWith("fbm:"))return;const[,id,n]=u.split(":"),fs=webFs();
+async function webDb(){const h=famGet();if(!h||h.length!==64||!window.FB_CONFIG)return null;FAM="fam/"+h;try{FB.setDoc(FB.doc(webFs(),FAM+"/meta/ok"),{t:Date.now()},{merge:true}).catch(()=>{})}catch(e){}return{db:webDbFor(FAM),as:{upload:b=>mediaPut(FAM,b),remove:async u=>{if(!u||!u.startsWith("fbm:"))return;const[,id,n]=u.split(":"),fs=webFs();
   await Promise.all([...Array(+n).keys()].map(i=>FB.deleteDoc(FB.doc(fs,FAM+"/media/"+id+"_"+i)).catch(()=>{})))}}}}
-function famScreen(){$("#nav").innerHTML="";$("#v").innerHTML=`<div class="bx c"><h2 class="px">FAMILY CODE</h2>
-  <p class="mut" style="margin:6px 0 12px">Type your secret family code. It must be exactly the same on Dad's phone and Cass's phone.</p>
-  <input id="fcode" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="family code" style="width:100%;font:700 20px 'Outfit',sans-serif;padding:14px 16px;border-radius:16px;border:2px solid var(--ln);background:rgba(0,0,0,.35);color:#fff;text-align:center">
-  <div class="row ctr" style="margin-top:12px"><button class="b d" id="fbk" style="display:inline-flex;align-items:center;gap:6px">${IC("back",22)}BACK</button><button class="b y" id="fgo">LET'S GO!</button></div><div class="mut" id="fmsg" style="margin-top:8px"></div></div>`;
-  const go=async()=>{const v=$("#fcode").value;if(v.trim().length<4){$("#fmsg").textContent="Make it at least 4 letters.";return}famSet(await famHash(v));if(db)shell();else startDb()};
+/* the password is right if that family already exists (a signed-in phone has marked it, or it has players) */
+async function famKnown(h){const fs=webFs(),b="fam/"+h;const m=await FB.getDoc(FB.doc(fs,b+"/meta/ok"));if(m.exists())return true;
+  const q=await FB.getDocs(FB.collection(fs,b+"/players"));return q.docs.length>0}
+function famScreen(){$("#nav").innerHTML="";$("#v").innerHTML=`<div class="bx c"><h2 class="px">PASSWORD</h2>
+  <p class="mut" style="margin:6px 0 12px">Type the password to open the game.</p>
+  <input id="fcode" type="password" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="password" style="width:100%;font:700 20px 'Outfit',sans-serif;padding:14px 16px;border-radius:16px;border:2px solid var(--ln);background:rgba(0,0,0,.35);color:#fff;text-align:center">
+  <div class="row ctr" style="margin-top:12px"><button class="b d" id="fbk" style="display:inline-flex;align-items:center;gap:6px">${IC("back",22)}BACK</button><button class="b y" id="fgo">LET'S GO!</button></div><div class="mut" id="fmsg" style="margin-top:8px;font-size:16px"></div></div>`;
+  let busy=0;const say=t=>{$("#fmsg").textContent=t};
+  const go=async()=>{if(busy)return;const v=$("#fcode").value;if(!v.trim()){say("Type the password first.");return}
+    busy=1;say("Checking...");let h,ok=false;
+    try{h=await famHash(v);ok=await Promise.race([famKnown(h),new Promise((_,no)=>setTimeout(()=>no(new Error("slow")),15000))])}
+    catch(e){busy=0;say("Couldn't check the password. Check the internet and try again.");return}
+    busy=0;if(!ok){say("That's not the right password. Try again.");$("#fcode").value="";$("#fcode").focus();return}
+    famSet(h);if(db)shell();else startDb()};
   $("#fbk").onclick=()=>{try{localStorage.removeItem("role")}catch(e){}role=null;shell()};$("#fgo").onclick=go;$("#fcode").onkeydown=e=>{if(e.key==="Enter")go()}}
 
 /* start again: wipes this family's coins, cards, posts, comments, games and saved media (Dad only) */
