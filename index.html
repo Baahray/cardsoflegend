@@ -1926,7 +1926,7 @@ function vToday(){
   <p class="mut c">Share what you're up to! 1 coin per type each day. Winning games gives 2.</p>
   <div class="row" style="justify-content:space-between;align-items:center;margin-top:14px"><h2 class="px" style="margin:0">WHAT WE'RE UP TO</h2><button class="b d" id="memo" style="padding:8px 14px;font-size:12px">📅 MEMORIES</button></div>${posts.length?posts.slice(0,12).map(postH).join("")+(posts.length>12?`<div class="row ctr"><button class="b d" id="memo2">SEE EVERYTHING IN MEMORIES</button></div>`:""):`<div class="mut">Nothing yet. Post the first one!</div>`}`;
   document.querySelectorAll("[data-a]").forEach(b=>b.onclick=()=>{const k=b.dataset.a;msg="";
-    if(k==="photo")pick("image/*",true,"photo");else if(k==="video")pick("video/*",false,"video");else if(k==="voice")voice();else{g="draw";view()}});postWire();[$("#memo"),$("#memo2")].forEach(b=>{if(b)b.onclick=()=>{g="memo";MDAY=null;view();window.scrollTo(0,0)}});
+    if(k==="photo"||k==="video")shareChoose(k);else if(k==="voice")voice();else{g="draw";view()}});postWire();[$("#memo"),$("#memo2")].forEach(b=>{if(b)b.onclick=()=>{g="memo";MDAY=null;view();window.scrollTo(0,0)}});
 }
 /* ---- Drawing studio: full screen, with colours, brushes, paint bucket, stamps, undo ---- */
 const PD={tool:"pen",col:"#14151a",size:1,stamp:"⭐"};
@@ -2947,6 +2947,14 @@ function liveInit(){
   document.addEventListener("visibilitychange",()=>{if(!document.hidden){onlBeat();onlUI()}else if(db&&role)db.doc("online/"+role).set({t:0}).catch(()=>{})});
   window.addEventListener("pagehide",()=>{try{if(db&&role)db.doc("online/"+role).set({t:0})}catch(e){}})}
 
+/* photo / video: take one now, or pick one already on the phone */
+function shareChoose(k){const ph=k==="photo",d=document.createElement("div");d.className="yn";d.id="shc";d.style.zIndex=250;
+  d.innerHTML=`<div class="ynb c" style="max-width:380px;width:100%"><h2 class="px" style="font-size:18px;margin:0 0 14px">${ph?"SHARE A PHOTO":"SHARE A VIDEO"}</h2>
+  <div style="display:grid;gap:10px"><button class="b o" id="shn" style="font-size:18px;padding:16px;display:flex;align-items:center;justify-content:center;gap:10px">${IC(ph?"camera":"video",34)}${ph?"TAKE A PHOTO":"RECORD A VIDEO"}</button>
+  <button class="b bl" id="shu" style="font-size:18px;padding:16px;display:flex;align-items:center;justify-content:center;gap:10px">${IC("memory",34)}${ph?"UPLOAD A PHOTO":"UPLOAD A VIDEO"}</button>
+  <button class="b d" id="shx">CANCEL</button></div></div>`;
+  document.body.appendChild(d);const go=cap=>{d.remove();pick(ph?"image/*":"video/*",cap,k)};
+  d.querySelector("#shn").onclick=()=>go(true);d.querySelector("#shu").onclick=()=>go(false);d.querySelector("#shx").onclick=()=>d.remove();d.onclick=e=>{if(e.target===d)d.remove()}}
 function unbox(){if(wob)return;wob=true;sfx("box");view();
   setTimeout(async()=>{const c=draw(album(mine()),role);let res={c};
     try{await upd(p=>{const i=p.cr.findIndex(x=>CK(x).k===c.k);if(i>=0){const o=CK(p.cr[i]);p.cr[i]={...o,lv:Math.min(5,(o.lv||1)+1),f:o.f||c.f};res={up:1,c:p.cr[i]}}else{p.cr.push(c);res={c}}p.ub=true})}catch(e){}
