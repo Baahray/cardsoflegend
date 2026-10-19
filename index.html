@@ -2976,8 +2976,8 @@ function tzNow(tz){const d=new Date();let p;try{p=new Intl.DateTimeFormat("en-GB
 const h12=h=>((h+11)%12)+1,ampm=h=>h<12?"am":"pm",dig=t=>`${h12(t.h)}:${String(t.m).padStart(2,"0")} ${ampm(t.h)}`;
 function partOf(h){return h<5?"in the middle of the night":h<12?"in the morning":h<17?"in the afternoon":h<21?"in the evening":"at night"}
 function kidTime(t){let h=t.h,m=t.m,say;const nx=()=>{h=(h+1)%24};
-  if(m<5)say=null;else if(m<13)say=`just after ${h12(h)} o'clock`;else if(m<18)say=`quarter past ${h12(h)}`;else if(m<28)say=`nearly half past ${h12(h)}`;else if(m<33)say=`half past ${h12(h)}`;
-  else if(m<43)say=`just after half past ${h12(h)}`;else if(m<48){nx();say=`quarter to ${h12(h)}`}else if(m<55){nx();say=`nearly ${h12(h)} o'clock`}else{nx();say=null}
+  if(m<5)say=null;else if(m<13)say=`just after ${h12(h)} o'clock`;else if(m<18)say=`quarter past ${h12(h)}`;else if(m<23)say=`just after quarter past ${h12(h)}`;else if(m<28)say=`nearly half past ${h12(h)}`;else if(m<33)say=`half past ${h12(h)}`;
+  else if(m<38)say=`just after half past ${h12(h)}`;else if(m<43){nx();say=`nearly quarter to ${h12(h)}`}else if(m<48){nx();say=`quarter to ${h12(h)}`}else if(m<55){nx();say=`nearly ${h12(h)} o'clock`}else{nx();say=null}
   if(!say){if(h===12)return"12 o'clock, midday";if(h===0)return"12 o'clock, midnight";say=`${h12(h)} o'clock`}
   return say+" "+partOf(h)}
 function doing(r,t){const h=t.h,wk=!["Saturday","Sunday"].includes(t.wd),n=PNM(r);
@@ -2993,7 +2993,7 @@ function clockSVG(t,sz){const day=t.h>=7&&t.h<19,a=(t.h%12+t.m/60)*30,b=t.m*6,in
 function tzCard(){if(!role)return"";const me_=tzNow((typeof MYTZ==="function"&&MYTZ())||tzOf(role)),th=tzNow(tzOf(ot())),n=ON0(),diff=Math.round((th.abs-me_.abs)/60),ah=Math.abs(diff);
   const dayLine=th.wd!==me_.wd?`<p class="tzd">For ${n} it is ${diff<0?"still":"already"} <b>${th.wd}</b>.</p>`:"";
   const gap=ah===0?`You and ${n} have the same time.`:`${n}'s clock is <b>${ah} hour${ah>1?"s":""} ${diff<0?"behind":"ahead of"}</b> yours.`;
-  return`<div class="bx tzc" id="tzc"><div class="tzr"><div class="tzk">${clockSVG(me_,role==="child"?86:64)}<b>YOU</b><span>${dig(me_)}</span></div><div class="tzk">${clockSVG(th,role==="child"?86:64)}<b>${n.toUpperCase()}</b><span>${dig(th)}</span></div></div>
+  return`<div class="bx tzc" id="tzc"><div class="tzr"><div class="tzk">${clockSVG(th,110)}<b>${n.toUpperCase()}'S TIME</b><span>${dig(th)}</span></div></div>
     <p class="tzsay">It is <b>${kidTime(th)}</b> for ${n}, ${doing(ot(),th)}</p>${dayLine}<p class="mut tzg">${gap}</p></div>`}
 function tzRefresh(){const e=document.getElementById("tzc");if(e)e.outerHTML=tzCard()}
 function extrasInit(){db.doc("seen/parent").onSnapshot(s=>{SEEN.parent=s.exists?(s.data().t||0):0;seenUI()},er);db.doc("seen/child").onSnapshot(s=>{SEEN.child=s.exists?(s.data().t||0):0;seenUI()},er);
