@@ -362,8 +362,8 @@ body.dfon{overflow:hidden}
 #chi .ynb{border:3px solid var(--gd);box-shadow:0 0 40px rgba(255,210,63,.35)}
 .lvbar{position:fixed;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 96px);z-index:60;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px 10px 16px;border-radius:20px;background:rgba(20,16,46,.96);border:2px solid var(--gd);box-shadow:0 10px 30px rgba(0,0,0,.5);font:600 14px 'Outfit',sans-serif;color:#fff}.lvbar .b{font-size:17px;padding:12px 22px}
 .snw{margin:6px 2px 0;font:700 13px 'Outfit',sans-serif}.sn{color:var(--mut);display:inline-flex;align-items:center;gap:5px}.sn.on{color:#2ef2c5}
-.tzc{padding:14px}.tzr{display:flex;justify-content:space-around;gap:10px}.tzk{display:flex;flex-direction:column;align-items:center;gap:2px}.tzk b{font:900 13px 'Outfit',sans-serif;letter-spacing:.08em;margin-top:4px}.tzk span{font:800 16px 'Outfit',sans-serif;color:var(--gd)}
-.tzsay{margin:12px 0 4px;font:700 17px/1.35 'Outfit',sans-serif;text-align:center}.tzsay b{color:var(--gd)}.tzd{margin:2px 0;text-align:center;font-weight:700}.tzg{text-align:center;margin:4px 0 0}
+.tzc{display:flex;align-items:center;gap:10px;padding:8px 12px}.tzc svg{flex:none}.tzt{min-width:0}.tzh b{font:900 10px 'Outfit',sans-serif;letter-spacing:.08em;color:var(--mut)}.tzh span{font:800 13px 'Outfit',sans-serif;color:var(--gd)}.tzh em{font:600 11px 'Outfit',sans-serif;font-style:normal;color:var(--mut)}
+.tzsay{font:600 13px/1.3 'Outfit',sans-serif;margin-top:1px;color:#dfe2ff}
 </style></head><body><main>
 <div class="top"><div><h1 class="px" style="font-size:15px;line-height:1.2">CASS &amp; DAD&#39;S<br>CARDS OF LEGENDS</h1><div id="onl" class="onl"></div></div><div class="row" style="flex-wrap:nowrap"><button class="b d" id="snd" style="min-height:44px;padding:0 12px"><span class="ico ico-horn" style="width:28px;height:28px"></span></button><div class="b y" id="pt" style="cursor:default"><span class="pot" id="pot"></span><b id="ptn">0</b></div></div></div>
 <div class="chk"></div><div id="v"></div></main><nav id="nav"></nav>
@@ -2981,20 +2981,18 @@ function kidTime(t){let h=t.h,m=t.m,say;const nx=()=>{h=(h+1)%24};
   if(!say){if(h===12)return"12 o'clock, midday";if(h===0)return"12 o'clock, midnight";say=`${h12(h)} o'clock`}
   return say+" "+partOf(h)}
 function doing(r,t){const h=t.h,wk=!["Saturday","Sunday"].includes(t.wd),n=PNM(r);
-  if(r==="parent"){if(h<6)return`so ${n} is fast asleep 😴`;if(h<8)return`so ${n} is just waking up 🌅`;if(h<12)return`so it's ${n}'s morning ☀️`;if(h<14)return`so it's lunchtime for ${n} 🥪`;
-    if(h<17)return`so it's ${n}'s afternoon 🌤️`;if(h<20)return`so ${n} is probably having dinner 🍽️`;if(h<22)return`so ${n} is relaxing in the evening 🛋️`;return`so ${n} is going to bed soon 🌙`}
-  if(h<7)return`so ${n} is fast asleep 😴`;if(h<9)return wk?`so ${n} is getting ready for school 🎒`:`so ${n} is just waking up 🌅`;if(h<15)return wk?`so ${n} is at school 🏫`:`so it's ${n}'s weekend 🎉`;
-  if(h<18)return wk?`so ${n} is home from school 🏠`:`so it's ${n}'s afternoon 🌤️`;if(h<20)return`so ${n} is having dinner and playing 🎮`;return`so ${n} is asleep 😴`}
+  if(r==="parent"){if(h<6)return`${n} is fast asleep 😴`;if(h<8)return`${n} is waking up 🌅`;if(h<12)return`It's ${n}'s morning ☀️`;if(h<14)return`It's lunchtime for ${n} 🥪`;
+    if(h<17)return`It's ${n}'s afternoon 🌤️`;if(h<20)return`${n} is probably having dinner 🍽️`;if(h<22)return`${n} is relaxing 🛋️`;return`${n} is going to bed soon 🌙`}
+  if(h<7)return`${n} is fast asleep 😴`;if(h<9)return wk?`${n} is getting ready for school 🎒`:`${n} is waking up 🌅`;if(h<15)return wk?`${n} is at school 🏫`:`It's ${n}'s weekend 🎉`;
+  if(h<18)return wk?`${n} is home from school 🏠`:`It's ${n}'s afternoon 🌤️`;if(h<20)return`${n} is having dinner and playing 🎮`;return`${n} is asleep 😴`}
 function clockSVG(t,sz){const day=t.h>=7&&t.h<19,a=(t.h%12+t.m/60)*30,b=t.m*6,ink=day?"#1b1640":"#ffffff",hand=(ang,l,w,c)=>`<line x1="50" y1="50" x2="${(50+l*Math.sin(ang*Math.PI/180)).toFixed(1)}" y2="${(50-l*Math.cos(ang*Math.PI/180)).toFixed(1)}" stroke="${c}" stroke-width="${w}" stroke-linecap="round"/>`;
   const ticks=[...Array(12).keys()].map(i=>{const q=i*30*Math.PI/180;return`<text x="${(50+36*Math.sin(q)).toFixed(1)}" y="${(50-36*Math.cos(q)).toFixed(1)}" font-size="${i%3?8:11}" font-weight="900" font-family="Outfit,sans-serif" text-anchor="middle" dominant-baseline="central" fill="${ink}">${i||12}</text>`}).join("");
   const sky=day?`<circle cx="50" cy="71" r="6" fill="#ffc21a"/>${[0,45,90,135,180,225,270,315].map(d=>{const q=d*Math.PI/180;return`<line x1="${(50+8.5*Math.cos(q)).toFixed(1)}" y1="${(71+8.5*Math.sin(q)).toFixed(1)}" x2="${(50+11*Math.cos(q)).toFixed(1)}" y2="${(71+11*Math.sin(q)).toFixed(1)}" stroke="#ffc21a" stroke-width="1.6" stroke-linecap="round"/>`}).join("")}`
     :`<circle cx="50" cy="71" r="7" fill="#f4f1c9"/><circle cx="53.5" cy="68.5" r="6" fill="#26235e"/><circle cx="33" cy="66" r="1.1" fill="#fff"/><circle cx="66" cy="64" r="1.3" fill="#fff"/><circle cx="62" cy="78" r=".9" fill="#fff"/><circle cx="38" cy="78" r="1" fill="#fff"/>`;
   return`<svg viewBox="0 0 100 100" width="${sz}" height="${sz}" aria-hidden="true"><circle cx="50" cy="50" r="48" fill="${day?"#fffdf4":"#26235e"}" stroke="${day?"#ffc21a":"#7c8cff"}" stroke-width="4"/>${sky}${ticks}${hand(a,22,5,ink)}${hand(b,32,3,"#ff3d77")}<circle cx="50" cy="50" r="4" fill="${ink}"/></svg>`}
 function tzCard(){if(!role)return"";const me_=tzNow((typeof MYTZ==="function"&&MYTZ())||tzOf(role)),th=tzNow(tzOf(ot())),n=ON0(),diff=Math.round((th.abs-me_.abs)/60),ah=Math.abs(diff);
-  const dayLine=th.wd!==me_.wd?`<p class="tzd">For ${n} it is ${diff<0?"still":"already"} <b>${th.wd}</b>.</p>`:"";
-  const gap=ah===0?`You and ${n} have the same time.`:`${n}'s clock is <b>${ah} hour${ah>1?"s":""} ${diff<0?"behind":"ahead of"}</b> yours.`;
-  return`<div class="bx tzc" id="tzc"><div class="tzr"><div class="tzk">${clockSVG(th,110)}<b>${n.toUpperCase()}'S TIME</b><span>${dig(th)}</span></div></div>
-    <p class="tzsay">It is <b>${kidTime(th)}</b> for ${n}, ${doing(ot(),th)}</p>${dayLine}<p class="mut tzg">${gap}</p></div>`}
+  const dayLine=th.wd!==me_.wd?` · ${th.wd}`:"",gap=ah===0?"":` · ${ah}h ${diff<0?"behind":"ahead"}`;
+  return`<div class="bx tzc" id="tzc">${clockSVG(th,40)}<div class="tzt"><div class="tzh"><b>${n.toUpperCase()}'S TIME</b> <span>${dig(th)}</span><em>${dayLine}${gap}</em></div><div class="tzsay">It is ${kidTime(th)} for ${n}. ${doing(ot(),th)}</div></div></div>`}
 function tzRefresh(){const e=document.getElementById("tzc");if(e)e.outerHTML=tzCard()}
 function extrasInit(){db.doc("seen/parent").onSnapshot(s=>{SEEN.parent=s.exists?(s.data().t||0):0;seenUI()},er);db.doc("seen/child").onSnapshot(s=>{SEEN.child=s.exists?(s.data().t||0):0;seenUI()},er);
   setInterval(seenTick,3000);setInterval(tzRefresh,30000);document.addEventListener("visibilitychange",()=>{if(!document.hidden){seenTick();tzRefresh()}})}
