@@ -2691,7 +2691,7 @@ function vCards0(){
   BN=Math.max(1,Math.min(BN,3,ks.length||1));TEAM=TEAM.filter(k=>own[k]).slice(0,BN);if(!TEAM.length&&srt.length)TEAM=[srt[0]];
   const seg=`<div class="seg">${[["pack",IC("chesttab",30),"COLLECT"],["mine",IC("card",30),"MY CARDS"],["album",IC("book",30),"ALBUM"],["battle",IC("swords",30),"BATTLE"]].map(([k,i,l])=>`<button data-s="${k}" class="${c===k?"on":""}"><span style="font-size:20px">${i}</span><br>${l}</button>`).join("")}</div>`;let h="";
   if(c==="pack")h=stBox(m)+`<div class="bx c">${can?`<div class="box ${wob?"shake":""}" id="mb">${CHEST(170)}</div><div class="px" style="font-size:12px">${wob?"OPENING...":"TODAY'S TREASURE CHEST! TAP!"}</div>`:`<div class="box" style="opacity:.35;animation:none">${CHEST(170)}</div><div class="px" style="font-size:11px">${m.ub?"COME BACK TOMORROW FOR A NEW CARD":"SHARE 2 THINGS TODAY TO OPEN THE CHEST ("+Math.min(2,SH(m))+"/2)"}</div>`}</div>
-   <div class="bx c"><div class="px" style="font-size:11px">COLLECTED ${nsh}/${NMV()}</div><div class="bar"><i style="width:${nsh/NMV()*100}%"></i></div><div class="mut" style="margin-top:8px">${role==="child"?"Specials: "+nex+"/"+mx+" · you can find every one!":"Your specials: "+nex+"/"+mx}</div></div>`.replace('<div class="bx c"><div class="px" style="font-size:11px">COLLECTED',earnBox(m)+'<div class="bx c"><div class="px" style="font-size:11px">COLLECTED');
+   <div class="bx c"><div class="px" style="font-size:11px">COLLECTED ${nsh}/${NMV()}</div><div class="bar"><i style="width:${nsh/NMV()*100}%"></i></div><div class="mut" style="margin-top:8px">${role==="child"?"Specials: "+nex+"/"+mx+" · you can find every one!":"Your specials: "+nex+"/"+mx}</div></div>`.replace('<div class="bx c"><div class="px" style="font-size:11px">COLLECTED',earnBox(m)+shopBox(m)+'<div class="bx c"><div class="px" style="font-size:11px">COLLECTED');
   else if(c==="mine")h=`<div class="bx"><h2 class="px" style="margin:0">MY CARDS (${ks.length})</h2><span class="mut">Strongest first. Tap a card for details.</span></div>${ks.length?`<div class="cards">${srt.slice(0,PG.mine).map(k=>cardH(own[k],k,sel===k)).join("")}</div>${more("mine",srt.length,PG.mine)}`:`<div class="mut c">No cards yet. ${stDone(m)?"Open today's treasure chest!":"Open your STARTER PACK in COLLECT!"}</div>`}`;
   else if(c==="album"){const ids=[...CAT.keys()].filter(k=>VIS(k)&&inF(k)),chip=(a,v,l,cur)=>`<button data-af="${a}:${v}" class="${cur===v?"on":""}">${l}</button>`;
    h=`<div class="bx"><div class="row" style="justify-content:space-between"><h2 class="px" style="margin:0">ALBUM ${nsh}/${NMV()}</h2><span class="mut">+ ${nex}/${mx} specials</span></div><div class="bar"><i style="width:${nsh/NMV()*100}%"></i></div></div>
@@ -2998,6 +2998,20 @@ function tzRefresh(){const e=document.getElementById("tzc");if(e)e.outerHTML=tzC
 function extrasInit(){db.doc("seen/parent").onSnapshot(s=>{SEEN.parent=s.exists?(s.data().t||0):0;seenUI()},er);db.doc("seen/child").onSnapshot(s=>{SEEN.child=s.exists?(s.data().t||0):0;seenUI()},er);
   setInterval(seenTick,3000);setInterval(tzRefresh,30000);document.addEventListener("visibilitychange",()=>{if(!document.hidden){seenTick();tzRefresh()}})}
 
+/* ---- CARD SHOP: 20 coins buys a card (pick 1 of 4), up to 2 a day ---- */
+const SHOP_COST=20,SHOP_MAX=2;
+const shopLeft=m=>SHOP_MAX-((m.sb&&m.sb.d===today())?m.sb.n:0);
+function shopBox(m){const left=shopLeft(m),pend=m.pb&&m.pb.length,need=SHOP_COST-m.pts,ok=left>0&&need<=0&&!pend;
+  const why=pend?"Open your waiting cards first!":left<=0?"You've bought 2 today. Come back tomorrow!":need>0?`You need ${need} more coin${need>1?"s":""}.`:"Pick 1 of 4 cards!";
+  return`<div class="bx c ebx shopb"><div class="ebi">${IC("cards",58)}</div><h2 class="px">CARD SHOP</h2><p class="ebp">Buy a new card for <b>${SHOP_COST}</b> ${COIN(18)} · <b>${Math.max(0,left)} of ${SHOP_MAX}</b> left today</p>
+    <button class="b y ebb" id="shbuy" ${ok?"":"disabled"} style="font-size:18px">BUY A CARD · ${SHOP_COST} ${COIN(20)}</button><p class="ebp sm" style="margin-top:6px">${why}</p></div>`}
+async function shopBuy(){const m=mine();if(shopLeft(m)<=0||m.pts<SHOP_COST||(m.pb&&m.pb.length))return;
+  if(!await askYN(`Spend ${SHOP_COST} coins on a new card?`,"BUY IT!"))return;
+  const items=ecItems();let done=false;
+  try{await upd(p=>{const d=today(),n=(p.sb&&p.sb.d===d)?p.sb.n:0;if(n>=SHOP_MAX||p.pts<SHOP_COST||(p.pb&&p.pb.length))return;p.pts-=SHOP_COST;p.sb={d,n:n+1};p.pb=items;done=true})}catch(e){}
+  if(!done){toast("Couldn't buy that. Try again.");return}
+  sfx("coin");setPot();EC={k:"bundle",items,pick:-1,fresh:1,shop:1};g="earn";view()}
+document.addEventListener("click",e=>{if(e.target.closest&&e.target.closest("#shbuy"))shopBuy()});
 function unbox(){if(wob)return;wob=true;sfx("box");view();
   setTimeout(async()=>{const c=draw(album(mine()),role);let res={c};
     try{await upd(p=>{const i=p.cr.findIndex(x=>CK(x).k===c.k);if(i>=0){const o=CK(p.cr[i]);p.cr[i]={...o,lv:Math.min(5,(o.lv||1)+1),f:o.f||c.f};res={up:1,c:p.cr[i]}}else{p.cr.push(c);res={c}}p.ub=true})}catch(e){}
@@ -3091,7 +3105,7 @@ function vEarn(){const E=EC;if(!E){g=null;return view()}let t="",h="";const agai
   else if(E.k==="pat"){t="COPY THE PATTERN";const n=E.n,left=E.cells.length-E.sel.length;
     h=`<p class="ecp">${E.show?"Remember the yellow squares!":E.end?"":E.bad.length?"Oops, not that one! Keep going.":"Tap the "+E.cells.length+" squares that were yellow."}</p>${E.show?"":`<div class="echt">${IC("heart",30).repeat(Math.max(0,E.lives))}${IC("heart",30).replace('class="ico','class="ico off').repeat(2-Math.max(0,E.lives))}</div>`}
     <div class="ecg2 pat" style="grid-template-columns:repeat(${n},1fr)">${[...Array(n*n).keys()].map(i=>`<button class="ecs ${E.cells.includes(i)&&(E.show||E.end||E.sel.includes(i))?"lit":""} ${E.bad.includes(i)?"miss":""}" data-pi="${i}" ${E.show||E.end||E.sel.includes(i)||E.bad.includes(i)?"disabled":""}></button>`).join("")}</div>${E.end?`<div class="ecm bad">So close! This was the pattern.</div>${again}`:E.show?"":`<p class="ecp sm">${left} more to find</p>`}`}
-  else if(E.k==="bundle"){t=E.pick<0?(E.fresh?"YOU DID IT!":"YOUR CARDS"):E.msg;const it=E.items[E.pick];
+  else if(E.k==="bundle"){t=E.pick<0?(E.shop?"YOUR NEW CARD!":E.fresh?"YOU DID IT!":"YOUR CARDS"):E.msg;const it=E.items[E.pick];
     h=`<p class="ecp">${E.pick<0?"<b>Pick 1 card!</b>":E.all?"The other three were these.":"&nbsp;"}</p><div class="ecb4">${E.items.map((x,i)=>E.pick<0?`<button class="ecback" data-bi="${i}" aria-label="Card ${i+1}"><span>?</span></button>`:i===E.pick?ecFace(x,"got"):E.all?ecFace(x,"dim"):`<div class="ecback off"><span>?</span></div>`).join("")}</div>
     ${E.all?(it.t==="lv"?`<button class="b y ebb" id="ecl">CHOOSE A CARD TO LEVEL UP</button>`:`<button class="b ebb" id="ecd">COLLECT</button>`):""}`}
   else if(E.k==="lvp"){t=E.done!=null?CH[E.done][0].toUpperCase()+" IS NOW LV "+E.lv+"!":"LEVEL UP!";const own=album(mine()),ks=Object.keys(own).map(Number).sort((a,b)=>tot2(own[b])-tot2(own[a]));
