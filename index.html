@@ -365,6 +365,11 @@ body.dfon{overflow:hidden}
 .post img,.post video{height:auto!important;max-height:75vh!important;object-fit:contain;background:#000}
 .tzc{display:flex;align-items:center;gap:10px;padding:8px 12px}.tzc svg{flex:none}.tzt{min-width:0}.tzh b{font:900 10px 'Outfit',sans-serif;letter-spacing:.08em;color:var(--mut)}.tzh span{font:800 13px 'Outfit',sans-serif;color:var(--gd)}.tzh em{font:600 11px 'Outfit',sans-serif;font-style:normal;color:var(--mut)}
 .tzsay{font:600 13px/1.3 'Outfit',sans-serif;margin-top:1px;color:#dfe2ff}
+#pdz{position:absolute;inset:0;transform-origin:0 0;will-change:transform}
+.pdzr{position:absolute;right:8px;top:8px;z-index:3;background:rgba(13,14,34,.85);color:#fff;border:1px solid var(--ln);border-radius:14px;padding:8px 12px;font:800 13px 'Outfit',sans-serif}
+.pdzh{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);z-index:3;background:rgba(13,14,34,.8);color:#fff;border-radius:14px;padding:6px 12px;font:700 12px 'Outfit',sans-serif;pointer-events:none;transition:opacity .6s;white-space:nowrap}.pdzh.off{opacity:0}
+.pdb{position:relative}.pshd{position:absolute;left:0;right:0;bottom:calc(100% + 8px);z-index:5;display:flex;flex-wrap:wrap;gap:10px;justify-content:center;background:#1b1a40;border:2px solid var(--ln);border-radius:20px;padding:12px;box-shadow:0 -10px 30px rgba(0,0,0,.5)}
+.pshd button{width:46px;height:46px;border-radius:50%;border:2px solid rgba(255,255,255,.4)}.pshd button.on{box-shadow:0 0 0 3px #1b1a40,0 0 0 6px #fff}
 </style></head><body><main>
 <div class="top"><div><h1 class="px" style="font-size:15px;line-height:1.2">CASS &amp; DAD&#39;S<br>CARDS OF LEGENDS</h1><div id="onl" class="onl"></div></div><div class="row" style="flex-wrap:nowrap"><button class="b d" id="snd" style="min-height:44px;padding:0 12px"><span class="ico ico-horn" style="width:28px;height:28px"></span></button><div class="b y" id="pt" style="cursor:default"><span class="pot" id="pot"></span><b id="ptn">0</b></div></div></div>
 <div class="chk"></div><div id="v"></div></main><nav id="nav"></nav>
@@ -1936,23 +1941,27 @@ function vToday(){
 /* ---- Drawing studio: full screen, with colours, brushes, paint bucket, stamps, undo ---- */
 const PD={tool:"pen",col:"#14151a",size:1,stamp:"⭐"};
 function vDraw(){
-  const COLS=["#14151a","#ffffff","#8a8fa8","#e8302b","#ff7a2f","#ffd23f","#a8e04a","#1f8a4c","#2ef2c5","#3aa8ff","#2d4bd6","#8a4dff","#ff4fd8","#ffb0d0","#8a5a2f","#f2c9a0"],
+  const BASES=["#14151a","#e8302b","#ff7a2f","#ffd23f","#2fb84f","#2ec4b6","#2d6bff","#8a4dff","#ff4fd8","#8a5a2f","#f2c9a0"],
+   hx=v=>"#"+v.map(n=>Math.round(Math.max(0,Math.min(255,n))).toString(16).padStart(2,"0")).join(""),
+   SHADE=b=>{if(b==="#14151a")return["#ffffff","#e6e7ee","#c4c6d2","#9a9db0","#6e7186","#45475a","#2a2b36","#14151a"];const c=[1,3,5].map(i=>parseInt(b.slice(i,i+2),16));
+     return[.75,.5,.25].map(t=>hx(c.map(v=>v+(255-v)*t))).concat([b],[.2,.4,.6].map(t=>hx(c.map(v=>v*(1-t)))))},
+   COLS=BASES.flatMap(SHADE),
    SZ=[3,8,16,30],TOOLS=[["pen",IC("pen",28),"PEN"],["mark",IC("marker",28),"MARKER"],["spray",IC("spray",28),"SPRAY"],["fill",IC("bucket",28),"FILL"],["erase",IC("rubber",28),"RUBBER"],["stamp",IC("maxlevel",28),"STAMP"]],STAMPS=["⭐","❤️","⚡","🔥","😀","👑","🐉","👻","🌈","💥","🚀","🦈"];
   $("#v").innerHTML=`<div class="pd" id="pd"><div class="pdt"><button class="pb" id="pdx" aria-label="Close">✕</button><button class="pb" id="pdu" aria-label="Undo" disabled>↶</button><button class="pb" id="pdr" aria-label="Redo" disabled>↷</button><button class="pb" id="pdc" aria-label="Clear the picture">${IC("bin",26)}</button><span style="flex:1"></span><button class="b r" id="pds">SEND ▶</button></div>
   <div class="pdq" id="pdq" hidden><span>Leave without sending your picture?</span><button class="b d" id="pdk">KEEP DRAWING</button><button class="b r" id="pdl">LEAVE</button></div>
-  <div class="pdw" id="pdw"><canvas id="dc"></canvas><canvas id="dl"></canvas></div>
-  <div class="pdb"><div class="pdr" id="pdtools">${TOOLS.map(([k,i,l])=>`<button class="pt2" data-tool="${k}"><span>${i}</span>${l}</button>`).join("")}</div>
+  <div class="pdw" id="pdw"><div id="pdz"><canvas id="dc"></canvas><canvas id="dl"></canvas></div><button class="pdzr" id="pdzr" hidden>1x</button><div class="pdzh" id="pdzh">🤏 Pinch with 2 fingers to zoom</div></div>
+  <div class="pdb"><div class="pshd" id="pshd" hidden></div><div class="pdr" id="pdtools">${TOOLS.map(([k,i,l])=>`<button class="pt2" data-tool="${k}"><span>${i}</span>${l}</button>`).join("")}</div>
   <div class="pdr" id="pdsz">${SZ.map((z,i)=>`<button class="psz" data-sz="${i}" aria-label="Brush size ${i+1}"><i style="width:${6+i*8}px;height:${6+i*8}px"></i></button>`).join("")}<span class="pdsep"></span><div class="pstm" id="pdst">${STAMPS.map(t=>`<button class="pst" data-st="${t}">${t}</button>`).join("")}</div></div>
-  <div class="pdr pcols" id="pdco">${COLS.map(c=>`<button class="pc" data-col="${c}" style="background:${c}" aria-label="Colour ${c}"></button>`).join("")}<label class="pc pcx" aria-label="Pick any colour">🎨<input type="color" id="pdcc" value="#ff4fd8"></label></div></div></div>`;
+  <div class="pdr pcols" id="pdco">${BASES.map(c=>`<button class="pc" data-base="${c}" style="background:${c}" aria-label="Colour"></button>`).join("")}<label class="pc pcx" aria-label="Pick any colour">🎨<input type="color" id="pdcc" value="#ff4fd8"></label></div></div></div>`;
   const wrap=$("#pdw"),c=$("#dc"),l=$("#dl"),dpr=Math.min(2,window.devicePixelRatio||1),W=Math.max(200,Math.round(wrap.clientWidth*dpr)),H=Math.max(200,Math.round(wrap.clientHeight*dpr));
   c.width=l.width=W;c.height=l.height=H;const x=c.getContext("2d",{willReadFrequently:true}),lx=l.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,W,H);
   let undo=[],redo=[],blank=true,down=false,last=null,mid=null,spr=null,pos=[0,0];
   const ui=()=>{document.querySelectorAll("[data-tool]").forEach(b=>b.classList.toggle("on",b.dataset.tool===PD.tool));document.querySelectorAll("[data-sz]").forEach(b=>b.classList.toggle("on",+b.dataset.sz===PD.size));
-    document.querySelectorAll("[data-col]").forEach(b=>b.classList.toggle("on",b.dataset.col===PD.col));document.querySelectorAll("[data-st]").forEach(b=>b.classList.toggle("on",b.dataset.st===PD.stamp));
+    document.querySelectorAll("[data-col]").forEach(b=>b.classList.toggle("on",b.dataset.col===PD.col));document.querySelectorAll("[data-base]").forEach(b=>b.classList.toggle("on",SHADE(b.dataset.base).includes(PD.col)));document.querySelectorAll("[data-st]").forEach(b=>b.classList.toggle("on",b.dataset.st===PD.stamp));
     $("#pdst").hidden=PD.tool!=="stamp";$("#pdu").disabled=!undo.length;$("#pdr").disabled=!redo.length;$(".pcx").style.boxShadow=COLS.includes(PD.col)?"":"0 0 0 3px #fff, 0 0 0 6px "+PD.col};
   const snap=()=>{undo.push(x.getImageData(0,0,W,H));if(undo.length>10)undo.shift();redo=[];ui()};
   const pt=e=>{const r=c.getBoundingClientRect();return[(e.clientX-r.left)*W/r.width,(e.clientY-r.top)*H/r.height]};
-  const lw=()=>SZ[PD.size]*dpr*(PD.tool==="mark"?2.4:PD.tool==="erase"?1.8:1);
+  const lw=()=>SZ[PD.size]*dpr*(PD.tool==="mark"?2.4:PD.tool==="erase"?1.8:1)/(window.PDZ||1);
   const rgb=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
   function fill(px,py){px=Math.floor(px);py=Math.floor(py);const im=x.getImageData(0,0,W,H),d=im.data,i0=(py*W+px)*4,t=[d[i0],d[i0+1],d[i0+2]],f=rgb(PD.col);
     if(Math.abs(t[0]-f[0])+Math.abs(t[1]-f[1])+Math.abs(t[2]-f[2])<12)return;
@@ -1966,7 +1975,7 @@ function vDraw(){
   const spray=()=>{const r=lw()*2.2,n=Math.round(10+r*.6);x.fillStyle=PD.col;for(let i=0;i<n;i++){const a=Math.random()*6.283,q=Math.sqrt(Math.random())*r;x.fillRect(pos[0]+Math.cos(a)*q,pos[1]+Math.sin(a)*q,1.4*dpr,1.4*dpr)}};
   c.onpointerdown=e=>{e.preventDefault();try{c.setPointerCapture(e.pointerId)}catch(_){}const p=pt(e);pos=p;snap();blank=false;
     if(PD.tool==="fill"){fill(p[0],p[1]);return}
-    if(PD.tool==="stamp"){const z=(26+PD.size*26)*dpr;x.font=z+"px serif";x.textAlign="center";x.textBaseline="middle";x.fillText(PD.stamp,p[0],p[1]);return}
+    if(PD.tool==="stamp"){const z=(26+PD.size*26)*dpr/(window.PDZ||1);x.font=z+"px serif";x.textAlign="center";x.textBaseline="middle";x.fillText(PD.stamp,p[0],p[1]);return}
     down=true;last=mid=p;
     if(PD.tool==="spray"){spray();spr=setInterval(spray,40);return}
     const g2=PD.tool==="mark"?lx:x;g2.lineCap=g2.lineJoin="round";g2.lineWidth=lw();g2.strokeStyle=PD.tool==="erase"?"#fff":PD.col;l.style.opacity=PD.tool==="mark"?.45:1;
@@ -1975,6 +1984,26 @@ function vDraw(){
     g2.beginPath();g2.moveTo(mid[0],mid[1]);g2.quadraticCurveTo(last[0],last[1],m[0],m[1]);g2.stroke();last=p;mid=m};
   const up=()=>{if(!down)return;down=false;clearInterval(spr);if(PD.tool==="mark"){x.globalAlpha=.45;x.drawImage(l,0,0);x.globalAlpha=1;lx.clearRect(0,0,W,H)}};
   c.onpointerup=c.onpointercancel=up;
+  /* colours: tap one to see its shades */
+  const shd=$("#pshd");let shB=null;const shClose=()=>{shd.hidden=true;shB=null};
+  document.querySelectorAll("[data-base]").forEach(b=>b.onclick=()=>{const bs=b.dataset.base;if(shB===bs){shClose();return}shB=bs;sfx("tap");
+    shd.innerHTML=SHADE(bs).map(c=>`<button data-col="${c}" class="${c===PD.col?"on":""}" style="background:${c}" aria-label="Shade"></button>`).join("");shd.hidden=false});
+  shd.onclick=e=>{const t=e.target.closest("[data-col]");if(!t)return;PD.col=t.dataset.col;if(PD.tool==="erase")PD.tool="pen";ui();shClose()};
+  /* pinch with two fingers to zoom in and move around; one finger draws */
+  const zin=$("#pdz"),Z={s:1,tx:0,ty:0},PTS=new Map(),D0=c.onpointerdown,M0=c.onpointermove,U0=c.onpointerup;let G=null,hold=false,t0=0;window.PDZ=1;
+  const zap=()=>{const cw=wrap.clientWidth,ch=wrap.clientHeight;Z.s=Math.max(1,Math.min(5,Z.s));Z.tx=Math.min(0,Math.max(cw*(1-Z.s),Z.tx));Z.ty=Math.min(0,Math.max(ch*(1-Z.s),Z.ty));
+    zin.style.transform=`translate(${Z.tx}px,${Z.ty}px) scale(${Z.s})`;window.PDZ=Z.s;$("#pdzr").hidden=Z.s<1.03;$("#pdzr").textContent=Z.s<1.03?"1x":"1x ↺"};
+  const rel=e=>{const r=wrap.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top]};
+  const two=()=>{const[a,b]=[...PTS.values()];return{d:Math.hypot(a[0]-b[0],a[1]-b[1])||1,m:[(a[0]+b[0])/2,(a[1]+b[1])/2]}};
+  c.onpointerdown=e=>{e.preventDefault();PTS.set(e.pointerId,rel(e));try{c.setPointerCapture(e.pointerId)}catch(_){}if(!shd.hidden)shClose();
+    if(PTS.size===2){if(!hold){if(performance.now()-t0<350){down=false;clearInterval(spr);lx.clearRect(0,0,W,H);if(undo.length){x.putImageData(undo.pop(),0,0);ui()}}else up()}
+      hold=true;const q=two();G={d0:q.d,m0:q.m,s0:Z.s,tx0:Z.tx,ty0:Z.ty};{const h=$("#pdzh");if(h)h.remove()}return}
+    if(PTS.size===1&&!hold){t0=performance.now();D0(e)}};
+  c.onpointermove=e=>{if(!PTS.has(e.pointerId))return;PTS.set(e.pointerId,rel(e));
+    if(G&&PTS.size>=2){const q=two(),s=Math.max(1,Math.min(5,G.s0*q.d/G.d0)),px=(G.m0[0]-G.tx0)/G.s0,py=(G.m0[1]-G.ty0)/G.s0;Z.s=s;Z.tx=q.m[0]-px*s;Z.ty=q.m[1]-py*s;zap();return}
+    if(!hold)M0(e)};
+  c.onpointerup=c.onpointercancel=e=>{PTS.delete(e.pointerId);if(!hold)U0(e);if(PTS.size<2)G=null;if(!PTS.size)hold=false};
+  $("#pdzr").onclick=()=>{Z.s=1;Z.tx=0;Z.ty=0;zap()};setTimeout(()=>{const h=$("#pdzh");if(h)h.style.opacity="0";setTimeout(()=>{if(h)h.remove()},700)},4000);
   document.querySelectorAll("[data-tool]").forEach(b=>b.onclick=()=>{PD.tool=b.dataset.tool;ui()});
   document.querySelectorAll("[data-sz]").forEach(b=>b.onclick=()=>{PD.size=+b.dataset.sz;ui()});
   document.querySelectorAll("[data-col]").forEach(b=>b.onclick=()=>{PD.col=b.dataset.col;if(PD.tool==="erase")PD.tool="pen";ui()});
