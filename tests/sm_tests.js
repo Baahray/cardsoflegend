@@ -7,7 +7,13 @@ console.log("The room");
 let r=run([0,.1,1],[0,1,-7]);t("1  A hard smack along the floor hits their back wall under head height: GOAL",r.ev.some(e=>e.k==="goal"&&e.by==="X"),r.k);
 r=run([0,.1,1],[0,5.6,-6]);t("2  Over head height it bounces off the wall: no goal from that hit",r.ev.find(e=>e.k!=="floor"&&e.k!=="cross").k==="wall",r.k);
 r=run([0,.1,1],[4,0,-2]);t("3  Off the side wall and back into play",r.ev.some(e=>e.k==="wall"||e.k==="box")&&!r.ev.some(e=>e.k==="goal"),r.k);
-r=run([1.2,.1,2],[0,4.2,-2.9]);t("4  Lands on top of a red box: stuck, dead ball",r.ev.some(e=>e.k==="stuck"&&e.where==="top"),r.k);
+{const mk=used=>({ball:{p:[1.2,.1,2],v:[0,4.2,-2.9]},hands:{X:hand("X",[0,SR.hy,2.6]),O:hand("O",[-1,SR.hy,-2.6])},touch:{X:0,O:used}}),
+   a=mk(0),ea=[],b=mk(0),eb=[];for(let i=0;i<180;i++){if(i===90)b.touch[R.srOwner(b.ball.p)]=2;/* it landed in Cass's half; say he has used both touches */ea.push(...R.srTick(a,1/60,null));eb.push(...R.srTick(b,1/60,null))}
+ t("4a Lands on top of a red box with a touch left: it sits there, still in play",a.ball.top&&!a.ball.dead&&!ea.some(e=>e.k==="stuck"),JSON.stringify(a.ball.p.map(v=>+v.toFixed(2))));
+ t("4b Lands on top with both touches used: dead ball",eb.some(e=>e.k==="stuck"&&e.where==="top"));
+ /* now the Shadow Knight's hand slides over the box and hits it off */
+ const H=a.hands.O;H.p=[1.2,R.srHandY([1.2,0,-.75],H.r),-.75];H.pp=H.p.slice();a.hands.O.p=[1.2,0,.2];const e2=R.srTick(a,1/30,null);
+ t("4c A hand that goes over the box climbs onto it and can smack the ball off the top",e2.some(e=>e.k==="touch"&&e.who==="O"),e2.map(e=>e.k).join(" "))}
 r=run([1.65,.1,2.5],[0,0,-2.6]);t("5  Rolls into the gap behind a red box: stuck, dead ball",r.ev.some(e=>e.k==="stuck"&&e.where==="behind"),r.k);
 r=run([1.2,.1,2],[0,0,-3]);t("6  Hits the side of a box: soft, it doesn't bounce far",r.ev.some(e=>e.k==="box")&&Math.abs(r.S.p[2])<2.6,r.k);
 {const S={p:[0,.1,1],v:[0,3,-1.2]},ev=R.srRun(S,6,[],null),f=ev.filter(e=>e.k==="floor").map(e=>e.sp);t("7  Bounces lower and lower, then rolls to a stop",f.length>=2&&f.every((v,i)=>!i||v<f[i-1])&&Math.hypot(S.v[0],S.v[2])<.05,f.join(" "))}

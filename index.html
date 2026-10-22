@@ -3741,9 +3741,11 @@ function srStep(S,hands,rnd){const R=SR,dt=R.dt,ev=[],pp=S.p.slice();
         const a=((rnd?rnd():.5)-.5)*.6,c=Math.cos(a),s=Math.sin(a),vx=S.v[0],vz=S.v[2];S.v[0]=vx*c-vz*s;S.v[2]=vx*s+vz*c;
         const sp=SV.len(S.v);if(sp>H.max)S.v=SV.mul(S.v,H.max/sp);ev.push({k:"touch",who:H.who,sp:+sp.toFixed(2),smack:hs>1.2})}}}
   /* stuck behind or on a box: dead ball after a moment */
-  const tr=srTrapped(S.p);if(tr&&SV.len(S.v)<.6){S.st=(S.st||0)+dt;if(S.st>.5&&!S.dead){S.dead=1;ev.push({k:"stuck",where:tr})}}else S.st=0;
+  const tr=srTrapped(S.p);if(tr&&SV.len(S.v)<.6){S.st=(S.st||0)+dt;if(tr==="behind"&&S.st>.5&&!S.dead){S.dead=1;ev.push({k:"stuck",where:tr})}}else S.st=0;S.top=tr==="top"&&SV.len(S.v)<.6;
   if(!S.dead&&srOwner(pp)!==srOwner(S.p))ev.push({k:"cross",to:srOwner(S.p)});
   return ev}
+/* a hand over a red box rests on top of it (so it can reach a ball sitting up there) */
+function srHandY(p,r){const ax=Math.abs(p[0]),az=Math.abs(p[2]);return ax>SR.bx0-r*.5&&ax<SR.bx1+r*.5&&az<SR.bz+r*.5?SR.bh+SR.hy*.7:SR.hy}
 /* run the ball on its own (no hands moving) for a while; used by tests and to look ahead */
 function srRun(S,secs,hands,rnd){const out=[];for(let i=0;i<secs*240;i++){const e=srStep(S,hands,rnd);e.forEach(x=>{x.t=+(i*SR.dt).toFixed(4);out.push(x)});if(S.dead)break}return out}
 
@@ -3751,16 +3753,18 @@ function srRun(S,secs,hands,rnd){const out=[];for(let i=0;i<secs*240;i++){const 
    Touches only count in the toucher's own half; a 3rd touch gives the other player a penalty. ---- */
 function srTick(G,dt,rnd){const out=[],n=Math.max(1,Math.round(dt/SR.dt)),hs=[G.hands.X,G.hands.O].filter(h=>h&&!h.ghost);if(G.ball.dead||G.pen)return out;
   const ends=hs.map(h=>h.p.slice()),starts=hs.map(h=>h.pp||h.p);
-  for(let i=0;i<n;i++){/* move the hands a bit each small step too, so a fast swipe can't jump over the ball */hs.forEach((h,j)=>{const k=(i+1)/n;h.p=[starts[j][0]+(ends[j][0]-starts[j][0])*k,ends[j][1],starts[j][2]+(ends[j][2]-starts[j][2])*k]});
+  for(let i=0;i<n;i++){/* move the hands a bit each small step too, so a fast swipe can't jump over the ball */hs.forEach((h,j)=>{const k=(i+1)/n,q=[starts[j][0]+(ends[j][0]-starts[j][0])*k,0,starts[j][2]+(ends[j][2]-starts[j][2])*k];q[1]=srHandY(q,h.r);h.p=q});
     const e=srStep(G.ball,hs,rnd);for(const x of e){if(x.k==="touch"){const now=G.t||0,H=G.hands[x.who];if(srOwner(G.ball.p)!==x.who&&srOwner(H.p)!==x.who)continue;
         if(now-(H.lastT||-1)<.18)continue;H.lastT=now;x.res=srTouch(G,x.who)}else if(x.k==="cross")srCross(G,x.to);out.push(x)}
-    G.t=(G.t||0)+SR.dt;if(G.ball.dead||G.pen)break}hs.forEach((h,j)=>{h.p=ends[j];h.pp=ends[j].slice()});return out}
+    /* a ball sitting on top of a box: still playable if that half's player has a touch left; otherwise (or if nobody plays it for 6 s) it's dead */
+    const B=G.ball;if(B.top&&!B.dead){B.topT=(B.topT||0)+SR.dt;const own=srOwner(B.p),used=(G.touch&&G.touch[own])||0;if((used>=2&&B.topT>.6)||B.topT>6){B.dead=1;out.push({k:"stuck",where:"top"})}}else B.topT=0;
+    G.t=(G.t||0)+SR.dt;if(G.ball.dead||G.pen)break}hs.forEach((h,j)=>{h.p=ends[j];h.p[1]=srHandY(h.p,h.r);h.pp=h.p.slice()});return out}
 /* ---- the 2-touch rule: count touches in your own half; the count resets when the ball crosses to the other half ---- */
 function srTouch(G,who){if(G.pen)return null;G.touch=G.touch||{X:0,O:0};G.touch[who]++;if(G.touch[who]>2){G.touch={X:0,O:0};G.pen=who==="X"?"O":"X";return"pen"}return"ok"}
 function srCross(G,to){G.touch=G.touch||{X:0,O:0};G.touch[to]=0;G.touch[to==="X"?"O":"X"]=0}
 
 /* ---- the Shadow Knight's hand. It never just gives up: with 2 touches used, if the ball sits in its half it has to hit it, and that's a penalty ---- */
-function srAI(G,dt,kidOpp,rnd){const A=G.ai=G.ai||{wait:0,slow:0,aim:0},H=G.hands.O,b=G.ball.p,v=G.ball.v,P=kidOpp?{sp:2.7}:{sp:3.4},home=[b[0]*.55,SR.hy,-SR.L+.55];
+function srAI(G,dt,kidOpp,rnd){const A=G.ai=G.ai||{wait:0,slow:0,aim:0},H=G.hands.O,b=G.ball.p,v=G.ball.v,P=kidOpp?{sp:2.7}:{sp:3.4},home=[b[0]*.55,SR.hy,-2.15];
   const inMine=b[2]<0,used=(G.touch&&G.touch.O)||0,sp=Math.hypot(v[0],v[2]);let tgt=home;A.wait=Math.max(0,A.wait-dt);
   if(inMine&&!G.pen&&A.wait<=0){A.slow=sp<.45&&b[1]<.2?A.slow+dt:0;
     const may=used<2||A.slow>.9;   /* the fix: after 0.9 s of a dead ball it must play it (3rd touch = penalty to you) */
@@ -3769,7 +3773,7 @@ function srAI(G,dt,kidOpp,rnd){const A=G.ai=G.ai||{wait:0,slow:0,aim:0},H=G.hand
       const behind=[b[0]-dx/dl*wind,SR.hy,b[2]-dz/dl*wind],dist=Math.hypot(H.p[0]-behind[0],H.p[2]-behind[2]);tgt=dist<.12||A.swing?[b[0]+dx/dl*.5,SR.hy,b[2]+dz/dl*.5]:behind;if(dist<.12)A.swing=.35}}
   else{A.slow=0;A.aimSet=0}
   if(A.swing){A.swing-=dt;if(A.swing<=0)A.swing=0}
-  const fast=A.swing?2.4:1,mx=P.sp*fast*dt;tgt=[Math.max(-SR.W+H.r,Math.min(SR.W-H.r,tgt[0])),SR.hy,Math.max(-SR.L+.1,Math.min(-H.r,tgt[2]))];
+  const fast=A.swing?2.4:1,mx=P.sp*fast*dt;tgt=[Math.max(-SR.W+H.r,Math.min(SR.W-H.r,tgt[0])),SR.hy,Math.max(-2.3,Math.min(-H.r,tgt[2]))];
   const d=[tgt[0]-H.p[0],0,tgt[2]-H.p[2]],l=Math.hypot(d[0],d[2]),st=Math.min(l,mx),np=l>1e-6?[H.p[0]+d[0]/l*st,SR.hy,H.p[2]+d[2]/l*st]:H.p.slice();
   H.v=[(np[0]-H.p[0])/dt,0,(np[2]-H.p[2])/dt];H.p=np}
 
@@ -3799,12 +3803,12 @@ function srPenRun(s,d,rec){const v=srPenLaunch(s),cross=s.roll?null:srFree(v,SR_
       if(S.dead&&(goal||S.high||t>2)){if(S.high){for(let j=0;j<120;j++){const e2=srStep({...S,dead:0,p:S.p,v:S.v},[],null);if(rec&&j%4===0)fr.push({t:t+j*SR.dt,p:S.p.slice(),h:np})}}break}if(!goal&&t>1.2&&SV.len(S.v)<.08)break;if(t>3.2)break}
     best={goal,save,ev,frames:fr,end:t,cross,zone:zi,dv,kind:goal?"goal":s.roll?"short":save?"saved":S.high?"over":"miss"};if(!save||!goal)break}
   return best}
-if(typeof module!=="undefined")module.exports={srTick,SR,SR_HAND,SR_Z,srOwner,srWallOf,srRng,srStep,srRun,srTrapped,srTouch,srCross,srAI,srZone,srPower,srPenLaunch,srPenRun,srKeeperHand,srFree};
+if(typeof module!=="undefined")module.exports={srHandY,srTick,SR,SR_HAND,SR_Z,srOwner,srWallOf,srRng,srStep,srRun,srTrapped,srTouch,srCross,srAI,srZone,srPower,srPenLaunch,srPenRun,srKeeperHand,srFree};
 
 /* ---------------- SMACKERBALL 3D: sitting at opposite ends of a room, smack the ball into the other one's wall. ----------------
    Your hand stays in your half. 2 touches max, a 3rd is a penalty (taken from the halfway line, Penalties controls). First to 5.
    Two red boxes at halfway: if the ball gets stuck behind or on top of one, it's a dead ball. Physics: sm_phys.js above. */
-const SMW=5;let SM=null,SMR=null;
+const SMW=5,SM_ZMAX=2.3;/* you sit just in front of your wall: your hand reaches from there to halfway */let SM=null,SMR=null;
 const smKid=r=>(r==="child"?SR_HAND.kid:SR_HAND.adult);
 const smMine=()=>SM&&SM.solo?"X":me(),smThem=()=>smMine()==="X"?"O":"X";
 const smOppName=()=>(SM&&SM.solo?SOLO_NM:ON0()).toUpperCase();
@@ -3829,7 +3833,7 @@ function smSend(k,extra){if(SM.solo)return;const B=SM.G.ball,ev={id:Math.random(
   db.doc("games/sm").update({ev,pen:SM.G.pen,...(extra||{})}).catch(er)}
 function smOn(d){if(!SM||SM.solo||!d)return;if(d.id!==SM.id){SM=null;if(g==="sm")view();return}SM.doc=d;
   if(d.ev&&d.ev.id!==SM.evId){SM.evId=d.ev.id;if(d.ev.by!==smMine()){const B=SM.G.ball;B.p=d.ev.b.p.slice();B.v=d.ev.b.v.slice();B.dead=0;B.st=0;
-      if(d.ev.k==="touch"){sfx("tap");SM.G.touch[smMine()]=0}
+      if(d.ev.k==="touch"){sfx("tap");SM.G.touch[smMine()]=0;if(SMR)SMR.scene.userData.hands[d.ev.by].sl=1}
       if(d.ev.k==="goal"){SM.pause=performance.now()+1300;const by=d.sc.X>SM.sc.X?"X":"O";smSay(by===smMine()?"GOAL!!!":smOppName()+" SCORES!");sfx(by===smMine()?"b_win":"b_ko")}
       if(d.ev.k==="stuck"){SM.pause=performance.now()+1300;smSay("STUCK! DEAD BALL");sfx("b_warn")}
       if(d.ev.k==="start"||d.ev.k==="goal"||d.ev.k==="stuck"){SM.G.touch={X:0,O:0}}
@@ -3874,28 +3878,28 @@ function sm3Init(){const T=THREE;
   const old=$("#g2c"),cv=SMR.r.domElement;cv.id="g2c";old.replaceWith(cv);smInput(cv);sm3Size();window.onresize=()=>{if($("#g2c"))sm3Size()};SMR.camP=null;
   const U=SMR.scene.userData,mine=smMine();U.hands.X.setLook(mine==="X"||!SM.solo?"you":"knight",mine==="X");U.hands.O.setLook(SM.solo?"knight":"you",mine==="O")}
 function sm3Size(){const c=SMR.r.domElement,w=c.parentNode?c.parentNode.clientWidth:innerWidth,h=c.parentNode?c.parentNode.clientHeight:innerHeight;SMR.r.setSize(w,h,false);SMR.cam.aspect=w/h;SMR.cam.updateProjectionMatrix()}
-/* a hand: palm, four fingers, thumb and an arm going back to its owner */
-function smHandMesh(S){const T=THREE,g=new T.Group(),skin=new T.MeshStandardMaterial({color:0xf1c7a3,roughness:.7}),sleeve=new T.MeshStandardMaterial({color:0x2563eb,roughness:.8}),
-    palm=new T.Mesh(new T.SphereGeometry(1,20,14),skin);palm.scale.set(.085,.032,.1);palm.castShadow=true;g.add(palm);const fingers=[];
-  [-.054,-.018,.018,.054].forEach((x,i)=>{const L=[.075,.088,.085,.068][i],f=new T.Mesh(new T.CylinderGeometry(.016,.017,L,8),skin);f.rotation.x=Math.PI/2;f.position.set(x,.004,-.1-L/2+.01);f.castShadow=true;g.add(f);
-    const tip=new T.Mesh(new T.SphereGeometry(.0165,8,6),skin);tip.position.set(x,.004,-.1-L+.01);g.add(tip);fingers.push(f,tip)});
-  const th=new T.Mesh(new T.CylinderGeometry(.018,.02,.08,8),skin);th.rotation.set(Math.PI/2,0,-.9);th.position.set(.095,0,-.03);th.castShadow=true;g.add(th);
-  const arm=new T.Mesh(new T.CylinderGeometry(.045,.055,.9,12),sleeve);arm.rotation.x=Math.PI/2-.35;arm.position.set(0,.16,.5);arm.castShadow=true;g.add(arm);
-  const cuff=new T.Mesh(new T.CylinderGeometry(.05,.05,.06,12),new T.MeshStandardMaterial({color:0xffffff}));cuff.rotation.x=Math.PI/2-.35;cuff.position.set(0,.03,.11);g.add(cuff);
-  const glow=new T.Mesh(new T.RingGeometry(.15,.19,32),new T.MeshBasicMaterial({color:0x2ef2c5,transparent:true,opacity:.6,depthWrite:false}));glow.rotation.x=-Math.PI/2;glow.position.y=-SR.hy+.012;g.add(glow);
-  S.add(g);return{g,setLook(kind,mine){/* you: skin and a blue sleeve. Shadow Knight: a dark metal gauntlet */const K=kind==="knight";skin.color.set(K?0x5b6170:0xf1c7a3);skin.metalness=K?.7:0;skin.roughness=K?.35:.7;sleeve.color.set(K?0x312e81:mine?0x2563eb:0xdc2626);
-      glow.material.color.set(mine?0x2ef2c5:0xff3d77);glow.visible=true},glow}}
+/* a slapping hand: upright palm, fingers spread, thumb out, a short wrist. It's a left hand on your left and a right hand on your right. */
+function smHandMesh(S){const T=THREE,g=new T.Group(),inner=new T.Group();g.add(inner);const skin=new T.MeshStandardMaterial({color:0xf1c7a3,roughness:.65}),cuffM=new T.MeshStandardMaterial({color:0x2563eb,roughness:.8});
+  const add=(geo,mat,x,y,z,par)=>{const m=new T.Mesh(geo,mat);m.position.set(x,y,z);m.castShadow=true;(par||inner).add(m);return m};
+  const palm=add(new T.SphereGeometry(1,22,16),skin,0,.15,0);palm.scale.set(.09,.105,.032);
+  /* fingers: pinky on the left, index next to the thumb (as you see the back of your left hand) */
+  [[-.062,.07,.3],[-.024,.09,.1],[.016,.1,-.06],[.054,.088,-.22]].forEach(([x,L,a])=>{const pv=new T.Group();pv.position.set(x,.235,0);pv.rotation.z=a;inner.add(pv);
+    add(new T.CylinderGeometry(.0165,.0185,L,10),skin,0,L/2,0,pv);add(new T.SphereGeometry(.0168,10,8),skin,0,L,0,pv)});
+  const tp=new T.Group();tp.position.set(.07,.12,0);tp.rotation.z=-1.05;inner.add(tp);add(new T.CylinderGeometry(.019,.022,.08,10),skin,0,.04,0,tp);add(new T.SphereGeometry(.019,10,8),skin,0,.08,0,tp);
+  const wr=add(new T.CylinderGeometry(.042,.05,.2,14),skin,0,.035,.07);wr.rotation.x=-1.0;const cuff=add(new T.CylinderGeometry(.052,.054,.06,14),cuffM,0,.075,.04);cuff.rotation.x=-1.0;
+  const glow=new T.Mesh(new T.RingGeometry(.15,.19,32),new T.MeshBasicMaterial({color:0x2ef2c5,transparent:true,opacity:.6,depthWrite:false}));glow.rotation.x=-Math.PI/2;glow.position.y=.012;g.add(glow);
+  S.add(g);return{g,inner,glow,left:1,sl:0,setLook(kind,mine){const K=kind==="knight";skin.color.set(K?0x5b6170:0xf1c7a3);skin.metalness=K?.7:0;skin.roughness=K?.35:.65;cuffM.color.set(K?0x7c3aed:mine?0x2563eb:0xdc2626);glow.material.color.set(mine?0x2ef2c5:0xff3d77)}}}
 function sm3Scene(r){const T=THREE,S=new T.Scene(),M=(c,o)=>new T.MeshStandardMaterial({color:c,roughness:.85,...o}),{L,W,WH,GH}=SR;S.background=new T.Color(0x1b1c2e);
   /* floor: wooden boards */
   const fl=hpTex(512,1024,(x,w,h)=>{const cols=["#c4925a","#b9864f","#cf9d63","#b88250","#c89458"];for(let i=0;i<8;i++){let y=-(i*137%300);while(y<h){const len=180+((i*53+y)%140);x.fillStyle=cols[(i*3+Math.floor(y/97))%5];x.fillRect(i*64,y,64,len);
       x.fillStyle="rgba(0,0,0,.18)";x.fillRect(i*64,y,64,2);for(let k=0;k<14;k++){x.fillStyle=`rgba(90,50,20,${Math.random()*.12})`;x.fillRect(i*64+Math.random()*60,y+Math.random()*len,2+Math.random()*30,1)}y+=len}x.fillStyle="rgba(0,0,0,.25)";x.fillRect(i*64,0,2,h)}});
-  fl.anisotropy=r.capabilities.getMaxAnisotropy();fl.wrapT=T.RepeatWrapping;fl.repeat.set(1,(2*L+3)/(2*L));const floor=new T.Mesh(new T.PlaneGeometry(2*W,2*L+3),new T.MeshStandardMaterial({map:fl,roughness:.6}));floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;S.add(floor);
+  fl.anisotropy=r.capabilities.getMaxAnisotropy();fl.wrapT=T.RepeatWrapping;fl.repeat.set(1,(2*L+5)/(2*L));const floor=new T.Mesh(new T.PlaneGeometry(2*W,2*L+5),new T.MeshStandardMaterial({map:fl,roughness:.6}));floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;S.add(floor);
   /* halfway line: blue tape */
   const tape=new T.Mesh(new T.PlaneGeometry(2*W,.06),new T.MeshStandardMaterial({color:0x1d4ed8,roughness:.5}));tape.rotation.x=-Math.PI/2;tape.position.y=.003;S.add(tape);
   /* walls: painted, with skirting. Back walls only show from the front, so you can see through your own wall to play */
   const paint=M(0xe9e2d4),wall=(w,h,x,y,z,ry,mat)=>{const m=new T.Mesh(new T.PlaneGeometry(w,h),mat||paint);m.position.set(x,y,z);m.rotation.y=ry;m.receiveShadow=true;S.add(m);return m};
-  wall(2*L,WH,-W,WH/2,0,Math.PI/2);wall(2*L,WH,W,WH/2,0,-Math.PI/2);
-  const ceil=new T.Mesh(new T.PlaneGeometry(2*W,2*L+3),new T.MeshBasicMaterial({color:0xe9e4da}));ceil.rotation.x=Math.PI/2;ceil.position.y=WH;S.add(ceil);
+  wall(2*L+5,WH,-W,WH/2,0,Math.PI/2);wall(2*L+5,WH,W,WH/2,0,-Math.PI/2);
+  const ceil=new T.Mesh(new T.PlaneGeometry(2*W,2*L+5),new T.MeshBasicMaterial({color:0xe9e4da}));ceil.rotation.x=Math.PI/2;ceil.position.y=WH;S.add(ceil);
   const back=(z,ry,col)=>{const t=hpTex(512,340,(x,w,h)=>{x.fillStyle="#e9e2d4";x.fillRect(0,0,w,h);const gy=h-(GH/WH)*h;x.fillStyle="rgba(46,242,107,.18)";x.fillRect(0,gy,w,h-gy);
       x.strokeStyle="#22c55e";x.lineWidth=14;x.beginPath();x.moveTo(4,h);x.lineTo(4,gy);x.lineTo(w-4,gy);x.lineTo(w-4,h);x.stroke();x.fillStyle="#16a34a";x.font="900 40px Outfit,Arial,sans-serif";x.textAlign="center";x.fillText(col,w/2,gy-18)});
     wall(2*W,WH,0,WH/2,z,ry,new T.MeshStandardMaterial({map:t,roughness:.9}))};
@@ -3923,13 +3927,15 @@ function sm3Scene(r){const T=THREE,S=new T.Scene(),M=(c,o)=>new T.MeshStandardMa
 /* your own eyes: sitting at your end of the room, looking across. For your penalty you move up to the halfway line. */
 function smPov(){const mine=smMine(),sg=mine==="X"?1:-1,P=SM.PK,pen=SM.G.pen;
   if(pen===mine&&(!P||P.t<1.4))return{p:[0,.95,sg*1.35],l:[0,.32,-sg*SR.L],fv:48,hf:44};
-  return{p:[0,1.75,sg*(SR.L+.75)],l:[0,.1,-sg*.4],fv:62,hf:62}}
+  /* the view slides left and right with your hand, so your hand is always on screen */const hx=SM.G.hands[mine].p[0];return{p:[hx*.55,2.35,sg*(SR.L+1.15)],l:[hx*.3,0,-sg*.3],fv:62,hf:64}}
 const smFov=(C,asp)=>Math.min(100,Math.max(C.fv,2*Math.atan(Math.tan(C.hf*Math.PI/360)/asp)*180/Math.PI));
 function smRay(cx,cy,plane){const c=SMR.r.domElement.getBoundingClientRect(),T=THREE,rc=new T.Raycaster();rc.setFromCamera(new T.Vector2((cx-c.left)/c.width*2-1,-(cy-c.top)/c.height*2+1),SMR.cam);const hit=new T.Vector3();return rc.ray.intersectPlane(plane,hit)?[hit.x,hit.y,hit.z]:null}
+function smFinger(e){const T=THREE,q=smRay(e.clientX,e.clientY,new T.Plane(new T.Vector3(0,1,0),-SR.hy));if(!q)return null;const c=SMR.r.domElement.getBoundingClientRect(),nx=((e.clientX-c.left)/c.width)*2-1;
+  /* sideways: the whole screen width covers the whole room width, so the far sides are always reachable */q[0]=Math.max(-1,Math.min(1,nx*1.18))*SR.W*(smMine()==="X"?1:-1);return q}
 function smInput(c){const T=THREE;
-  c.onpointerdown=e=>{if(!SM)return;SM.down={x:e.clientX,y:e.clientY};try{c.setPointerCapture(e.pointerId)}catch(_){}if(!SM.G.pen){SM.fp=smRay(e.clientX,e.clientY,new T.Plane(new T.Vector3(0,1,0),-SR.hy));/* lift your hand and put it down where you touch, instead of dragging it through the ball */
-    const H=SM.G.hands[smMine()];if(SM.fp&&Math.hypot(SM.fp[0]-H.p[0],SM.fp[2]-H.p[2])>.45){const sg=smMine()==="X"?1:-1;H.p=[Math.max(-SR.W+H.r,Math.min(SR.W-H.r,SM.fp[0])),SR.hy,Math.max(sg>0?H.r:-SR.L+.12,Math.min(sg>0?SR.L-.12:-H.r,SM.fp[2]))];H.v=[0,0,0];H.jump=1}}};
-  c.onpointermove=e=>{if(!SM||!SM.down||SM.G.pen)return;SM.fp=smRay(e.clientX,e.clientY,new T.Plane(new T.Vector3(0,1,0),-SR.hy))};
+  c.onpointerdown=e=>{if(!SM)return;SM.down={x:e.clientX,y:e.clientY};try{c.setPointerCapture(e.pointerId)}catch(_){}if(!SM.G.pen){SM.fp=smFinger(e);/* lift your hand and put it down where you touch, instead of dragging it through the ball */
+    const H=SM.G.hands[smMine()];if(SM.fp&&Math.hypot(SM.fp[0]-H.p[0],SM.fp[2]-H.p[2])>.45){const sg=smMine()==="X"?1:-1;H.p=[Math.max(-SR.W+H.r,Math.min(SR.W-H.r,SM.fp[0])),0,Math.max(sg>0?H.r:-SM_ZMAX,Math.min(sg>0?SM_ZMAX:-H.r,SM.fp[2]))];H.p[1]=srHandY(H.p,H.r);H.v=[0,0,0];H.jump=1}}};
+  c.onpointermove=e=>{if(!SM||!SM.down||SM.G.pen)return;SM.fp=smFinger(e)};
   c.onpointerup=c.onpointercancel=e=>{if(!SM)return;const D=SM.down;SM.down=null;SM.fp=null;const part=smPenPart();if(part!=="s"||!D)return;const r=c.getBoundingClientRect(),dy=e.clientY-D.y,K=role==="child",mine=smMine(),sgn=mine==="X"?1:-1;
     if(-dy>r.height*.06){if(!SM.spot){hpMsg("Tap their wall first!");return}const P=srPower(pkBarP(),K);sfx(P.q==="perfect"?"coin":"tap");hpMsg(P.q==="perfect"?"PERFECT POWER!":P.q.toUpperCase()+"!");
       smPenSubmit("s",{tx:+(SM.spot[0]*sgn).toFixed(2),ty:SM.spot[1],...P,kid:K?1:0});SM.spot=null;smUI();return}
@@ -3938,26 +3944,26 @@ function smInput(c){const T=THREE;
 /* every frame */
 function sm3Frame(dt){if(!SM||!SMR)return;const T=THREE,U=SMR.scene.userData,G=SM.G,mine=smMine(),them=smThem(),now=performance.now(),H=G.hands[mine],live=!SM.solo;pkBarDraw();
   /* my hand follows my finger, inside my half */
-  {const sg=mine==="X"?1:-1,lo=sg>0?H.r:-SR.L+.12,hi=sg>0?SR.L-.12:-H.r;let tp=H.p;if(SM.fp&&!G.pen)tp=[Math.max(-SR.W+H.r,Math.min(SR.W-H.r,SM.fp[0])),SR.hy,Math.max(lo,Math.min(hi,SM.fp[2]))];
-    H.pp=H.p.slice();if(H.jump){H.jump=0;tp=H.p}const k=Math.min(1,dt*26),np=[H.p[0]+(tp[0]-H.p[0])*k,SR.hy,H.p[2]+(tp[2]-H.p[2])*k];H.v=[(np[0]-H.p[0])/Math.max(dt,.008),0,(np[2]-H.p[2])/Math.max(dt,.008)];H.p=np}
+  {const sg=mine==="X"?1:-1,lo=sg>0?H.r:-SM_ZMAX,hi=sg>0?SM_ZMAX:-H.r;let tp=H.p;if(SM.fp&&!G.pen)tp=[Math.max(-SR.W+H.r,Math.min(SR.W-H.r,SM.fp[0])),SR.hy,Math.max(lo,Math.min(hi,SM.fp[2]))];
+    H.pp=H.p.slice();if(H.jump){H.jump=0;tp=H.p}const k=Math.min(1,dt*26),np=[H.p[0]+(tp[0]-H.p[0])*k,0,H.p[2]+(tp[2]-H.p[2])*k];np[1]=srHandY(np,H.r);H.v=[(np[0]-H.p[0])/Math.max(dt,.008),0,(np[2]-H.p[2])/Math.max(dt,.008)];H.p=np}
   /* the other hand: the Shadow Knight, or where the other phone says it is */
   if(SM.solo){if(!G.pen&&now>SM.pause){const O=G.hands.O;O.pp=O.p.slice();srAI(G,dt,role==="child",SM.rnd)}}else if(SM.oppT){const O=G.hands[them],k=Math.min(1,dt*10);O.p=[O.p[0]+(SM.oppT[0]-O.p[0])*k,SR.hy,O.p[2]+(SM.oppT[1]-O.p[2])*k]}
   /* the ball */
   let bp=G.ball.p;
   if(SM.PK){const P=SM.PK;if(!window.HP_FREEZE)P.t+=dt;const F=P.r.frames,fl=P.flip?(q=>[-q[0],q[1],-q[2]]):(q=>q);
     if(P.t<0){bp=fl([0,SR.br,0]);const sh=G.hands[P.sh],w=Math.max(0,Math.min(1,(P.t+.75)/.75)),from=fl([.05,SR.hy,.55]),to=fl([0,SR.hy,.12]);sh.p=[from[0]+(to[0]-from[0])*w*w,SR.hy,from[2]+(to[2]-from[2])*w*w]}
-    else{if(!P.kicked){P.kicked=1;sfx("b_punch")}let j=P.fi||0;while(j<F.length-2&&F[j+1].t<P.t)j++;P.fi=j;const f0=F[j],f1=F[Math.min(F.length-1,j+1)],u=f1.t>f0.t?Math.max(0,Math.min(1,(P.t-f0.t)/(f1.t-f0.t))):0;
+    else{if(!P.kicked){P.kicked=1;sfx("b_punch");U.hands[P.sh].sl=1}let j=P.fi||0;while(j<F.length-2&&F[j+1].t<P.t)j++;P.fi=j;const f0=F[j],f1=F[Math.min(F.length-1,j+1)],u=f1.t>f0.t?Math.max(0,Math.min(1,(P.t-f0.t)/(f1.t-f0.t))):0;
       bp=fl([0,1,2].map(k=>f0.p[k]+(f1.p[k]-f0.p[k])*u));const kh=fl(f0.h);G.hands[P.sh==="X"?"O":"X"].p=kh;
-      while(P.evi<P.r.ev.length&&P.r.ev[P.evi].t<=P.t){const e=P.r.ev[P.evi++];if(e.k==="touch")sfx("b_punch");else if(e.k==="wall")sfx("b_clang");else if(e.k==="goal")sfx("b_swish");else if(e.k==="floor"&&e.sp>1)sfx("tap")}}
+      while(P.evi<P.r.ev.length&&P.r.ev[P.evi].t<=P.t){const e=P.r.ev[P.evi++];if(e.k==="touch"){sfx("b_punch");U.hands[P.sh==="X"?"O":"X"].sl=1}else if(e.k==="wall")sfx("b_clang");else if(e.k==="goal")sfx("b_swish");else if(e.k==="floor"&&e.sp>1)sfx("tap")}}
     if(!P.said&&P.t>=P.tSay){P.said=1;const by=P.sh,me_=by===mine,k=P.r.kind;
       if(P.r.goal){smSay(me_?"PENALTY SCORED!":smOppName()+" SCORES THE PENALTY!");sfx(me_?"b_win":"b_ko")}else smSay(k==="saved"?(me_?smOppName()+" SAVES IT!":"YOU SAVED IT!"):k==="over"?"OVER THE TOP!":k==="short"?"TOO SOFT! IT STOPPED":"MISSED!");}
     if(P.t>=P.end)smPenEnd()}
   else if(!G.pen&&!SM.w&&now>SM.pause){const ev=srTick(G,dt,SM.rnd);for(const e of ev){
-      if(e.k==="touch"){if(live&&e.who!==mine)continue;sfx(e.smack?"b_punch":"tap");if(e.res==="pen"){SM.G.pen=e.who==="X"?"O":"X";SM.pid=(SM.pid||0)+1;G.ball.v=[0,0,0];smSay("3 TOUCHES! PENALTY!",e.who===mine?smOppName()+" gets a penalty":"Penalty to YOU!");sfx("b_warn");
+      if(e.k==="touch"){U.hands[e.who].sl=1;if(live&&e.who!==mine)continue;sfx(e.smack?"b_punch":"tap");if(e.res==="pen"){SM.G.pen=e.who==="X"?"O":"X";SM.pid=(SM.pid||0)+1;G.ball.v=[0,0,0];smSay("3 TOUCHES! PENALTY!",e.who===mine?smOppName()+" gets a penalty":"Penalty to YOU!");sfx("b_warn");
           if(SM.solo){SM.doc.pks=null;SM.doc.pkd=null}smSend("pen",{pid:SM.pid,pks:null,pkd:null});break}if(live)smSend("touch")}
       else if(e.k==="goal"){const conceded=e.by===mine?them:mine;if(live&&conceded!==mine)continue;/* the phone of whoever's wall it hit writes the goal */
         SM.sc[e.by]++;if(SM.sc[e.by]>=SMW)SM.w=e.by;smSay(e.by===mine?"GOAL!!!":smOppName()+" SCORES!");sfx(e.by===mine?"b_win":"b_ko");sfx("b_clang");smServe(conceded);smSend("goal",{sc:{...SM.sc},w:SM.w})}
-      else if(e.k==="stuck"){if(live&&srOwner(G.ball.p)!==mine)continue;smSay("STUCK! DEAD BALL",e.where==="top"?"It landed on the box":"It's behind the box");sfx("b_warn");const last=G.lastBy||srOwner(G.ball.p);smServe(last==="X"?"O":"X");smSend("stuck")}
+      else if(e.k==="stuck"){if(live&&srOwner(G.ball.p)!==mine)continue;smSay("STUCK! DEAD BALL",e.where==="top"?"Left on the box":"It's behind the box");sfx("b_warn");const last=G.lastBy||srOwner(G.ball.p);smServe(last==="X"?"O":"X");smSend("stuck")}
       else if(e.k==="wall"&&e.sp>1.5)sfx("tap");else if(e.k==="box")sfx("b_punch")}
     for(const e of ev)if(e.k==="touch")G.lastBy=e.who;
     if(live&&srOwner(G.ball.p)===mine&&now-SM.hb>250){SM.hb=now;db.doc("games/smh").update({[mine]:{x:+H.p[0].toFixed(2),y:+H.p[2].toFixed(2),i:SM.id}}).catch(()=>{})}
@@ -3966,7 +3972,9 @@ function sm3Frame(dt){if(!SM||!SMR)return;const T=THREE,U=SMR.scene.userData,G=S
   /* draw */
   U.ball.position.set(...bp);U.blob.position.set(bp[0],.004,bp[2]);const hh=Math.max(0,bp[1]-SR.br);U.blob.scale.setScalar(1+hh*.8);U.blob.material.opacity=.32/(1+hh*2);
   const sp=Math.hypot(G.ball.v[0],G.ball.v[2]);if(sp>.05&&!SM.PK)U.ball.rotateOnWorldAxis(new T.Vector3(G.ball.v[2],0,-G.ball.v[0]).normalize(),-sp/SR.br*dt);
-  for(const w of ["X","O"]){const h=G.hands[w],m=U.hands[w],face=w==="X"?0:Math.PI;m.g.position.set(h.p[0],h.p[1],h.p[2]);const lean=Math.max(-.5,Math.min(.5,(h.v[0]||0)*.08));m.g.rotation.set(0,face+lean,0);m.g.scale.setScalar(h.r/.16)}
+  for(const w of ["X","O"]){const h=G.hands[w],m=U.hands[w],face=w==="X"?0:Math.PI;m.g.position.set(h.p[0],h.p[1]-SR.hy,h.p[2]);const lean=Math.max(-.4,Math.min(.4,(h.v[0]||0)*.06));m.g.rotation.set(0,face-lean,0);
+    /* left hand on your left side, right hand on your right */const lx=w==="X"?h.p[0]:-h.p[0];if(lx<-.08)m.left=1;else if(lx>.08)m.left=0;const sc=h.r/.16*1.25;m.inner.scale.set((m.left?1:-1)*sc,sc,sc);
+    m.sl=Math.max(0,m.sl-dt*4.5);m.inner.rotation.x=-.18-.75*Math.sin(m.sl*Math.PI)}
   const showAim=smPenPart()==="s"&&SM.spot;U.aim.visible=!!showAim;if(showAim){const sg=mine==="X"?1:-1;U.aim.position.set(SM.spot[0],SM.spot[1],-sg*(SR.L-.02));U.aim.rotation.y=sg>0?0:Math.PI}
   const C=smPov(),cam=SMR.cam,fv=smFov(C,cam.aspect);if(Math.abs(cam.fov-fv)>.1){cam.fov=fv;cam.updateProjectionMatrix()}
   if(!SMR.camP){SMR.camP=new T.Vector3(...C.p);SMR.camL=new T.Vector3(...C.l)}const e=1-Math.exp(-dt*5);SMR.camP.lerp(new T.Vector3(...C.p),e);SMR.camL.lerp(new T.Vector3(...C.l),e);

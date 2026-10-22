@@ -35,9 +35,11 @@ function srStep(S,hands,rnd){const R=SR,dt=R.dt,ev=[],pp=S.p.slice();
         const a=((rnd?rnd():.5)-.5)*.6,c=Math.cos(a),s=Math.sin(a),vx=S.v[0],vz=S.v[2];S.v[0]=vx*c-vz*s;S.v[2]=vx*s+vz*c;
         const sp=SV.len(S.v);if(sp>H.max)S.v=SV.mul(S.v,H.max/sp);ev.push({k:"touch",who:H.who,sp:+sp.toFixed(2),smack:hs>1.2})}}}
   /* stuck behind or on a box: dead ball after a moment */
-  const tr=srTrapped(S.p);if(tr&&SV.len(S.v)<.6){S.st=(S.st||0)+dt;if(S.st>.5&&!S.dead){S.dead=1;ev.push({k:"stuck",where:tr})}}else S.st=0;
+  const tr=srTrapped(S.p);if(tr&&SV.len(S.v)<.6){S.st=(S.st||0)+dt;if(tr==="behind"&&S.st>.5&&!S.dead){S.dead=1;ev.push({k:"stuck",where:tr})}}else S.st=0;S.top=tr==="top"&&SV.len(S.v)<.6;
   if(!S.dead&&srOwner(pp)!==srOwner(S.p))ev.push({k:"cross",to:srOwner(S.p)});
   return ev}
+/* a hand over a red box rests on top of it (so it can reach a ball sitting up there) */
+function srHandY(p,r){const ax=Math.abs(p[0]),az=Math.abs(p[2]);return ax>SR.bx0-r*.5&&ax<SR.bx1+r*.5&&az<SR.bz+r*.5?SR.bh+SR.hy*.7:SR.hy}
 /* run the ball on its own (no hands moving) for a while; used by tests and to look ahead */
 function srRun(S,secs,hands,rnd){const out=[];for(let i=0;i<secs*240;i++){const e=srStep(S,hands,rnd);e.forEach(x=>{x.t=+(i*SR.dt).toFixed(4);out.push(x)});if(S.dead)break}return out}
 
@@ -45,16 +47,18 @@ function srRun(S,secs,hands,rnd){const out=[];for(let i=0;i<secs*240;i++){const 
    Touches only count in the toucher's own half; a 3rd touch gives the other player a penalty. ---- */
 function srTick(G,dt,rnd){const out=[],n=Math.max(1,Math.round(dt/SR.dt)),hs=[G.hands.X,G.hands.O].filter(h=>h&&!h.ghost);if(G.ball.dead||G.pen)return out;
   const ends=hs.map(h=>h.p.slice()),starts=hs.map(h=>h.pp||h.p);
-  for(let i=0;i<n;i++){/* move the hands a bit each small step too, so a fast swipe can't jump over the ball */hs.forEach((h,j)=>{const k=(i+1)/n;h.p=[starts[j][0]+(ends[j][0]-starts[j][0])*k,ends[j][1],starts[j][2]+(ends[j][2]-starts[j][2])*k]});
+  for(let i=0;i<n;i++){/* move the hands a bit each small step too, so a fast swipe can't jump over the ball */hs.forEach((h,j)=>{const k=(i+1)/n,q=[starts[j][0]+(ends[j][0]-starts[j][0])*k,0,starts[j][2]+(ends[j][2]-starts[j][2])*k];q[1]=srHandY(q,h.r);h.p=q});
     const e=srStep(G.ball,hs,rnd);for(const x of e){if(x.k==="touch"){const now=G.t||0,H=G.hands[x.who];if(srOwner(G.ball.p)!==x.who&&srOwner(H.p)!==x.who)continue;
         if(now-(H.lastT||-1)<.18)continue;H.lastT=now;x.res=srTouch(G,x.who)}else if(x.k==="cross")srCross(G,x.to);out.push(x)}
-    G.t=(G.t||0)+SR.dt;if(G.ball.dead||G.pen)break}hs.forEach((h,j)=>{h.p=ends[j];h.pp=ends[j].slice()});return out}
+    /* a ball sitting on top of a box: still playable if that half's player has a touch left; otherwise (or if nobody plays it for 6 s) it's dead */
+    const B=G.ball;if(B.top&&!B.dead){B.topT=(B.topT||0)+SR.dt;const own=srOwner(B.p),used=(G.touch&&G.touch[own])||0;if((used>=2&&B.topT>.6)||B.topT>6){B.dead=1;out.push({k:"stuck",where:"top"})}}else B.topT=0;
+    G.t=(G.t||0)+SR.dt;if(G.ball.dead||G.pen)break}hs.forEach((h,j)=>{h.p=ends[j];h.p[1]=srHandY(h.p,h.r);h.pp=h.p.slice()});return out}
 /* ---- the 2-touch rule: count touches in your own half; the count resets when the ball crosses to the other half ---- */
 function srTouch(G,who){if(G.pen)return null;G.touch=G.touch||{X:0,O:0};G.touch[who]++;if(G.touch[who]>2){G.touch={X:0,O:0};G.pen=who==="X"?"O":"X";return"pen"}return"ok"}
 function srCross(G,to){G.touch=G.touch||{X:0,O:0};G.touch[to]=0;G.touch[to==="X"?"O":"X"]=0}
 
 /* ---- the Shadow Knight's hand. It never just gives up: with 2 touches used, if the ball sits in its half it has to hit it, and that's a penalty ---- */
-function srAI(G,dt,kidOpp,rnd){const A=G.ai=G.ai||{wait:0,slow:0,aim:0},H=G.hands.O,b=G.ball.p,v=G.ball.v,P=kidOpp?{sp:2.7}:{sp:3.4},home=[b[0]*.55,SR.hy,-SR.L+.55];
+function srAI(G,dt,kidOpp,rnd){const A=G.ai=G.ai||{wait:0,slow:0,aim:0},H=G.hands.O,b=G.ball.p,v=G.ball.v,P=kidOpp?{sp:2.7}:{sp:3.4},home=[b[0]*.55,SR.hy,-2.15];
   const inMine=b[2]<0,used=(G.touch&&G.touch.O)||0,sp=Math.hypot(v[0],v[2]);let tgt=home;A.wait=Math.max(0,A.wait-dt);
   if(inMine&&!G.pen&&A.wait<=0){A.slow=sp<.45&&b[1]<.2?A.slow+dt:0;
     const may=used<2||A.slow>.9;   /* the fix: after 0.9 s of a dead ball it must play it (3rd touch = penalty to you) */
@@ -63,7 +67,7 @@ function srAI(G,dt,kidOpp,rnd){const A=G.ai=G.ai||{wait:0,slow:0,aim:0},H=G.hand
       const behind=[b[0]-dx/dl*wind,SR.hy,b[2]-dz/dl*wind],dist=Math.hypot(H.p[0]-behind[0],H.p[2]-behind[2]);tgt=dist<.12||A.swing?[b[0]+dx/dl*.5,SR.hy,b[2]+dz/dl*.5]:behind;if(dist<.12)A.swing=.35}}
   else{A.slow=0;A.aimSet=0}
   if(A.swing){A.swing-=dt;if(A.swing<=0)A.swing=0}
-  const fast=A.swing?2.4:1,mx=P.sp*fast*dt;tgt=[Math.max(-SR.W+H.r,Math.min(SR.W-H.r,tgt[0])),SR.hy,Math.max(-SR.L+.1,Math.min(-H.r,tgt[2]))];
+  const fast=A.swing?2.4:1,mx=P.sp*fast*dt;tgt=[Math.max(-SR.W+H.r,Math.min(SR.W-H.r,tgt[0])),SR.hy,Math.max(-2.3,Math.min(-H.r,tgt[2]))];
   const d=[tgt[0]-H.p[0],0,tgt[2]-H.p[2]],l=Math.hypot(d[0],d[2]),st=Math.min(l,mx),np=l>1e-6?[H.p[0]+d[0]/l*st,SR.hy,H.p[2]+d[2]/l*st]:H.p.slice();
   H.v=[(np[0]-H.p[0])/dt,0,(np[2]-H.p[2])/dt];H.p=np}
 
@@ -93,4 +97,4 @@ function srPenRun(s,d,rec){const v=srPenLaunch(s),cross=s.roll?null:srFree(v,SR_
       if(S.dead&&(goal||S.high||t>2)){if(S.high){for(let j=0;j<120;j++){const e2=srStep({...S,dead:0,p:S.p,v:S.v},[],null);if(rec&&j%4===0)fr.push({t:t+j*SR.dt,p:S.p.slice(),h:np})}}break}if(!goal&&t>1.2&&SV.len(S.v)<.08)break;if(t>3.2)break}
     best={goal,save,ev,frames:fr,end:t,cross,zone:zi,dv,kind:goal?"goal":s.roll?"short":save?"saved":S.high?"over":"miss"};if(!save||!goal)break}
   return best}
-if(typeof module!=="undefined")module.exports={srTick,SR,SR_HAND,SR_Z,srOwner,srWallOf,srRng,srStep,srRun,srTrapped,srTouch,srCross,srAI,srZone,srPower,srPenLaunch,srPenRun,srKeeperHand,srFree};
+if(typeof module!=="undefined")module.exports={srHandY,srTick,SR,SR_HAND,SR_Z,srOwner,srWallOf,srRng,srStep,srRun,srTrapped,srTouch,srCross,srAI,srZone,srPower,srPenLaunch,srPenRun,srKeeperHand,srFree};
