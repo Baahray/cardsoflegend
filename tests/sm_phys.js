@@ -3,7 +3,8 @@
    Your goal is the whole back wall behind you, up to head height. Two red boxes stand against the side walls at halfway.
    A ball that lands on top of one stays there: still in play if that half's player has a touch left, otherwise dead. */
 const SR={g:9.81,dt:1/240,br:.1,L:3,W:1.45,GH:.9,WH:2.4,bx0:.95,bx1:1.45,bz:.9,bh:.45,eFloor:.72,eWall:.78,eBox:.4,eHand:.86,drag:.06,roll:.5,hy:.11};
-const SR_HAND={kid:{r:.27,max:9.6,sp:5.5,reach:.68},adult:{r:.24,max:8.6,sp:5.5,reach:.6}};
+/* glove size: ex = half width, half height, half depth of the solid glove (it's as big as the picture) */
+const SR_HAND={kid:{r:.27,ex:[.34,.27,.16],max:9.6,sp:5.5,reach:.68},adult:{r:.24,ex:[.3,.25,.15],max:8.6,sp:5.5,reach:.6}};
 const SV={add:(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]],sub:(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]],mul:(a,k)=>[a[0]*k,a[1]*k,a[2]*k],dot:(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2],len:a=>Math.hypot(a[0],a[1],a[2])};
 const srOwner=p=>p[2]>0?"X":"O";            /* whose half the ball is in */
 const srWallOf=w=>w==="X"?SR.L:-SR.L;         /* the z of someone's goal wall */
@@ -29,12 +30,15 @@ function srStep(S,hands,rnd){const R=SR,dt=R.dt,ev=[],pp=S.p.slice();
     if(l<R.br){let n;if(l>1e-6)n=SV.mul(d,1/l);else{/* inside: push out the nearest way */const dz=[S.p[0]-lo[0],hi[0]-S.p[0],hi[1]-S.p[1],S.p[2]-lo[2],hi[2]-S.p[2]],m=Math.min(...dz),k=dz.indexOf(m);n=[[-1,0,0],[1,0,0],[0,1,0],[0,0,-1],[0,0,1]][k]}
       S.p=SV.add(q,SV.mul(n,R.br+1e-4));const top=n[1]>.7,sp=srBounce(S,n,top?.25:R.eBox,top?.5:.15);if(sp>.3)ev.push({k:"box",sp,top})}}
   /* hands touching the ball: a still hand stops it softly (so you can stop it, then slap it); a moving hand pushes it along, low */
-  for(const H of hands||[]){/* a glove sweeping fast (your finger swiping) doesn't shove the ball: the swipe itself does the hitting */if(Math.hypot(H.v[0],H.v[2])>1.6)continue;
-    const d=SV.sub(S.p,H.p),l=SV.len(d),rr=R.br+H.r;if(l<rr&&l>1e-6){let n=SV.mul(d,1/l);n=[n[0],Math.max(n[1],0),n[2]];const nl=SV.len(n)||1;n=SV.mul(n,1/nl);
-      S.p=SV.add(H.p,SV.mul(n,rr+1e-3));S.p[1]=Math.max(S.p[1],R.br);const rel=SV.sub(S.v,H.v),vn=SV.dot(rel,n);if(vn<0){const hs=Math.hypot(H.v[0],H.v[2]),e=hs>1.5?.6:.28;
-        S.v=SV.add(S.v,SV.mul(n,-(1+e)*vn));S.v[1]=Math.min(S.v[1],.25+hs*.04);/* stays low */
-        const a=((rnd?rnd():.5)-.5)*.2,c=Math.cos(a),s=Math.sin(a),vx=S.v[0],vz=S.v[2];S.v[0]=vx*c-vz*s;S.v[2]=vx*s+vz*c;
-        const sp=SV.len(S.v);if(sp>H.max)S.v=SV.mul(S.v,H.max/sp);ev.push({k:"touch",who:H.who,sp:+sp.toFixed(2),smack:false})}}}
+  /* gloves are solid, the size of the picture (an egg shape: wide, half a metre tall, fairly deep). A still or slow glove SAVES the ball softly;
+     a glove moving fast into the ball SLAPS it the way the glove is going, with some air. */
+  for(const H of hands||[]){const ex=H.ex||[H.r,H.r,H.r],c=[H.p[0],H.p[1]-SR.hy+ex[1],H.p[2]],d=SV.sub(S.p,c),A=[ex[0]+R.br,ex[1]+R.br,ex[2]+R.br],q=Math.hypot(d[0]/A[0],d[1]/A[1],d[2]/A[2]);
+    if(q<1&&q>1e-6){let n=[d[0]/(A[0]*A[0]),Math.max(0,d[1]/(A[1]*A[1])),d[2]/(A[2]*A[2])];let nl=SV.len(n)||1;n=SV.mul(n,1/nl);
+      /* the glove's flat side faces the other player: balls coming at it bounce back their way, not off sideways */const fz=H.who==="X"?-1:1;if(n[2]*fz>-.2){n=[n[0]*.45,n[1]*.45,n[2]+fz*1.2];nl=SV.len(n);n=SV.mul(n,1/nl)}S.p=SV.add(c,SV.mul(d,1/q*1.002));S.p[1]=Math.max(S.p[1],R.br);
+      const hs=Math.hypot(H.v[0],H.v[2]),rel=SV.sub(S.v,H.v),vn=SV.dot(rel,n);if(vn<0||hs>1.5){
+        if(hs>1.5&&SV.dot(H.v,n)>0){/* SLAP */const P=Math.min(H.max,Math.max(3.5,2.4+hs*1.0)),dir=[H.v[0]/hs,H.v[2]/hs];S.v=[dir[0]*P,srLift(P),dir[1]*P];ev.push({k:"touch",who:H.who,sp:+P.toFixed(2),smack:true,slap:1,dir})}
+        else if(vn<0){/* SAVE: soak it up */S.v=SV.add(S.v,SV.mul(n,-1.3*vn));S.v[1]=Math.min(S.v[1],.3);const a=((rnd?rnd():.5)-.5)*.2,cs=Math.cos(a),sn=Math.sin(a),vx=S.v[0],vz=S.v[2];S.v[0]=vx*cs-vz*sn;S.v[2]=vx*sn+vz*cs;
+          const sp=SV.len(S.v);if(sp>H.max)S.v=SV.mul(S.v,H.max/sp);ev.push({k:"touch",who:H.who,sp:+sp.toFixed(2),smack:false})}}}}
   /* stuck behind or on a box: dead ball after a moment */
   const tr=srTrapped(S.p);if(tr&&SV.len(S.v)<.6){S.st=(S.st||0)+dt;if(tr==="behind"&&S.st>.5&&!S.dead){S.dead=1;ev.push({k:"stuck",where:tr})}}else S.st=0;S.top=tr==="top"&&SV.len(S.v)<.6;
   if(!S.dead&&srOwner(pp)!==srOwner(S.p))ev.push({k:"cross",to:srOwner(S.p)});
@@ -64,6 +68,7 @@ function srRun(S,secs,hands,rnd){const out=[];for(let i=0;i<secs*240;i++){const 
    Touches only count in the toucher's own half; a 3rd touch gives the other player a penalty. ---- */
 function srTick(G,dt,rnd){const out=[],n=Math.max(1,Math.round(dt/SR.dt)),hs=[G.hands.X,G.hands.O].filter(h=>h&&!h.ghost);if(G.ball.dead||G.pen)return out;
   const ends=hs.map(h=>h.p.slice()),starts=hs.map(h=>h.pp||h.p);
+  /* how fast each glove is moving this tick (from where it was to where it is now) */hs.forEach((h,j)=>{if(h.pp){const T=n*SR.dt;h.v=[(ends[j][0]-starts[j][0])/T,0,(ends[j][2]-starts[j][2])/T]}});
   for(let i=0;i<n;i++){/* slaps whose moment of impact has come */if(G.slaps&&G.slaps.length){const due=G.slaps.filter(q=>q.at<=(G.t||0));G.slaps=G.slaps.filter(q=>q.at>(G.t||0));for(const q of due){const h=srSlapHit(G,q);if(h){out.push(h);if(G.pen)break}}if(G.pen)break}
     /* move the hands a bit each small step too, so a fast swipe can't jump over the ball */hs.forEach((h,j)=>{const k=(i+1)/n,q=[starts[j][0]+(ends[j][0]-starts[j][0])*k,0,starts[j][2]+(ends[j][2]-starts[j][2])*k];q[1]=srHandY(q,h.r);h.p=q});
     const e=srStep(G.ball,hs,rnd);for(const x of e){if(x.k==="touch"){const now=G.t||0,H=G.hands[x.who];if(srOwner(G.ball.p)!==x.who&&srOwner(H.p)!==x.who)continue;

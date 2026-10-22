@@ -2,7 +2,7 @@
 let R;try{R=require("./sm_phys.js")}catch(e){R=require("../sm_phys.js")}
 const {SR}=R;let pass=0,fail=0;const t=(name,cond,info)=>{if(cond){pass++;console.log("  ok   "+name)}else{fail++;console.log("  FAIL "+name+(info?"  ->  "+info:""))}};
 const run=(p,v,secs=4,hands=[],seed=1)=>{const S={p,v};const ev=R.srRun(S,secs,hands,R.srRng(seed));return{S,ev,k:ev.filter(e=>e.k!=="floor").map(e=>e.k+(e.by?":"+e.by:"")+(e.where?":"+e.where:"")+(e.high?":high":"")).join(" ")}};
-const hand=(who,p,v=[0,0,0],kid=false)=>({who,p,v,r:(kid?R.SR_HAND.kid:R.SR_HAND.adult).r,max:(kid?R.SR_HAND.kid:R.SR_HAND.adult).max});
+const hand=(who,p,v=[0,0,0],kid=false)=>{const K=kid?R.SR_HAND.kid:R.SR_HAND.adult;return{who,p,v,r:K.r,ex:K.ex,max:K.max,reach:K.reach}};
 console.log("The room");
 let r=run([0,.1,1],[0,1,-7]);t("1  A hard smack along the floor hits their back wall under head height: GOAL",r.ev.some(e=>e.k==="goal"&&e.by==="X"),r.k);
 r=run([0,.1,1],[0,5.6,-6]);t("2  Over head height it bounces off the wall: no goal from that hit",r.ev.find(e=>e.k!=="floor"&&e.k!=="cross").k==="wall",r.k);
@@ -22,8 +22,10 @@ console.log("\nHands");
  const sp=outs.map(v=>Math.hypot(v[0],v[2])),ang=outs.map(v=>Math.atan2(v[0],v[2])*180/Math.PI);
  t("8  A still glove stops a shot softly, so you can stop it and then flick it",sp.every(s=>s<2.3),sp.map(s=>s.toFixed(1)).join(" "));
  t("9  ...and it comes off at slightly different angles each time",Math.max(...ang)-Math.min(...ang)>4,ang.map(a=>a.toFixed(0)).join(" "))}
-{const S={p:[0,.1,1.6],v:[0,0,0]},ev=R.srRun(S,.05,[hand("X",[0,SR.hy,1.93],[0,0,-6])],null),S2={p:[0,.1,1.6],v:[0,0,0]};R.srRun(S2,.05,[hand("X",[0,SR.hy,1.93],[0,0,-1])],null);
- t("10 A glove sweeping fast doesn't shove the ball (your swipe does the hitting); a slow glove nudges it",Math.hypot(...S.v)<.05&&S2.v[2]<-.3,S.v.map(v=>v.toFixed(2)).join(",")+" / "+S2.v.map(v=>v.toFixed(2)).join(","))}
+{const S={p:[0,.1,1.6],v:[0,0,0]};R.srRun(S,.05,[hand("X",[0,SR.hy,1.8],[0,0,-6])],null);let top=0;const S2={p:S.p.slice(),v:S.v.slice()};for(let i=0;i<120;i++){R.srStep(S2,[],null);top=Math.max(top,S2.p[1])}
+ t("10 A glove moving fast into the ball SLAPS it hard the way the glove is going, with air",S.v[2]<-6&&top>.3&&top<SR.GH,S.v.map(v=>v.toFixed(2)).join(",")+" highest "+top.toFixed(2))}
+{let saves=0,n=0;for(const x of [-.25,-.12,0,.12,.25])for(const vy of [0,1.5,2.5]){n++;const S={p:[x,.1,.2],v:[0,vy,6]};R.srRun(S,.45,[hand("X",[0,SR.hy,1.4])],R.srRng(3));if(S.p[2]<1.4&&S.v[2]<=0)saves++}
+ t("10z A still glove saves shots that hit anywhere on it, even bouncing ones",saves===n,saves+"/"+n)}
 {const mk=kid=>({ball:{p:[0,.1,1.2],v:[0,0,0]},hands:{X:{...hand("X",[0,SR.hy,1.6],[0,0,0],kid),reach:(kid?R.SR_HAND.kid:R.SR_HAND.adult).reach},O:hand("O",[0,SR.hy,-2.4])},touch:{X:0,O:0},t:0}),A=mk(true),B=mk(false),kid=A.hands.X,dad=B.hands.X;
  R.srSwipeHit(A,"X",[0,0,1.7],[0,0,.5],15);R.srSwipeHit(B,"X",[0,0,1.7],[0,0,.5],15);const a=A.ball,b=B.ball;
  t("11 Cass's hand is bigger and smacks a bit harder (his hidden advantage)",kid.r>dad.r&&Math.hypot(...a.v)>Math.hypot(...b.v),Math.hypot(...a.v).toFixed(1)+" vs "+Math.hypot(...b.v).toFixed(1))}
