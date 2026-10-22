@@ -67,7 +67,7 @@ function srTouch(G,who){if(G.pen)return null;G.touch=G.touch||{X:0,O:0};G.touch[
 function srCross(G,to){G.touch=G.touch||{X:0,O:0};G.touch[to]=0;G.touch[to==="X"?"O":"X"]=0}
 
 /* ---- the Shadow Knight's hand. It never just gives up: with 2 touches used, if the ball sits in its half it has to hit it, and that's a penalty ---- */
-function srAI(G,dt,kidOpp,rnd){const A=G.ai=G.ai||{wait:0,slow:0,aim:0,cool:0},H=G.hands.O,b=G.ball.p,v=G.ball.v,P=kidOpp?{sp:2.7,pw:5.4}:{sp:3.4,pw:6.6},home=[b[0]*.55,SR.hy,-1.75];
+function srAI(G,dt,kidOpp,rnd){const A=G.ai=G.ai||{wait:0,slow:0,aim:0,cool:0},H=G.hands.O,b=G.ball.p,v=G.ball.v,P=kidOpp?{sp:2.7,pw:5.4}:{sp:3.4,pw:6.6},home=[b[0]*.55,SR.hy,-2.3];
   const inMine=b[2]<0,used=(G.touch&&G.touch.O)||0,sp=Math.hypot(v[0],v[2]);let tgt=home;A.wait=Math.max(0,A.wait-dt);A.cool=Math.max(0,A.cool-dt);
   if(inMine&&!G.pen&&A.wait<=0){A.slow=sp<.45&&b[1]<.2?A.slow+dt:0;
     const may=used<2||A.slow>.9;   /* the fix: after 0.9 s of a dead ball it must play it (3rd touch = penalty to you) */
@@ -76,7 +76,7 @@ function srAI(G,dt,kidOpp,rnd){const A=G.ai=G.ai||{wait:0,slow:0,aim:0,cool:0},H
       const behind=[b[0]-dx/dl*.28,SR.hy,b[2]-dz/dl*.28];tgt=behind;
       if(A.cool<=0&&Math.hypot(H.p[0]-b[0],H.p[2]-b[2])<(H.reach||.5)*.85&&sp<3){srSlap(G,"O",[dx,dz],P.pw*(.85+(rnd?rnd():.5)*.3));A.cool=.6;A.aimSet=0;A.slapped=1}}}
   else{A.slow=0;A.aimSet=0}
-  const mx=P.sp*dt;tgt=[Math.max(-SR.W+H.r,Math.min(SR.W-H.r,tgt[0])),SR.hy,Math.max(-1.9,Math.min(-H.r,tgt[2]))];
+  const mx=P.sp*dt;tgt=[Math.max(-SR.W+H.r,Math.min(SR.W-H.r,tgt[0])),SR.hy,Math.max(-2.7,Math.min(-H.r,tgt[2]))];
   const d=[tgt[0]-H.p[0],0,tgt[2]-H.p[2]],l=Math.hypot(d[0],d[2]),st=Math.min(l,mx),np=l>1e-6?[H.p[0]+d[0]/l*st,SR.hy,H.p[2]+d[2]/l*st]:H.p.slice();
   H.v=[(np[0]-H.p[0])/dt,0,(np[2]-H.p[2])/dt];H.p=np}
 
