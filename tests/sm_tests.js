@@ -14,23 +14,23 @@ r=run([0,.1,1],[4,0,-2]);t("3  Off the side wall and back into play",r.ev.some(e
  /* now the Shadow Knight's hand slides over the box and hits it off */
  const H=a.hands.O;H.p=[1.2,R.srHandY([1.2,0,-.75],H.r),-.75];H.pp=H.p.slice();a.hands.O.p=[1.2,0,.2];const e2=R.srTick(a,1/30,null);
  t("4c A hand that goes over the box climbs onto it and can smack the ball off the top",e2.some(e=>e.k==="touch"&&e.who==="O"),e2.map(e=>e.k).join(" "))}
-r=run([1.65,.1,2.5],[0,0,-2.6]);t("5  Rolls into the gap behind a red box: stuck, dead ball",r.ev.some(e=>e.k==="stuck"&&e.where==="behind"),r.k);
+r=run([1.3,.1,2.5],[0,0,-2.6]);t("5  The red boxes are flat against the wall: a ball rolling down the side can't get behind, it hits the box",r.ev.some(e=>e.k==="box")&&!r.ev.some(e=>e.where==="behind")&&SR.bx1===SR.W,r.k);
 r=run([1.2,.1,2],[0,0,-3]);t("6  Hits the side of a box: soft, it doesn't bounce far",r.ev.some(e=>e.k==="box")&&Math.abs(r.S.p[2])<2.6,r.k);
 {const S={p:[0,.1,1],v:[0,3,-1.2]},ev=R.srRun(S,6,[],null),f=ev.filter(e=>e.k==="floor").map(e=>e.sp);t("7  Bounces lower and lower, then rolls to a stop",f.length>=2&&f.every((v,i)=>!i||v<f[i-1])&&Math.hypot(S.v[0],S.v[2])<.05,f.join(" "))}
 console.log("\nHands");
 {const outs=[1,2,3,4,5].map(s=>{const S={p:[0,.1,.5],v:[.2,0,-6]};R.srRun(S,.4,[hand("O",[0,SR.hy,-1.5])],R.srRng(s));return S.v});
  const sp=outs.map(v=>Math.hypot(v[0],v[2])),ang=outs.map(v=>Math.atan2(v[0],v[2])*180/Math.PI);
- t("8  A still hand stops a shot softly, so you can stop it and then slap it",sp.every(s=>s<2.7),sp.map(s=>s.toFixed(1)).join(" "));
+ t("8  A still glove stops a shot softly, so you can stop it and then flick it",sp.every(s=>s<2.3),sp.map(s=>s.toFixed(1)).join(" "));
  t("9  ...and it comes off at slightly different angles each time",Math.max(...ang)-Math.min(...ang)>4,ang.map(a=>a.toFixed(0)).join(" "))}
-{const S={p:[0,.1,1.6],v:[0,0,0]},ev=R.srRun(S,.05,[hand("X",[0,SR.hy,1.85],[0,0,-6])],null);t("10 A hand pushed through the ball moves it on, and it stays low",S.v[2]<-3&&S.v[1]<.6,S.v.map(v=>v.toFixed(2)).join(","))}
-{const S={p:[0,.1,1.6],v:[0,0,0]},kid=hand("X",[0,SR.hy,1.85],[0,0,-15],true),dad=hand("X",[0,SR.hy,1.85],[0,0,-15]);const a={...S,p:S.p.slice(),v:S.v.slice()},b={...S,p:S.p.slice(),v:S.v.slice()};R.srRun(a,.05,[kid],null);R.srRun(b,.05,[dad],null);
+{const S={p:[0,.1,1.6],v:[0,0,0]},ev=R.srRun(S,.05,[hand("X",[0,SR.hy,1.93],[0,0,-6])],null);t("10 A hand pushed through the ball moves it on, and it stays low",S.v[2]<-3&&S.v[1]<.6,S.v.map(v=>v.toFixed(2)).join(","))}
+{const S={p:[0,.1,1.6],v:[0,0,0]},kid=hand("X",[0,SR.hy,1.96],[0,0,-15],true),dad=hand("X",[0,SR.hy,1.93],[0,0,-15]);const a={...S,p:S.p.slice(),v:S.v.slice()},b={...S,p:S.p.slice(),v:S.v.slice()};R.srRun(a,.05,[kid],null);R.srRun(b,.05,[dad],null);
  t("11 Cass's hand is bigger and smacks a bit harder (his hidden advantage)",kid.r>dad.r&&Math.hypot(...a.v)>Math.hypot(...b.v),Math.hypot(...a.v).toFixed(1)+" vs "+Math.hypot(...b.v).toFixed(1))}
 {const mk=()=>({ball:{p:[.2,.1,1.3],v:[0,0,0]},hands:{X:{...hand("X",[.2,SR.hy,1.62]),reach:R.SR_HAND.adult.reach},O:hand("O",[0,SR.hy,-2.4])},touch:{X:0,O:0},t:0});
  let G=mk();R.srSlap(G,"X",[0,-1],6);const e=[];for(let i=0;i<10;i++)e.push(...R.srTick(G,1/60,null));const s=e.find(x=>x.slap);
- t("10b TAP: the hand slaps the ball straight at their wall, fast and low",s&&G.ball.v[2]<-5&&G.ball.p[1]<.35,JSON.stringify(G.ball.v.map(v=>+v.toFixed(2))));
+ t("10b FLICK straight up: the glove slaps the ball straight at their wall, fast and low",s&&G.ball.v[2]<-5&&G.ball.p[1]<.35,JSON.stringify(G.ball.v.map(v=>+v.toFixed(2))));
  G=mk();R.srSlap(G,"X",[1,-1],6);for(let i=0;i<10;i++)R.srTick(G,1/60,null);const ang=Math.atan2(G.ball.v[0],-G.ball.v[2])*180/Math.PI;
  t("10c FLICK: it goes the way you flicked (45 degrees right here)",Math.abs(ang-45)<4,ang.toFixed(1)+" degrees");
- G=mk();G.ball.p=[1.4,.1,.3];const e2=[];R.srSlap(G,"X",[0,-1],6);for(let i=0;i<10;i++)e2.push(...R.srTick(G,1/60,null));t("10d A slap that's nowhere near the ball doesn't touch it",!e2.some(x=>x.k==="touch"));
+ G=mk();G.ball.p=[1.3,.1,.2];const e2=[];R.srSlap(G,"X",[0,-1],6);for(let i=0;i<10;i++)e2.push(...R.srTick(G,1/60,null));t("10d A slap that's nowhere near the ball doesn't touch it",!e2.some(x=>x.k==="touch"));
  G=mk();let res=[];for(let k=0;k<3;k++){G.ball.p=[.2,.1,1.3];G.ball.v=[0,0,0];G.t+=.5;R.srSlap(G,"X",[0,-1],2);for(let i=0;i<8;i++){const ee=R.srTick(G,1/60,null);ee.filter(x=>x.slap).forEach(x=>res.push(x.res))}}
  t("10e Slaps count as touches: a 3rd one in your half is a penalty",res.join()==="ok,ok,pen"&&G.pen==="O",res.join())}
 console.log("\nRules");

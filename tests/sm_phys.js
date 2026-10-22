@@ -1,9 +1,9 @@
 /* ===== Smackerball physics (pure, no drawing). Used by the game, the Shadow Knight and the tests. =====
    A room 6 m long and 3.6 m wide, metres, y up. Dad (X) sits at the +z end, Cass (O) at the -z end, halfway is z = 0.
-   Your goal is the whole back wall behind you, up to head height. Two red boxes stand by the side walls at halfway,
-   with a gap behind them: a ball that drops behind a box, or lands on top of one, is stuck and the play is dead. */
-const SR={g:9.81,dt:1/240,br:.1,L:3,W:1.8,GH:.9,WH:2.4,bx0:.95,bx1:1.5,bz:.9,bh:.45,eFloor:.72,eWall:.78,eBox:.4,eHand:.86,drag:.06,roll:.5,hy:.11};
-const SR_HAND={kid:{r:.19,max:9.6,sp:5.5,reach:.58},adult:{r:.16,max:8.6,sp:5.5,reach:.5}};
+   Your goal is the whole back wall behind you, up to head height. Two red boxes stand against the side walls at halfway.
+   A ball that lands on top of one stays there: still in play if that half's player has a touch left, otherwise dead. */
+const SR={g:9.81,dt:1/240,br:.1,L:3,W:1.45,GH:.9,WH:2.4,bx0:.95,bx1:1.45,bz:.9,bh:.45,eFloor:.72,eWall:.78,eBox:.4,eHand:.86,drag:.06,roll:.5,hy:.11};
+const SR_HAND={kid:{r:.27,max:9.6,sp:5.5,reach:.68},adult:{r:.24,max:8.6,sp:5.5,reach:.6}};
 const SV={add:(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]],sub:(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]],mul:(a,k)=>[a[0]*k,a[1]*k,a[2]*k],dot:(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2],len:a=>Math.hypot(a[0],a[1],a[2])};
 const srOwner=p=>p[2]>0?"X":"O";            /* whose half the ball is in */
 const srWallOf=w=>w==="X"?SR.L:-SR.L;         /* the z of someone's goal wall */
@@ -30,7 +30,7 @@ function srStep(S,hands,rnd){const R=SR,dt=R.dt,ev=[],pp=S.p.slice();
       S.p=SV.add(q,SV.mul(n,R.br+1e-4));const top=n[1]>.7,sp=srBounce(S,n,top?.25:R.eBox,top?.5:.15);if(sp>.3)ev.push({k:"box",sp,top})}}
   /* hands touching the ball: a still hand stops it softly (so you can stop it, then slap it); a moving hand pushes it along, low */
   for(const H of hands||[]){const d=SV.sub(S.p,H.p),l=SV.len(d),rr=R.br+H.r;if(l<rr&&l>1e-6){let n=SV.mul(d,1/l);n=[n[0],Math.max(n[1],0),n[2]];const nl=SV.len(n)||1;n=SV.mul(n,1/nl);
-      S.p=SV.add(H.p,SV.mul(n,rr+1e-3));S.p[1]=Math.max(S.p[1],R.br);const rel=SV.sub(S.v,H.v),vn=SV.dot(rel,n);if(vn<0){const hs=Math.hypot(H.v[0],H.v[2]),e=hs>1.5?.65:.35;
+      S.p=SV.add(H.p,SV.mul(n,rr+1e-3));S.p[1]=Math.max(S.p[1],R.br);const rel=SV.sub(S.v,H.v),vn=SV.dot(rel,n);if(vn<0){const hs=Math.hypot(H.v[0],H.v[2]),e=hs>1.5?.6:.28;
         S.v=SV.add(S.v,SV.mul(n,-(1+e)*vn));S.v[1]=Math.min(S.v[1],.25+hs*.04);/* stays low */
         const a=((rnd?rnd():.5)-.5)*.2,c=Math.cos(a),s=Math.sin(a),vx=S.v[0],vz=S.v[2];S.v[0]=vx*c-vz*s;S.v[2]=vx*s+vz*c;
         const sp=SV.len(S.v);if(sp>H.max)S.v=SV.mul(S.v,H.max/sp);ev.push({k:"touch",who:H.who,sp:+sp.toFixed(2),smack:false})}}}
@@ -67,7 +67,7 @@ function srTouch(G,who){if(G.pen)return null;G.touch=G.touch||{X:0,O:0};G.touch[
 function srCross(G,to){G.touch=G.touch||{X:0,O:0};G.touch[to]=0;G.touch[to==="X"?"O":"X"]=0}
 
 /* ---- the Shadow Knight's hand. It never just gives up: with 2 touches used, if the ball sits in its half it has to hit it, and that's a penalty ---- */
-function srAI(G,dt,kidOpp,rnd){const A=G.ai=G.ai||{wait:0,slow:0,aim:0,cool:0},H=G.hands.O,b=G.ball.p,v=G.ball.v,P=kidOpp?{sp:2.7,pw:5.4}:{sp:3.4,pw:6.6},home=[b[0]*.55,SR.hy,-2.15];
+function srAI(G,dt,kidOpp,rnd){const A=G.ai=G.ai||{wait:0,slow:0,aim:0,cool:0},H=G.hands.O,b=G.ball.p,v=G.ball.v,P=kidOpp?{sp:2.7,pw:5.4}:{sp:3.4,pw:6.6},home=[b[0]*.55,SR.hy,-1.75];
   const inMine=b[2]<0,used=(G.touch&&G.touch.O)||0,sp=Math.hypot(v[0],v[2]);let tgt=home;A.wait=Math.max(0,A.wait-dt);A.cool=Math.max(0,A.cool-dt);
   if(inMine&&!G.pen&&A.wait<=0){A.slow=sp<.45&&b[1]<.2?A.slow+dt:0;
     const may=used<2||A.slow>.9;   /* the fix: after 0.9 s of a dead ball it must play it (3rd touch = penalty to you) */
@@ -76,13 +76,13 @@ function srAI(G,dt,kidOpp,rnd){const A=G.ai=G.ai||{wait:0,slow:0,aim:0,cool:0},H
       const behind=[b[0]-dx/dl*.28,SR.hy,b[2]-dz/dl*.28];tgt=behind;
       if(A.cool<=0&&Math.hypot(H.p[0]-b[0],H.p[2]-b[2])<(H.reach||.5)*.85&&sp<3){srSlap(G,"O",[dx,dz],P.pw*(.85+(rnd?rnd():.5)*.3));A.cool=.6;A.aimSet=0;A.slapped=1}}}
   else{A.slow=0;A.aimSet=0}
-  const mx=P.sp*dt;tgt=[Math.max(-SR.W+H.r,Math.min(SR.W-H.r,tgt[0])),SR.hy,Math.max(-2.3,Math.min(-H.r,tgt[2]))];
+  const mx=P.sp*dt;tgt=[Math.max(-SR.W+H.r,Math.min(SR.W-H.r,tgt[0])),SR.hy,Math.max(-1.9,Math.min(-H.r,tgt[2]))];
   const d=[tgt[0]-H.p[0],0,tgt[2]-H.p[2]],l=Math.hypot(d[0],d[2]),st=Math.min(l,mx),np=l>1e-6?[H.p[0]+d[0]/l*st,SR.hy,H.p[2]+d[2]/l*st]:H.p.slice();
   H.v=[(np[0]-H.p[0])/dt,0,(np[2]-H.p[2])/dt];H.p=np}
 
 /* ---- penalties: taken from the halfway line, same controls as Penalties (tap a spot, flick on the power bar; keeper picks an area) ----
    Worked out as if the shooter is at halfway shooting at the wall at z = -L; the game mirrors it for the other end. */
-const SR_Z=[{n:"LEFT TOP",x:-1.2,y:.68},{n:"LEFT MIDDLE",x:-1.2,y:.4},{n:"LEFT BOTTOM",x:-1.2,y:.12},{n:"CENTRE",x:0,y:.35},{n:"RIGHT TOP",x:1.2,y:.68},{n:"RIGHT MIDDLE",x:1.2,y:.4},{n:"RIGHT BOTTOM",x:1.2,y:.12}];
+const SR_Z=[{n:"LEFT TOP",x:-.95,y:.68},{n:"LEFT MIDDLE",x:-.95,y:.4},{n:"LEFT BOTTOM",x:-.95,y:.12},{n:"CENTRE",x:0,y:.35},{n:"RIGHT TOP",x:.95,y:.68},{n:"RIGHT MIDDLE",x:.95,y:.4},{n:"RIGHT BOTTOM",x:.95,y:.12}];
 const srZone=(x,y)=>{let b=0,bd=1e9;SR_Z.forEach((z,i)=>{const d=Math.hypot(x-z.x,(y-z.y)*1.6);if(d<bd){bd=d;b=i}});return b};
 const srZd=(x,y,z)=>Math.hypot(x-z.x,(y-z.y)*1.6);
 /* power bar (same bar as Penalties): green perfect; too hard flies above head height; a bit soft is slower and easier to save; far too soft rolls and stops short */
