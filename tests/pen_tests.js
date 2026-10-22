@@ -50,4 +50,14 @@ console.log("\nSave areas and the power bar (the game's rules)");
 {const p=P.PN_BAR.mid+P.PN_BAR.adult+.02;t("Cass's green area is a bit wider (his hidden advantage)",P.pnPower(p,true).q==="perfect"&&P.pnPower(p,false).q!=="perfect")}
 {/* a shot just on the border between two areas: Cass in goal gets it, Dad doesn't */const s={tx:-2.4,ty:.79,pw:1,lift:0,cu:0,kid:0},kid=P.pnRun(s,{z:2,kid:1},false),dad=P.pnRun(s,{z:2,kid:0},false);
  t("Cass in goal also saves shots right on the edge of his area",!kid.goal&&dad.goal,P.PN_Z[kid.plan.zone].n)}
+{const tg={tx:2.4,ty:.4},r=P.pnRun({...tg,cu:0,kid:0,...P.pnPower(.97,false,tg)},{z:3,kid:0},true),k=P.pnKind(r),xs=r.frames.filter(f=>f.p[2]>0).map(f=>f.p[0]);
+ t("Far too hard at a low corner: it curls out past the post",!r.goal&&(k==="wide"||k==="post")&&xs[xs.length-1]>2.4,k+" crosses at x="+(r.cross&&r.cross.x.toFixed(2)))}
+{const tg={tx:2.4,ty:.4},hard=P.pnRun({...tg,cu:0,kid:0,...P.pnPower(.66,false,tg)},{z:3,kid:0},false);t("A bit too hard: it drifts out and up from where you picked",hard.cross.x>2.45&&hard.cross.y>.45,JSON.stringify(hard.cross))}
+{const tg={tx:2.4,ty:.4},sp={...tg,cu:0,kid:0,...P.pnPower(.4,false,tg)},pf={...tg,cu:0,kid:0,...P.pnPower(P.PN_BAR.mid,false,tg)},a=P.pnRun(sp,{z:5,kid:0},false),b=P.pnRun(pf,{z:5,kid:0},false);
+ t("A bit too soft: slower, so the keeper saves it from the next area along too",!a.goal&&b.goal&&a.plan.cross&&P.pnPlan(sp,{z:5}).L.v[2]>P.pnPlan(pf,{z:5}).L.v[2],P.pnKind(a)+" vs "+P.pnKind(b))}
+{const s={tx:1.5,ty:.5,cu:0,kid:0,...P.pnPower(.05,false,{tx:1.5,ty:.5})},r=P.pnRun(s,{z:3,kid:0},true),last=r.frames[r.frames.length-1],air=r.frames.every(f=>f.p[1]<P.PN.br+.02);
+ t("Far too soft: it rolls along the grass and stops before the goal",!r.goal&&P.pnKind(r)==="short"&&last.p[2]>1&&air,"stops at z="+last.p[2].toFixed(2))}
+{let bad=0,n=0;for(let tx=-3.4;tx<=3.4;tx+=.4)for(let ty=.2;ty<=2.2;ty+=.4)for(const pb of [.3,.42,.6,.7,.9])for(let z=0;z<7;z++){n++;const tg={tx,ty},s={...tg,cu:0,kid:0,...P.pnPower(pb,false,tg)},r=P.pnRun(s,{z,kid:0},false),k=P.pnKind(r);
+  if(r.plan.save&&r.goal)bad++;if(!r.plan.save&&(k==="saved"||k==="caught"))bad++}
+ t("Across "+n+" kicks at every power: never saved without the right area, never a goal when it is",bad===0,bad+" wrong")}
 console.log(`\n${pass} passed, ${fail} failed`);if(fail)process.exit(1);

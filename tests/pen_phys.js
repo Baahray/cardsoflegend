@@ -36,7 +36,9 @@ function pnAssist(sh,kid){const soft=(v,lim,k)=>Math.sign(v)*(Math.abs(v)<lim?Ma
 function pnFree(v,w,stopZ){/* flight with no obstacles, to aim the kick */const S={p:[0,PN.br,PN.spot],v:v.slice(),w:w.slice()};for(let i=0;i<4*240;i++){pnStep(S);if(S.p[2]<=stopZ)return S.p}return S.p}
 function pnStep(S){const sp=PV.len(S.v),dt=PN.dt,a=PV.add(PV.mul(S.v,-PN.kd*sp),PV.mul(PV.cross(S.w,S.v),PN.mag));a[1]-=PN.g;S.v=PV.add(S.v,PV.mul(a,dt));S.p=PV.add(S.p,PV.mul(S.v,dt));S.w=PV.mul(S.w,1-.25*dt)}
 /* turn the kick into a starting velocity and spin. Hitting it too hard makes it rise (and maybe fly over). */
-function pnLaunch(sh,kid){const V=Math.max(9,Math.min(34,25*sh.pw)),lift=sh.lift!=null?sh.lift:Math.max(0,sh.pw-(kid?1.15:1.08))*(kid?3.5:5),T=[sh.tx,sh.ty+lift],w=[-12*Math.min(1,Math.max(0,sh.pw-.5)),-(sh.cu||0)*34,0];
+function pnLaunch(sh,kid){if(sh.roll){/* far too soft: it just rolls along the grass */const V=sh.rv||5,L=Math.hypot(sh.tx,PN.spot);return{v:[+(sh.tx/L*V).toFixed(4),0,+(-PN.spot/L*V).toFixed(4)],w:[-V/PN.br,0,0]}}
+  const sg=sh.tx>=0?1:-1,out=sh.out||0,cu=out?sg*Math.min(1,.35+out*.5):(sh.cu||0);
+  const V=Math.max(9,Math.min(34,25*sh.pw)),lift=sh.lift!=null?sh.lift:Math.max(0,sh.pw-(kid?1.15:1.08))*(kid?3.5:5),T=[sh.tx+sg*out,sh.ty+lift],w=[-12*Math.min(1,Math.max(0,sh.pw-.5)),-cu*34,0];
   const P0=[0,PN.br,PN.spot],dz=-PN.spot,tf=PN.spot/V;let v=[(T[0]-P0[0])/tf,(T[1]-P0[1])/tf+PN.g*tf/2,dz/tf];
   for(let it=0;it<6;it++){const p=pnFree(v,w,0),tt=PN.spot/Math.max(5,-v[2]);v=[v[0]+(T[0]-p[0])/tt,v[1]+(T[1]-p[1])/tt,v[2]]}
   return{v:v.map(x=>+x.toFixed(4)),w}}
@@ -72,7 +74,7 @@ function pnSim(kick,dv,kidK,rec,opt){opt=opt||{};const S={p:[0,PN.br,PN.spot],v:
       /* advertising boards and the stand stop the ball far away */
       if(S.p[2]<-4.2+G.br){S.p[2]=-4.2+G.br;if(pnBounce(S,[0,0,1],.35,.4)>.3)add("boards",1)}
       /* the grass */
-      if(S.p[1]<G.br){S.p[1]=G.br;const sp=pnBounce(S,[0,1,0],G.eGround,.5);if(sp>.6)add("ground",sp);else{S.v[1]=Math.max(0,S.v[1]);const f=1-.9*G.dt;S.v[0]*=f;S.v[2]*=f;S.w=[-S.v[2]/G.br,S.w[1]*.97,S.v[0]/G.br]}}}
+      if(S.p[1]<G.br){S.p[1]=G.br;const sp=pnBounce(S,[0,1,0],G.eGround,.5);if(sp>.6)add("ground",sp);else{S.v[1]=Math.max(0,S.v[1]);const f=1-.9*G.dt;S.v[0]*=f;S.v[2]*=f;S.w=[S.v[2]/G.br,S.w[1]*.97,-S.v[0]/G.br]}}}
     /* where it crossed the goal line (for wide / over) */
     if(!cross&&pp[2]>0&&S.p[2]<=0){const k=pp[2]/(pp[2]-S.p[2]);cross={x:+(pp[0]+(S.p[0]-pp[0])*k).toFixed(3),y:+(pp[1]+(S.p[1]-pp[1])*k).toFixed(3),t}}
     /* goal: the WHOLE ball over the line, between the posts and under the bar. Counted once. */
@@ -92,12 +94,21 @@ const PN_Z=[{n:"LEFT TOP",x:-2.4,y:1.85},{n:"LEFT MIDDLE",x:-2.4,y:1.15},{n:"LEF
 const pnZone=(x,y)=>{let b=0,bd=1e9;PN_Z.forEach((z,i)=>{const d=Math.hypot(x-z.x,y-z.y);if(d<bd){bd=d;b=i}});return b};
 /* power bar: 0 = empty, 1 = full. The green middle is perfect. Cass's green is a bit wider. */
 const PN_BAR={mid:.56,kid:.11,adult:.075};
-function pnPower(p,kid){const h=kid?PN_BAR.kid:PN_BAR.adult,top=PN_BAR.mid+h,bot=PN_BAR.mid-h;
-  if(p>=bot&&p<=top)return{pw:1,lift:0,q:"perfect"};if(p>top){const e=p-top;return{pw:+(1+e*.7).toFixed(3),lift:+(e*4.6).toFixed(3),q:e<.1?"hard":"too hard"}}
-  const e=bot-p;return{pw:+Math.max(.5,1-e*1.15).toFixed(3),lift:+(-e*1.4).toFixed(3),q:e<.1?"soft":"too soft"}}
+/* what the power does:
+   green  = perfect, goes exactly where you picked
+   yellow above = a bit hard: rises and drifts out a little (can clip the post or bar)
+   red top = far too hard: high shots fly over the bar, low or side shots curl out past the post
+   yellow below = a bit soft: slower, so the keeper can save it from the next area along too
+   red bottom = far too soft: it rolls along the grass and doesn't even reach the goal */
+function pnPower(p,kid,tg){const h=kid?PN_BAR.kid:PN_BAR.adult,top=PN_BAR.mid+h,bot=PN_BAR.mid-h,tx=tg?tg.tx:0,ty=tg?tg.ty:1,f=v=>+v.toFixed(3);
+  if(p>=bot&&p<=top)return{pw:1,lift:0,out:0,slack:0,q:"perfect"};
+  if(p>top){const e=p-top;if(e<.1)return{pw:f(1+e*.6),lift:f(e*2.4),out:f(e*2.6),slack:0,q:"hard"};
+    return ty>1.25||Math.abs(tx)<1?{pw:f(1.1+e*.4),lift:f(.95+e*3),out:f(e*.8),slack:0,q:"too hard"}:{pw:f(1.1+e*.4),lift:.15,out:f(.75+e*3),slack:0,q:"too hard"}}
+  const e=bot-p;if(e<.12)return{pw:f(Math.max(.68,1-e*2.6)),lift:f(-e*.8),out:0,slack:.95,q:"soft"};
+  return{pw:.3,lift:0,out:0,slack:0,roll:1,rv:f(Math.max(5.6,7.3-(e-.12)*5)),q:"too soft"}}
 /* a whole kick decided: where it would cross the line, and whether the keeper's area was the closest one */
-function pnPlan(s,d){const L=pnLaunch(s,s.kid),c=pnFree(L.v,L.w,0),cross={x:c[0],y:c[1]},inG=Math.abs(c[0])<PN.gw-.03&&c[1]<PN.gh-.03&&c[1]>0,zi=pnZone(c[0],c[1]),kz=PN_Z[d.z];
-  const near=zi===d.z||(d.kid&&Math.hypot(c[0]-kz.x,c[1]-kz.y)-Math.hypot(c[0]-PN_Z[zi].x,c[1]-PN_Z[zi].y)<.35),save=inG&&near;
+function pnPlan(s,d){if(s.roll){const L=pnLaunch(s,s.kid);return{L,cross:null,zone:-1,save:false,dv:{x:0,y:1},opt:{ghost:1}}}const L=pnLaunch(s,s.kid),c=pnFree(L.v,L.w,0),cross={x:c[0],y:c[1]},inG=Math.abs(c[0])<PN.gw-.03&&c[1]<PN.gh-.03&&c[1]>0,zi=pnZone(c[0],c[1]),kz=PN_Z[d.z];
+  const near=zi===d.z||Math.hypot(c[0]-kz.x,c[1]-kz.y)-Math.hypot(c[0]-PN_Z[zi].x,c[1]-PN_Z[zi].y)<(s.slack||0)+(d.kid?.35:0),save=inG&&near;
   return{L,cross,zone:zi,save,dv:save?{x:+c[0].toFixed(3),y:+Math.max(.2,c[1]).toFixed(3)}:{x:kz.x,y:kz.y},opt:save?{save:1}:{ghost:1}}}
 function pnRun(s,d,rec){const P=pnPlan(s,d);let r=pnSim(P.L,P.dv,!!d.kid,rec,P.opt);
   /* right area: the keeper must get it. If his first dive misses (rare, e.g. low under him), he goes again slightly differently */
