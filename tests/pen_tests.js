@@ -36,4 +36,18 @@ console.log("\nRules");
 {let reach=0;for(let tx=0;tx<=3.6;tx+=.05){const k=P.pnKeeper({x:tx,y:.4},1,false);reach=Math.max(reach,k.J.handL[0])}t("Corners right by the post are out of the keeper's reach",reach<3.3,"reach "+reach.toFixed(2))}
 {const kid=P.pnKeeper({x:3.3,y:.4},1,true).J.handL[0],dad=P.pnKeeper({x:3.3,y:.4},1,false).J.handL[0];t("Cass in goal reaches a bit further (his hidden advantage)",kid>dad,kid.toFixed(2)+" vs "+dad.toFixed(2))}
 {const a=P.pnAssist({tx:4.5,ty:3.5,pw:1,cu:0},true),b=P.pnAssist({tx:4.5,ty:3.5,pw:1,cu:0},false);t("Cass's wild aims are pulled back towards the goal more than Dad's",a.tx<b.tx&&a.ty<b.ty,JSON.stringify([a,b]))}
+console.log("\nSave areas and the power bar (the game's rules)");
+{const pk=(z,tx,ty)=>P.pnRun({tx,ty,pw:1,lift:0,cu:0,kid:0},{z,kid:0},false);let ok=0;P.PN_Z.forEach((Z,i)=>{const r=pk(i,Z.x,Z.y);if(!r.goal)ok++});
+ t("Keeper picks the right area: every one of the 7 areas is saved",ok===7,ok+"/7")}
+{let ok=0;P.PN_Z.forEach((Z,i)=>{const r=P.pnRun({tx:Z.x,ty:Z.y,pw:1,lift:0,cu:0,kid:0},{z:(i+2)%7,kid:0},false);if(r.goal)ok++});t("Keeper picks a different area: it's a goal",ok===7,ok+"/7")}
+{let bad=0,n=0;for(let tx=-3.5;tx<=3.5;tx+=.25)for(let ty=.15;ty<=2.3;ty+=.25)for(let z=0;z<7;z++){n++;const s={tx,ty,pw:1,lift:0,cu:0,kid:0},r=P.pnRun(s,{z,kid:0},false),k=P.pnKind(r);
+  if(r.plan.save&&r.goal)bad++;if(!r.plan.save&&(k==="saved"||k==="caught"))bad++}
+ t("Across "+n+" kicks: saved exactly when the shot is closest to the keeper's area",bad===0,bad+" wrong")}
+{const r=P.pnRun({tx:-2.9,ty:.3,pw:1,lift:0,cu:0,kid:0},{z:2,kid:0},true);t("A save really happens in the physics: the keeper's gloves or body touch the ball",r.ev.some(e=>e.k==="keeper"||e.k==="catch"),seq(r))}
+{const g=P.pnPower(P.PN_BAR.mid,false),hi=P.pnPower(.98,false),lo=P.pnPower(.05,false);t("Power bar: green is perfect, top is too hard, bottom is too soft",g.q==="perfect"&&g.lift===0&&hi.q==="too hard"&&hi.lift>1&&lo.q==="too soft"&&lo.pw<.7,JSON.stringify([g,hi,lo]))}
+{const s={tx:0,ty:1.6,cu:0,kid:0},a=P.pnRun({...s,...P.pnPower(P.PN_BAR.mid,false)},{z:0,kid:0},false),b=P.pnRun({...s,...P.pnPower(1,false)},{z:0,kid:0},false);
+ t("Hit it in the green and it goes where you picked; too hard and it flies over",a.goal&&!b.goal&&(P.pnKind(b)==="over"||P.pnKind(b)==="bar"),P.pnKind(a)+" / "+P.pnKind(b))}
+{const p=P.PN_BAR.mid+P.PN_BAR.adult+.02;t("Cass's green area is a bit wider (his hidden advantage)",P.pnPower(p,true).q==="perfect"&&P.pnPower(p,false).q!=="perfect")}
+{/* a shot just on the border between two areas: Cass in goal gets it, Dad doesn't */const s={tx:-2.4,ty:.79,pw:1,lift:0,cu:0,kid:0},kid=P.pnRun(s,{z:2,kid:1},false),dad=P.pnRun(s,{z:2,kid:0},false);
+ t("Cass in goal also saves shots right on the edge of his area",!kid.goal&&dad.goal,P.PN_Z[kid.plan.zone].n)}
 console.log(`\n${pass} passed, ${fail} failed`);if(fail)process.exit(1);

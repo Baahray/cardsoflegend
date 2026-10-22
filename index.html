@@ -384,7 +384,13 @@ body.dfon{overflow:hidden}
 .hparr{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none;opacity:0}.hparr.on{opacity:1}.hparr line{stroke-width:7;stroke-linecap:round;stroke-dasharray:2 13}
 .hptip{position:absolute;left:0;right:0;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:2;text-align:center;color:#fff;font:800 16px 'Outfit',sans-serif;text-shadow:0 2px 6px rgba(0,0,0,.7);pointer-events:none}.hptip.my{animation:hpt 1.2s ease-in-out infinite}@keyframes hpt{50%{transform:translateY(-5px)}}
 .hpload{position:absolute;inset:0;z-index:3;display:flex;align-items:center;justify-content:center;text-align:center;color:#fff;font:800 18px 'Outfit',sans-serif;background:linear-gradient(#2f7fe0,#bfe4ff);padding:30px}
-.hplv:empty{display:none}.pkdots{position:absolute;top:calc(36px + env(safe-area-inset-top,0px));left:64px;right:12px;z-index:2;display:flex;justify-content:space-between;pointer-events:none}.pkdots span{display:flex;gap:4px}
+.hplv:empty{display:none}.pkz{position:absolute;left:50%;bottom:calc(58px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:3;display:none;gap:6px;padding:8px 8px 10px;border:5px solid #fff;border-bottom:none;border-radius:6px 6px 0 0;background:rgba(10,20,40,.4)}.pkz.on{display:flex}
+.pkzc{display:flex;flex-direction:column;gap:6px}.pkz button{width:86px;height:48px;border-radius:10px;border:2px solid rgba(255,255,255,.65);background:rgba(20,30,60,.72);color:#fff;font:800 11px 'Outfit',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
+.pkz button b{font-size:19px;line-height:1}.pkz button.on{background:#2ef26b;color:#063;border-color:#fff}.pkzm button{height:156px;width:76px}
+.pkbar{position:absolute;right:14px;top:56%;height:27%;width:30px;z-index:3;display:none}.pkbar.on{display:block}.pkbg{position:absolute;inset:0;border-radius:17px;border:3px solid #fff;box-shadow:0 4px 14px rgba(0,0,0,.4)}
+.pkn{position:absolute;left:-10px;right:-10px;height:8px;background:#fff;border-radius:4px;box-shadow:0 0 0 2px #111,0 0 10px #000;transform:translateY(50%)}.pkbar span{position:absolute;top:100%;left:50%;transform:translateX(-50%);font:900 11px 'Outfit',sans-serif;color:#fff;margin-top:6px;text-shadow:0 1px 3px #000}
+.pkok{position:absolute;right:42px;transform:translateY(50%);font:900 11px 'Outfit',sans-serif;color:#2ef26b;text-shadow:0 1px 3px #000;white-space:nowrap}
+.pkdots{position:absolute;top:calc(36px + env(safe-area-inset-top,0px));left:64px;right:12px;z-index:2;display:flex;justify-content:space-between;pointer-events:none}.pkdots span{display:flex;gap:4px}
 .pkdots i{width:11px;height:11px;border-radius:50%;background:rgba(255,255,255,.25);border:1px solid rgba(255,255,255,.4)}.pkdots i.g{background:#2ef26b}.pkdots i.m{background:#ff4d4d}
 .g2ov{position:absolute;inset:0;z-index:4;background:rgba(10,8,30,.78);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px}
 </style></head><body><main>
@@ -3156,7 +3162,7 @@ const HP_SAY={swish:"SWISH!",bank:"BANK SHOT!","roll-in":"ROLLED IN!","rim-in":"
 const HP_CAMS=["BEHIND","CLOSE-UP","FRONT","TOP-DOWN","SIDE LEFT","SIDE RIGHT","WIDE","DIAGONAL","LOW","HIGH"];
 const hpNew=()=>({id:Date.now(),n:0,sh:[],w:""});
 let HPA=null,HPL=-1,HPT0=0,HPR=null,hpCamI=0,HPDRAG=null;
-try{hpCamI=Math.max(0,Math.min(9,+localStorage.getItem("hpcam")||0))}catch(_){}
+/* one fixed view from behind the ball */
 function hpTurn(d){return d.n%2===0?"X":"O"}
 function hpScore(d,upto){const s={X:0,O:0};(d.sh||[]).forEach((q,i)=>{if(q.ok&&(upto==null||i<upto))s[q.p]++});return s}
 function hpDone(d){const s=hpScore(d),n=d.n;if(n<10||n%2)return null;return s.X===s.O?null:(s.X>s.O?"X":"O")}
@@ -3168,11 +3174,8 @@ function hpThree(cb){if(window.THREE)return cb();if(hpThree.q){hpThree.q.push(cb
 
 function vHoop(){const d=HPD;if(!d){GD("hoop").set(hpNew());return}
   g2Shell("hpc",`<div class="g2top" id="g2t"></div><div class="g2msg" id="g2m"></div><div class="hplv" id="hplv"></div>
-    <button class="hpcam" id="hpcam" aria-label="Camera">🎥 <span id="hpcamn">${HP_CAMS[hpCamI]}</span></button><div class="hpcm" id="hpcm">${HP_CAMS.map((c,i)=>`<button data-hpc="${i}">${c}</button>`).join("")}</div>
     <svg class="hparr" id="hparr"><line id="hparl" x1="0" y1="0" x2="0" y2="0"/><circle id="hparc" r="10"/></svg><div class="hptip" id="hptip"></div><div class="hpload" id="hpload">Loading the court…</div>`);
   HPL=(d.sh||[]).length;HPA=null;HPT0=performance.now();HPDRAG=null;
-  $("#hpcam").onclick=e=>{e.stopPropagation();$("#hpcm").classList.toggle("on")};
-  document.querySelectorAll("[data-hpc]").forEach(b=>b.onclick=e=>{e.stopPropagation();hpCamI=+b.dataset.hpc;try{localStorage.setItem("hpcam",hpCamI)}catch(_){}$("#hpcamn").textContent=HP_CAMS[hpCamI];$("#hpcm").classList.remove("on");sfx("tap")});
   hpThree(()=>{if(!$("#hpc"))return;const L=$("#hpload");if(L)L.remove();try{hp3Init()}catch(e){console.error(e);const m=document.createElement("div");m.className="hpload";m.textContent="3D isn't working on this phone.";$("#hpc").appendChild(m);return}
     g2Loop(hp3Frame);hpUpd()});
   hpUpd()}
@@ -3181,7 +3184,7 @@ function vHoop(){const d=HPD;if(!d){GD("hoop").set(hpNew());return}
 function hpSwipeVals(dx,dy,H){const ref=Math.min(H,820)*.3,raw=Math.max(0,-dy)/ref,an=Math.atan2(dx,Math.max(1,-dy))*180/Math.PI*.6,cfg=hpRound(HPD?HPD.n:0);
   return{raw,rawAn:an,a:hpAssist(raw,an,G2K(),cfg)}}
 function hpInput(c){
-  c.onpointerdown=e=>{const D=HPD;$("#hpcm")&&$("#hpcm").classList.remove("on");if(!D||!HPR||HPA||HPR.reset>0||hpTurn(D)!==me()||D.w||hpDone(D))return;
+  c.onpointerdown=e=>{const D=HPD;if(!D||!HPR||HPA||HPR.reset>0||hpTurn(D)!==me()||D.w||hpDone(D))return;
     HPDRAG={x:e.clientX,y:e.clientY,cx:e.clientX,cy:e.clientY};try{c.setPointerCapture(e.pointerId)}catch(_){}hpArrow()};
   c.onpointermove=e=>{if(!HPDRAG)return;HPDRAG.cx=e.clientX;HPDRAG.cy=e.clientY;hpArrow()};
   c.onpointerup=c.onpointercancel=e=>{if(!HPDRAG)return;const S_=HPDRAG;HPDRAG=null;hpArrow();const D=HPD,r=c.getBoundingClientRect();if(!D||HPA||hpTurn(D)!==me())return;
@@ -3346,16 +3349,18 @@ function hp3Frame(dt){if(!HPR||!HPD)return;const T=THREE,U=HPR.scene.userData,d=
 const PN={g:9.81,dt:1/240,br:.11,mass:.43,kd:.0135,mag:.02,spot:11,gw:3.66,gh:2.44,postR:.062,netD:1.9,eGround:.58,ePost:.62,eNet:.12,eBody:.3,eHand:.45,kz:.42};
 PN.I=2/3*PN.mass*PN.br*PN.br;
 /* keeper: Cass gets a slightly quicker, longer dive (his hidden advantage) */
+/* when the keeper picked the right save area he goes early and gets there in time; otherwise the ball goes past him */
+const PN_KSAVE={pre:.3,T:.48,travel:3.3,catchV:40};
 const PN_KP={kid:{pre:.1,T:.56,travel:2.1,catchV:21},adult:{pre:.09,T:.57,travel:1.8,catchV:19}};
 const PV={add:(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]],sub:(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]],mul:(a,k)=>[a[0]*k,a[1]*k,a[2]*k],dot:(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2],
   cross:(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]],len:a=>Math.hypot(a[0],a[1],a[2]),lerp:(a,b,k)=>[a[0]+(b[0]-a[0])*k,a[1]+(b[1]-a[1])*k,a[2]+(b[2]-a[2])*k]};
 const pnEase=s=>s<=0?0:s>=1?1:s*s*(3-2*s);
 /* The keeper's body at time t (t = 0 is the kick). dv = where he dives to on the goal {x,y}. Returns spheres for the physics and joints for drawing. */
-function pnKeeper(dv,t,kid){const P=kid?PN_KP.kid:PN_KP.adult,s=pnEase((t+P.pre)/P.T),z=PN.kz,H0=[0,.98],T=[dv.x,Math.max(.15,Math.min(2.6,dv.y))];
+function pnKeeper(dv,t,kid){const P=typeof kid==='object'?kid:kid?PN_KP.kid:PN_KP.adult,s=pnEase((t+P.pre)/P.T),z=PN.kz,H0=[0,.98],T=[dv.x,Math.max(.15,Math.min(2.6,dv.y))];
   let hip,u,hands,mid=Math.abs(T[0])<.75;
   if(mid){/* stays in the middle: steps, crouches or jumps, and brings the gloves to the ball */
-    const hy=.98+(T[1]>1.75?(T[1]-1.75)*.75:T[1]<.55?-.32:0)*s;hip=[T[0]*.45*s,hy];u=[0,1];
-    const sh=[hip[0],hip[1]+.55],ready=[[sh[0]-.32,hip[1]+.25],[sh[0]+.32,hip[1]+.25]],tg=(()=>{const d=[T[0]-sh[0],T[1]-sh[1]],l=Math.hypot(d[0],d[1]),m=Math.min(l,.78);return l>1e-6?[sh[0]+d[0]/l*m,sh[1]+d[1]/l*m]:sh})();
+    const hy=.98+(T[1]>1.75?(T[1]-1.75)*.75:T[1]<.55?-.5:T[1]<.9?-.25:0)*s;hip=[T[0]*.45*s,hy];u=[0,1];
+    const sh=[hip[0],hip[1]+.55],ready=[[sh[0]-.32,hip[1]+.25],[sh[0]+.32,hip[1]+.25]],tg=(()=>{const d=[T[0]-sh[0],T[1]-sh[1]],l=Math.hypot(d[0],d[1]),m=Math.min(l,.86);return l>1e-6?[sh[0]+d[0]/l*m,sh[1]+d[1]/l*m]:sh})();
     hands=ready.map((r,i)=>[r[0]+(tg[0]+(i?.1:-.1)-r[0])*s,r[1]+(tg[1]-r[1])*s])}
   else{/* full dive: the body flies along the line from his hips towards the target, arms stretched out in front */
     const d=[T[0]-H0[0],T[1]-H0[1]],L=Math.hypot(d[0],d[1]),n=[d[0]/L,d[1]/L],go=Math.max(0,Math.min(P.travel,L-1.22)),hf=[H0[0]+n[0]*go,Math.max(.32,H0[1]+n[1]*go)],
@@ -3376,7 +3381,7 @@ function pnAssist(sh,kid){const soft=(v,lim,k)=>Math.sign(v)*(Math.abs(v)<lim?Ma
 function pnFree(v,w,stopZ){/* flight with no obstacles, to aim the kick */const S={p:[0,PN.br,PN.spot],v:v.slice(),w:w.slice()};for(let i=0;i<4*240;i++){pnStep(S);if(S.p[2]<=stopZ)return S.p}return S.p}
 function pnStep(S){const sp=PV.len(S.v),dt=PN.dt,a=PV.add(PV.mul(S.v,-PN.kd*sp),PV.mul(PV.cross(S.w,S.v),PN.mag));a[1]-=PN.g;S.v=PV.add(S.v,PV.mul(a,dt));S.p=PV.add(S.p,PV.mul(S.v,dt));S.w=PV.mul(S.w,1-.25*dt)}
 /* turn the kick into a starting velocity and spin. Hitting it too hard makes it rise (and maybe fly over). */
-function pnLaunch(sh,kid){const V=Math.max(9,Math.min(34,25*sh.pw)),lift=Math.max(0,sh.pw-(kid?1.15:1.08))*(kid?3.5:5),T=[sh.tx,sh.ty+lift],w=[-12*Math.min(1,Math.max(0,sh.pw-.5)),-(sh.cu||0)*34,0];
+function pnLaunch(sh,kid){const V=Math.max(9,Math.min(34,25*sh.pw)),lift=sh.lift!=null?sh.lift:Math.max(0,sh.pw-(kid?1.15:1.08))*(kid?3.5:5),T=[sh.tx,sh.ty+lift],w=[-12*Math.min(1,Math.max(0,sh.pw-.5)),-(sh.cu||0)*34,0];
   const P0=[0,PN.br,PN.spot],dz=-PN.spot,tf=PN.spot/V;let v=[(T[0]-P0[0])/tf,(T[1]-P0[1])/tf+PN.g*tf/2,dz/tf];
   for(let it=0;it<6;it++){const p=pnFree(v,w,0),tt=PN.spot/Math.max(5,-v[2]);v=[v[0]+(T[0]-p[0])/tt,v[1]+(T[1]-p[1])/tt,v[2]]}
   return{v:v.map(x=>+x.toFixed(4)),w}}
@@ -3385,18 +3390,18 @@ function pnBounce(S,n,e,mu,vel){const rv=PV.sub(S.v,vel||[0,0,0]),r=PV.mul(n,-PN
   if(l>1e-6){const jt=Math.min(l*PN.mass/2.5,mu*(1+e)*Math.abs(vn)*PN.mass),J=PV.mul(vt,-jt/l);S.v=PV.add(S.v,PV.mul(J,1/PN.mass));S.w=PV.add(S.w,PV.mul(PV.cross(r,J),1/PN.I))}return -vn}
 function pnSeg(p,a,b){const ab=PV.sub(b,a),k=Math.max(0,Math.min(1,PV.dot(PV.sub(p,a),ab)/PV.dot(ab,ab)));return PV.add(a,PV.mul(ab,k))}
 /* run the whole kick. kick = launch from pnLaunch, dv = keeper's dive target, kidK = is the keeper Cass */
-function pnSim(kick,dv,kidK,rec){const S={p:[0,PN.br,PN.spot],v:kick.v.slice(),w:kick.w.slice()},ev=[],fr=[],G=PN,KP=kidK?PN_KP.kid:PN_KP.adult;
+function pnSim(kick,dv,kidK,rec,opt){opt=opt||{};const S={p:[0,PN.br,PN.spot],v:kick.v.slice(),w:kick.w.slice()},ev=[],fr=[],G=PN,KP=opt.save?PN_KSAVE:kidK?PN_KP.kid:PN_KP.adult;
   let t=0,goal=false,goalT=-1,caught=null,rest=0,cross=null,prevK=null,touched=false;
   const add=(k,sp,x)=>{const e=ev[ev.length-1];if(e&&e.k===k&&t-e.t2<.08){e.t2=t;return}ev.push({k,t,t2:t,sp:+sp.toFixed(2),...(x||{})})};
   const posts=[[[-G.gw-G.postR,0,0],[-G.gw-G.postR,G.gh+G.postR,0],"post"],[[G.gw+G.postR,0,0],[G.gw+G.postR,G.gh+G.postR,0],"post"],[[-G.gw-G.postR,G.gh+G.postR,0],[G.gw+G.postR,G.gh+G.postR,0],"bar"]];
   for(let i=0;i<240*5;i++){t=i*G.dt;const pp=S.p.slice();
-    const K=pnKeeper(dv,t,kidK);if(!prevK)prevK=K;
+    const K=pnKeeper(dv,t,KP);if(!prevK)prevK=K;
     if(caught){/* held in the keeper's gloves */const c=K.J[caught.at];S.p=PV.add(c,caught.off);S.v=PV.mul(PV.sub(S.p,pp),1/G.dt)}
     else{pnStep(S);
       /* posts and crossbar: round bars */
       for(const [a,b,k] of posts){const q=pnSeg(S.p,a,b),d=PV.sub(S.p,q),l=PV.len(d);if(l<G.br+G.postR){const n=PV.mul(d,1/l);S.p=PV.add(q,PV.mul(n,G.br+G.postR+1e-4));const sp=pnBounce(S,n,G.ePost,.25);if(sp>.3)add(k,sp,{x:+q[0].toFixed(2),y:+q[1].toFixed(2)})}}
       /* keeper: every body part is a moving ball shape */
-      for(let j=0;j<K.parts.length;j++){const P=K.parts[j],d=PV.sub(S.p,P.c),l=PV.len(d);if(l<G.br+P.r&&l>1e-6){const n=PV.mul(d,1/l),vel=PV.mul(PV.sub(P.c,prevK.parts[j].c),1/G.dt),rel=PV.len(PV.sub(S.v,vel));
+      for(let j=0;j<(opt.ghost?0:K.parts.length);j++){const P=K.parts[j],d=PV.sub(S.p,P.c),l=PV.len(d);if(l<G.br+P.r&&l>1e-6){const n=PV.mul(d,1/l),vel=PV.mul(PV.sub(P.c,prevK.parts[j].c),1/G.dt),rel=PV.len(PV.sub(S.v,vel));
         S.p=PV.add(P.c,PV.mul(n,G.br+P.r+1e-4));
         const at=P.k==="hand"?(j===0?"handL":"handR"):P.k==="body"&&j>=4&&j<=6?"chest":null;
         if(!goal&&at&&rel<KP.catchV*(P.k==="hand"?.8:1)&&S.p[2]>-.05){caught={at,off:PV.sub(S.p,K.J[at])};S.v=vel;S.w=PV.mul(S.w,.1);add("catch",rel);touched=true;break}
@@ -3427,16 +3432,31 @@ function pnKind(r){const c=r.cross,hit=r.ev.filter(e=>e.k!=="ground"&&e.k!=="net
     if(c&&Math.abs(c.x)>2.3&&c.y>1.5)return"top-corner";if(c&&Math.abs(c.x)>2.3&&c.y<.7)return"low-corner";if(c&&Math.abs(c.x)<1)return"middle";return"goal"}
   if(r.caught)return"caught";if(f&&f.k==="keeper")return"saved";if(f&&f.k==="post")return"post";if(f&&f.k==="bar")return"bar";
   if(c){if(Math.abs(c.x)>=PN.gw)return c.y>=PN.gh?"over":"wide";if(c.y>=PN.gh)return"over"}return"short"}
-if(typeof module!=="undefined")module.exports={PN,PN_KP,pnKeeper,pnAssist,pnLaunch,pnSim,pnKind,pnStep};
+/* ---- the 7 save areas, as the SHOOTER sees the goal (minus x = shooter's left) ---- */
+const PN_Z=[{n:"LEFT TOP",x:-2.4,y:1.85},{n:"LEFT MIDDLE",x:-2.4,y:1.15},{n:"LEFT BOTTOM",x:-2.4,y:.42},{n:"CENTRE",x:0,y:1.05},{n:"RIGHT TOP",x:2.4,y:1.85},{n:"RIGHT MIDDLE",x:2.4,y:1.15},{n:"RIGHT BOTTOM",x:2.4,y:.42}];
+const pnZone=(x,y)=>{let b=0,bd=1e9;PN_Z.forEach((z,i)=>{const d=Math.hypot(x-z.x,y-z.y);if(d<bd){bd=d;b=i}});return b};
+/* power bar: 0 = empty, 1 = full. The green middle is perfect. Cass's green is a bit wider. */
+const PN_BAR={mid:.56,kid:.11,adult:.075};
+function pnPower(p,kid){const h=kid?PN_BAR.kid:PN_BAR.adult,top=PN_BAR.mid+h,bot=PN_BAR.mid-h;
+  if(p>=bot&&p<=top)return{pw:1,lift:0,q:"perfect"};if(p>top){const e=p-top;return{pw:+(1+e*.7).toFixed(3),lift:+(e*4.6).toFixed(3),q:e<.1?"hard":"too hard"}}
+  const e=bot-p;return{pw:+Math.max(.5,1-e*1.15).toFixed(3),lift:+(-e*1.4).toFixed(3),q:e<.1?"soft":"too soft"}}
+/* a whole kick decided: where it would cross the line, and whether the keeper's area was the closest one */
+function pnPlan(s,d){const L=pnLaunch(s,s.kid),c=pnFree(L.v,L.w,0),cross={x:c[0],y:c[1]},inG=Math.abs(c[0])<PN.gw-.03&&c[1]<PN.gh-.03&&c[1]>0,zi=pnZone(c[0],c[1]),kz=PN_Z[d.z];
+  const near=zi===d.z||(d.kid&&Math.hypot(c[0]-kz.x,c[1]-kz.y)-Math.hypot(c[0]-PN_Z[zi].x,c[1]-PN_Z[zi].y)<.35),save=inG&&near;
+  return{L,cross,zone:zi,save,dv:save?{x:+c[0].toFixed(3),y:+Math.max(.2,c[1]).toFixed(3)}:{x:kz.x,y:kz.y},opt:save?{save:1}:{ghost:1}}}
+function pnRun(s,d,rec){const P=pnPlan(s,d);let r=pnSim(P.L,P.dv,!!d.kid,rec,P.opt);
+  /* right area: the keeper must get it. If his first dive misses (rare, e.g. low under him), he goes again slightly differently */
+  if(P.save&&r.goal)for(const o of [[0,-.25],[0,.25],[.2,0],[-.2,0],[0,-.5]]){const dv={x:P.dv.x+o[0],y:Math.max(.12,P.dv.y+o[1])},r2=pnSim(P.L,dv,!!d.kid,rec,P.opt);if(!r2.goal){r=r2;P.dv=dv;break}}
+  r.plan=P;return r}
+if(typeof module!=="undefined")module.exports={PN,PN_KP,PN_KSAVE,PN_Z,PN_BAR,pnZone,pnPower,pnPlan,pnRun,pnFree,pnKeeper,pnAssist,pnLaunch,pnSim,pnKind,pnStep};
 
-/* ---------------- PENALTIES 3D: one shoots, one saves, then swap. 5 kicks each, then sudden death. ----------------
-   The shooter swipes from the ball to the spot in the goal (a fast swipe hits it harder). The keeper taps where to dive.
-   Both choose without seeing the other's choice, then both phones play the same kick from pnSim (real physics above). */
+/* ---------------- PENALTIES 3D: one shoots, one saves, then swap. 5 kicks each, then sudden death. You always see it through your own eyes. ----------------
+   Shooter: tap the spot in the goal, then flick up when the power bar is GREEN.
+   Keeper: pick one of 7 save areas. If the shot is closest to your area, you save it.
+   Both choose without seeing the other's choice, then both phones play the same kick (pnRun: real physics, see above). */
 const PK_SAY={"top-corner":"TOP CORNER!","low-corner":"BOTTOM CORNER!","middle":"DOWN THE MIDDLE!","goal":"GOAL!","post-in":"IN OFF THE POST!","bar-in":"OFF THE BAR AND IN!","keeper-in":"THROUGH HIS GLOVES!",
   caught:"WHAT A CATCH!",saved:"SAVED!",post:"OFF THE POST!",bar:"OFF THE CROSSBAR!",wide:"WIDE!",over:"OVER THE BAR!",short:"TOO SOFT!"};
-const PK_CAMS=["BEHIND","KEEPER","TV","SIDE","HIGH","GOAL CAM","LOW","TOP-DOWN","CLOSE","DIAGONAL"];
-let PKD=null,PKA=null,PKL=-1,PKR=null,pkCamI=0,PKIN=null,pkBotT=0,pkResN=-1;GV.pen=v=>{PKD=v};
-try{pkCamI=Math.max(0,Math.min(9,+localStorage.getItem("pkcam")||0))}catch(_){}
+let PKD=null,PKA=null,PKL=-1,PKR=null,PKIN=null,pkBotT=0,pkResN=-1,PKSPOT=null,PKBAR0=0;GV.pen=v=>{PKD=v};
 Object.assign(GNAME,{pen:"PENALTIES"});
 const pkNew=()=>({id:Date.now(),n:0,res:[],s:null,d:null,w:""});
 const pkShooter=n=>n%2?"O":"X",pkKeeperOf=n=>n%2?"X":"O";
@@ -3445,20 +3465,21 @@ function pkScore(d,upto){const s={X:0,O:0},k={X:0,O:0};(d.res||[]).forEach((r,i)
 /* who has won? Stops early when one side can't catch up, then sudden death in pairs */
 function pkDone(d){const n=(d.res||[]).length,{s,k}=pkScore(d);if(n<10){const lx=5-k.X,lo=5-k.O;if(s.X+lx<s.O)return"O";if(s.O+lo<s.X)return"X";return null}
   if(n%2)return null;return s.X===s.O?null:s.X>s.O?"X":"O"}
-function pkResolve(n,s,d){const r=pnSim(pnLaunch(s,s.kid),{x:d.x,y:d.y},d.kid,false);
-  return{n,sp:pkShooter(n),s:{tx:s.tx,ty:s.ty,pw:s.pw,cu:s.cu,kid:s.kid?1:0},d:{x:d.x,y:d.y,kid:d.kid?1:0},ok:r.goal,k:pnKind(r)}}
+function pkResolve(n,s,d){const r=pnRun(s,d,false);
+  return{n,sp:pkShooter(n),s:{tx:s.tx,ty:s.ty,pw:s.pw,lift:s.lift,cu:0,q:s.q,kid:s.kid?1:0},d:{z:d.z,kid:d.kid?1:0},ok:r.goal,k:pnKind(r),sz:r.plan.zone}}
 /* send my choice. If the other one has already chosen, work out the kick straight away (same answer on both phones) */
 function pkSubmit(part,val){const D=PKD;if(!D||pkDone(D))return;const n=(D.res||[]).length,mine={...val,n},other=part==="s"?D.d:D.s,up={[part]:mine};
   if(other&&other.n===n){const s=part==="s"?mine:other,dd=part==="d"?mine:other;up.res=[...(D.res||[]),pkResolve(n,s,dd)];up.n=n+1;up.s=null;up.d=null;pkResN=n}
   GD("pen").update(up).catch(er)}
-
+/* the 7 save areas, drawn as the keeper sees them (his left is the shooter's right) */
+const PK_ZBTN=[[4,"↖","TOP"],[5,"←","MIDDLE"],[6,"↙","BOTTOM"],[3,"●","CENTRE"],[0,"↗","TOP"],[1,"→","MIDDLE"],[2,"↘","BOTTOM"]];
 function vPen(){const d=PKD;if(!d){GD("pen").set(pkNew());return}
   g2Shell("pkc",`<div class="g2top" id="g2t"></div><div class="g2msg" id="g2m"></div><div class="hplv" id="pkrole"></div><div class="pkdots" id="pkdots"></div>
-    <button class="hpcam" id="hpcam" aria-label="Camera">🎥 <span id="hpcamn">${PK_CAMS[pkCamI]}</span></button><div class="hpcm" id="hpcm">${PK_CAMS.map((c,i)=>`<button data-pkc="${i}">${c}</button>`).join("")}</div>
+    <div class="pkz" id="pkz"><div class="pkzc">${PK_ZBTN.slice(0,3).map(([z,a,t])=>`<button data-pkz="${z}"><b>${a}</b>${t}</button>`).join("")}</div><div class="pkzc pkzm"><button data-pkz="3"><b>●</b>CENTRE</button></div><div class="pkzc">${PK_ZBTN.slice(4).map(([z,a,t])=>`<button data-pkz="${z}"><b>${a}</b>${t}</button>`).join("")}</div></div>
+    <div class="pkbar" id="pkbar"><div class="pkbg" id="pkbg"></div><b class="pkok" id="pkok">PERFECT</b><div class="pkn" id="pkn"></div><span>POWER</span></div>
     <div class="hptip" id="hptip"></div><div class="hpload" id="hpload" style="background:linear-gradient(#2f7fe0,#7fd36b)">Loading the stadium…</div>`);
-  PKL=(d.res||[]).length;PKA=null;PKIN=null;
-  $("#hpcam").onclick=e=>{e.stopPropagation();$("#hpcm").classList.toggle("on")};
-  document.querySelectorAll("[data-pkc]").forEach(b=>b.onclick=e=>{e.stopPropagation();pkCamI=+b.dataset.pkc;try{localStorage.setItem("pkcam",pkCamI)}catch(_){}$("#hpcamn").textContent=PK_CAMS[pkCamI];$("#hpcm").classList.remove("on");sfx("tap")});
+  PKL=(d.res||[]).length;PKA=null;PKIN=null;PKSPOT=null;
+  document.querySelectorAll("[data-pkz]").forEach(b=>b.onclick=e=>{e.stopPropagation();if(pkMyPart()!=="d")return;sfx("tap");pkSubmit("d",{z:+b.dataset.pkz,kid:role==="child"?1:0});b.classList.add("on")});
   hpThree(()=>{if(!$("#pkc"))return;const L=$("#hpload");if(L)L.remove();try{pk3Init()}catch(e){console.error(e);const m=document.createElement("div");m.className="hpload";m.textContent="3D isn't working on this phone.";$("#pkc").appendChild(m);return}
     g2Loop(pk3Frame);pkUpd()});
   pkUpd()}
@@ -3475,40 +3496,42 @@ function pkUpd(){const D=PKD;if(!D||!$("#pkc"))return;const mine=me(),them=mine=
   const dots=$("#pkdots");if(dots){const row=p=>{const L=res.filter((r,i)=>r.sp===p&&!(PKA&&!PKA.said&&i>=PKA.i));let h="";for(let i=0;i<Math.max(5,L.length);i++){const r=L[i];h+=`<i class="${r?r.ok?"g":"m":""}"></i>`}return h};
     dots.innerHTML=`<span>${row(mine)}</span><span>${row(them)}</span>`}
   if(PKR)pkBoard(sc.s[mine],sc.s[them]);
-  const part=pkMyPart(),role=$("#pkrole"),tip=$("#hptip");
-  if(role)role.innerHTML=w||PKA?"":pkShooter(n)===mine?`<b>YOU SHOOT</b> ${(SOLO?SOLO_NM:ON0())} is in goal`:`<b>YOU'RE IN GOAL</b> ${(SOLO?SOLO_NM:ON0())} shoots`;
-  if(tip){tip.textContent=w||PKA?"":part==="s"?"Swipe from the ball to where you want it to go ⚽":part==="d"?"Tap where you'll dive 🧤":part==="wait"?"Waiting for "+(SOLO?SOLO_NM:ON0())+"…":"";tip.classList.toggle("my",part==="s"||part==="d")}
+  const part=pkMyPart(),role_=$("#pkrole"),tip=$("#hptip"),Z=$("#pkz"),bar=$("#pkbar");if(part!=="s")PKSPOT=null;
+  if(role_)role_.innerHTML=w||PKA?"":pkShooter(n)===mine?`<b>YOU SHOOT</b> ${(SOLO?SOLO_NM:ON0())} is in goal`:`<b>YOU'RE IN GOAL</b> ${(SOLO?SOLO_NM:ON0())} shoots`;
+  if(Z){Z.classList.toggle("on",part==="d"||(part==="wait"&&pkKeeperOf(n)===mine&&!PKA));if(part==="d")Z.querySelectorAll("button").forEach(b=>b.classList.remove("on"))}
+  if(bar)bar.classList.toggle("on",part==="s"&&!!PKSPOT);
+  if(tip){tip.textContent=w||PKA?"":part==="s"?(PKSPOT?"Flick UP when the bar is GREEN! ⚡":"Tap the spot in the goal you want to hit ⚽"):part==="d"?"Pick where you'll dive 🧤":part==="wait"?"Waiting for "+(SOLO?SOLO_NM:ON0())+"…":"";tip.classList.toggle("my",part==="s"||part==="d")}
   if(w&&!PKA){if(!document.querySelector(".g2ov")){const win=w===mine;if(win&&scored["pk"+D.id]!==1){scored["pk"+D.id]=1;gamePts(2)}sfx(win?"b_win":"b_lose");
     $("#pkc").insertAdjacentHTML("beforeend",g2Over(win,win?"YOU WIN!"+gpTxt():(SOLO?SOLO_NM:ON0()).toUpperCase()+" WINS!"));
     $("#g2again").onclick=()=>{GD("pen").set(pkNew())};$("#g2back").onclick=()=>{g2Stop();g=null;view()}}}
   else{const o=document.querySelector(".g2ov");if(o&&!w)o.remove()}
   if(SOLO&&!w&&!PKA)pkBot()}
-/* Shadow Knight: picks a spot (and a dive) like a person would; it can't see what you chose */
+/* Shadow Knight: picks a spot and stops the power bar like a person would, or guesses a save area. It can't see what you chose. */
 function pkBot(){const D=PKD;if(!SOLO||!D||pkDone(D)||Date.now()<pkBotT)return;const n=(D.res||[]).length,bot=me()==="X"?"O":"X",g=()=>Math.sqrt(-2*Math.log(Math.random()+1e-9))*Math.cos(6.2832*Math.random());
   if(pkShooter(n)===bot&&!(D.s&&D.s.n===n)){pkBotT=Date.now()+1500;setTimeout(()=>{const E=PKD;if(!SOLO||!E||(E.res||[]).length!==n||(E.s&&E.s.n===n))return;
-      const side=Math.random()<.5?-1:1,tx=Math.random()<.15?g()*.6:side*(1.6+Math.random()*1.9),ty=Math.random()<.5?.25+Math.random()*.5:.9+Math.random()*1.5;
-      pkSubmit("s",{...pnAssist({tx,ty,pw:1+g()*.12,cu:g()*.3},false),kid:0})},900)}
+      const side=Math.random()<.5?-1:1,tx=Math.random()<.18?g()*.5:side*(1.7+Math.random()*1.7),ty=Math.random()<.45?.25+Math.random()*.5:.8+Math.random()*1.4,P=pnPower(PN_BAR.mid+g()*(role==="child"?.12:.09),false);
+      pkSubmit("s",{...pnAssist({tx,ty,pw:1,cu:0},false),pw:P.pw,lift:P.lift,q:P.q,cu:0,kid:0})},900)}
   else if(pkKeeperOf(n)===bot&&!(D.d&&D.d.n===n)){pkBotT=Date.now()+1500;setTimeout(()=>{const E=PKD;if(!SOLO||!E||(E.res||[]).length!==n||(E.d&&E.d.n===n))return;
-      const r=Math.random(),x=r<.14?0:(Math.random()<.5?-1:1)*(1.4+Math.random()*1.6),y=[.4,.9,1.5,2.1][Math.floor(Math.random()*4)];pkSubmit("d",{x:+x.toFixed(2),y,kid:0})},700)}}
+      const w=[1.2,1,1.2,.9,1.2,1,1.2];let r=Math.random()*w.reduce((a,b)=>a+b),z=0;while(r>w[z]){r-=w[z];z++}pkSubmit("d",{z,kid:0})},700)}}
 
-/* ---- input. Choosing always uses the view from behind the ball, so the goal is where your finger is ---- */
-function pkProj(cx,cy){const c=PKR.r.domElement.getBoundingClientRect(),T=THREE,V=PKR.vc;V.aspect=c.width/c.height;const C=pkCamFor(0);V.fov=pkFov(C,V.aspect);V.position.set(...C.p);V.up.set(0,1,0);V.lookAt(new T.Vector3(...C.l));V.updateProjectionMatrix();V.updateMatrixWorld();
+/* ---- power bar: goes up and down; where it is when you flick decides the power ---- */
+const pkBarP=()=>{const per=role==="child"?2.1:1.6,x=((performance.now()-PKBAR0)/1000/per)%1;return x<.5?x*2:2-x*2};
+function pkBarDraw(){const n=$("#pkn"),b=$("#pkbar");if(!n||!b||!b.classList.contains("on"))return;n.style.bottom=(pkBarP()*100)+"%";const bg=$("#pkbg");if(bg&&!bg._set){bg._set=1;const h=role==="child"?PN_BAR.kid:PN_BAR.adult,a=PN_BAR.mid-h,c=PN_BAR.mid+h,P=v=>(v*100).toFixed(1)+"%";
+    bg.style.background=`linear-gradient(to top,#ff4d4d 0%,#ff4d4d ${P(a-.16)},#ffd23f ${P(a-.1)},#ffd23f ${P(a)},#2ef26b ${P(a)},#2ef26b ${P(c)},#ffd23f ${P(c)},#ffd23f ${P(c+.08)},#ff4d4d ${P(c+.14)},#ff4d4d 100%)`;
+    const ok=$("#pkok");if(ok)ok.style.bottom=P(PN_BAR.mid)}}
+/* ---- input: tap the goal to pick the spot, flick up to shoot ---- */
+function pkProj(cx,cy){const c=PKR.r.domElement.getBoundingClientRect(),T=THREE,V=PKR.vc;V.aspect=c.width/c.height;const C=pkPov("s",null,0);V.fov=pkFov(C,V.aspect);V.position.set(...C.p);V.up.set(0,1,0);V.lookAt(new T.Vector3(...C.l));V.updateProjectionMatrix();V.updateMatrixWorld();
   const rc=new T.Raycaster();rc.setFromCamera(new T.Vector2((cx-c.left)/c.width*2-1,-(cy-c.top)/c.height*2+1),V);const hit=new T.Vector3();if(!rc.ray.intersectPlane(new T.Plane(new T.Vector3(0,0,1),0),hit))return null;return{x:hit.x,y:hit.y}}
 function pkInput(c){
-  c.onpointerdown=e=>{$("#hpcm")&&$("#hpcm").classList.remove("on");const part=pkMyPart();if(part!=="s"&&part!=="d")return;PKIN={part,pts:[[e.clientX,e.clientY,performance.now()]]};try{c.setPointerCapture(e.pointerId)}catch(_){}pkAim(e.clientX,e.clientY)};
-  c.onpointermove=e=>{if(!PKIN)return;PKIN.pts.push([e.clientX,e.clientY,performance.now()]);pkAim(e.clientX,e.clientY)};
-  c.onpointerup=c.onpointercancel=e=>{if(!PKIN)return;const I=PKIN;PKIN=null;const part=pkMyPart();if(part!==I.part)return pkAim();const r=c.getBoundingClientRect(),K=role==="child";
-    if(part==="d"){const q=pkProj(e.clientX,e.clientY);if(!q)return;const x=Math.max(-4,Math.min(4,q.x)),y=Math.max(.15,Math.min(2.7,q.y));PKR.dive={x,y};sfx("tap");pkSubmit("d",{x:+x.toFixed(2),y:+y.toFixed(2),kid:K?1:0});pkAim();return}
-    const p0=I.pts[0],p1=[e.clientX,e.clientY,performance.now()],len=Math.hypot(p1[0]-p0[0],p1[1]-p0[1])/r.height;if(p0[1]-p1[1]<r.height*.08){pkAim();hpMsg("Swipe UP to the goal! ↑");return}
-    const q=pkProj(p1[0],p1[1]);if(!q){pkAim();return}const dur=Math.max(.06,(p1[2]-p0[2])/1000),spd=len/dur,pw=.8+.45*Math.max(0,Math.min(1,(spd-.6)/2.4));
-    /* curl: how much the swipe bends away from a straight line */let dev=0;const ax=p1[0]-p0[0],ay=p1[1]-p0[1],al=Math.hypot(ax,ay)||1;I.pts.forEach(p=>{const cr=((p[0]-p0[0])*ay-(p[1]-p0[1])*ax)/al;if(Math.abs(cr)>Math.abs(dev))dev=cr});
-    const cu=Math.max(-1,Math.min(1,dev/al*3.2)),sh={...pnAssist({tx:q.x,ty:q.y,pw,cu},K),kid:K?1:0};pkAim();sfx("tap");pkSubmit("s",sh)}}
-function pkAim(cx,cy){if(!PKR)return;const m=PKR.scene.userData.aim;if(cx==null||!PKIN){m.visible=false;return}const q=pkProj(cx,cy);if(!q){m.visible=false;return}
-  m.visible=true;m.position.set(q.x,Math.max(.05,q.y),.02);const inG=Math.abs(q.x)<PN.gw&&q.y<PN.gh&&q.y>0;m.material.color.set(PKIN.part==="d"?0x2ef26b:inG?0xffd23f:0xff4d4d)}
+  c.onpointerdown=e=>{if(pkMyPart()!=="s")return;PKIN={x:e.clientX,y:e.clientY,t:performance.now()};try{c.setPointerCapture(e.pointerId)}catch(_){}};
+  c.onpointerup=c.onpointercancel=e=>{if(!PKIN)return;const I=PKIN;PKIN=null;if(pkMyPart()!=="s")return;const r=c.getBoundingClientRect(),dy=e.clientY-I.y,K=role==="child";
+    if(-dy>r.height*.06){/* a flick */if(!PKSPOT){hpMsg("Tap the goal first!");return}const p=pkBarP(),P=pnPower(p,K),sh={...pnAssist({tx:PKSPOT.x,ty:PKSPOT.y,pw:1,cu:0},K),pw:P.pw,lift:P.lift,q:P.q,cu:0,kid:K?1:0};
+      sfx(P.q==="perfect"?"coin":"tap");hpMsg(P.q==="perfect"?"PERFECT POWER!":P.q.toUpperCase()+"!");pkSubmit("s",sh);PKSPOT=null;pkUpd();return}
+    if(Math.abs(dy)<r.height*.04){const q=pkProj(e.clientX,e.clientY);if(!q||Math.abs(q.x)>5.5||q.y>4||q.y<-.5)return;PKSPOT={x:+q.x.toFixed(2),y:+Math.max(.12,q.y).toFixed(2)};if(!$("#pkbar").classList.contains("on"))PKBAR0=performance.now();sfx("tap");pkUpd()}}}
 
 /* ---- play a kick: run-up, strike, flight, dive, result ---- */
-function pkPlay(R,i){const r=pnSim(pnLaunch(R.s,R.s.kid),{x:R.d.x,y:R.d.y},R.d.kid,true),hit=r.ev.find(e=>e.k==="keeper"||e.k==="catch"||e.k==="post"||e.k==="bar");
-  const tSay=r.goal?r.goalT:hit?hit.t+.3:r.cross?r.cross.t+.25:Math.min(1.6,r.end);PKA={R,i,r,t:-1.15,said:0,evi:0,kicked:0,tSay,end:Math.min(r.end,tSay+2.4)};if(PKR){PKR.dive=null;PKR.ballQ=null}}
+function pkPlay(R,i){const r=pnRun(R.s,R.d,true),hit=r.ev.find(e=>e.k==="keeper"||e.k==="catch"||e.k==="post"||e.k==="bar");
+  const tSay=r.goal?r.goalT:hit?hit.t+.3:r.cross?r.cross.t+.25:Math.min(1.6,r.end);PKA={R,i,r,t:-1.15,said:0,evi:0,kicked:0,tSay,end:Math.min(r.end,tSay+2.4),kp:r.plan.opt.save?PN_KSAVE:R.d.kid?PN_KP.kid:PN_KP.adult,dv:r.plan.dv}}
 function pkMsgFor(A){const mine=A.R.sp===me(),say=PK_SAY[A.R.k]||"",keeperMine=A.R.sp!==me();
   if(A.R.ok){sfx("b_swish");setTimeout(()=>sfx("epic"),150);hpMsg(mine?"GOAL!":pkName(A.R.sp)+" SCORES!",say==="GOAL!"?"":say)}
   else{const saved=A.R.k==="saved"||A.R.k==="caught";sfx(saved&&keeperMine?"win":"lose");hpMsg(saved?(keeperMine?"YOU SAVED IT!":pkName(pkKeeperOf(A.i))+" SAVES!"):mine?"MISSED!":pkName(A.R.sp)+" MISSED!",say)}}
@@ -3516,26 +3539,27 @@ function pkMsgFor(A){const mine=A.R.sp===me(),say=PK_SAY[A.R.k]||"",keeperMine=A
 /* ================= the 3D stadium ================= */
 function pk3Init(){const T=THREE;
   if(!PKR){const r=new T.WebGLRenderer({antialias:true,powerPreference:"high-performance"});r.setPixelRatio(Math.min(2,window.devicePixelRatio||1));r.outputEncoding=T.sRGBEncoding;r.shadowMap.enabled=true;r.shadowMap.type=T.PCFSoftShadowMap;
-    PKR={r,cam:new T.PerspectiveCamera(50,1,.1,800),vc:new T.PerspectiveCamera(50,1,.1,800),camP:null,camL:null,sb:"",dive:null};PKR.scene=pk3Scene(r)}
+    PKR={r,cam:new T.PerspectiveCamera(50,1,.08,800),vc:new T.PerspectiveCamera(50,1,.08,800),camP:null,camL:null,sb:""};PKR.scene=pk3Scene(r)}
   const old=$("#g2c"),cv=PKR.r.domElement;cv.id="g2c";old.replaceWith(cv);pkInput(cv);pk3Size();window.onresize=()=>{if($("#g2c"))pk3Size()};PKR.camP=null;PKR.sb=""}
 function pk3Size(){const c=PKR.r.domElement,w=c.parentNode?c.parentNode.clientWidth:innerWidth,h=c.parentNode?c.parentNode.clientHeight:innerHeight;PKR.r.setSize(w,h,false);PKR.cam.aspect=w/h;PKR.cam.updateProjectionMatrix()}
 /* a person made of simple shapes: head, body, arms and legs that follow joint positions */
 function pkRig(S,kit,shorts,socks,skin,hair,gloves){const T=THREE,g=new T.Group(),L=c=>new T.MeshLambertMaterial({color:c}),m={kit:L(kit),sh:L(shorts),so:L(socks),sk:L(skin),hr:L(hair),gl:L(gloves),bt:L(0x15151a)};
   const cyl=(r0,r1,mt)=>{const o=new T.Mesh(new T.CylinderGeometry(r0,r1,1,10),mt);o.castShadow=true;g.add(o);return o},sph=(r,mt)=>{const o=new T.Mesh(new T.SphereGeometry(r,14,10),mt);o.castShadow=true;g.add(o);return o};
   const P={head:sph(.115,m.sk),hair:sph(.12,m.hr),neck:cyl(.05,.05,m.sk),body:cyl(.17,.15,m.kit),pelvis:cyl(.155,.16,m.sh),
-    uaL:cyl(.055,.05,m.kit),uaR:cyl(.055,.05,m.kit),faL:cyl(.045,.04,m.sk),faR:cyl(.045,.04,m.sk),hdL:sph(gloves?.075:.05,gloves?m.gl:m.sk),hdR:sph(gloves?.075:.05,gloves?m.gl:m.sk),
+    uaL:cyl(.055,.05,m.kit),uaR:cyl(.055,.05,m.kit),faL:cyl(.045,.04,m.sk),faR:cyl(.045,.04,m.sk),hdL:sph(gloves?.085:.05,gloves?m.gl:m.sk),hdR:sph(gloves?.085:.05,gloves?m.gl:m.sk),
     thL:cyl(.08,.065,m.sh),thR:cyl(.08,.065,m.sh),shL:cyl(.06,.045,m.so),shR:cyl(.06,.045,m.so),ftL:sph(.065,m.bt),ftR:sph(.065,m.bt)};
   P.hair.scale.set(1,.75,1);P.ftL.scale.set(1,.7,1.7);P.ftR.scale.set(1,.7,1.7);S.add(g);
   const up=new T.Vector3(0,1,0),A=new T.Vector3(),B=new T.Vector3(),D=new T.Vector3();
   const limb=(o,a,b)=>{A.set(...a);B.set(...b);D.subVectors(B,A);const l=D.length()||1e-3;o.position.addVectors(A,B).multiplyScalar(.5);o.scale.set(1,l,1);o.quaternion.setFromUnitVectors(up,D.multiplyScalar(1/l))};
   /* J: head, neck, chest, hip, shL, shR, elL, elR, hdL, hdR, hpL, hpR, knL, knR, ftL, ftR (all [x,y,z]); fwd = which way the toes point */
-  return{g,pose(J,fwd){P.head.position.set(...J.head);P.hair.position.set(J.head[0],J.head[1]+.035,J.head[2]);limb(P.neck,J.neck,J.head);limb(P.body,J.hip,J.neck);
+  const vis=new Set(Object.keys(P));
+  return{g,only(keep){const k=keep?keep.join():"";if(vis._k===k)return;vis._k=k;for(const n in P)P[n].visible=!keep||keep.includes(n)},pose(J,fwd){P.head.position.set(...J.head);P.hair.position.set(J.head[0],J.head[1]+.035,J.head[2]);limb(P.neck,J.neck,J.head);limb(P.body,J.hip,J.neck);
     const pl=[J.hip[0],J.hip[1]-.06,J.hip[2]];limb(P.pelvis,pl,J.hip);
     limb(P.uaL,J.shL,J.elL);limb(P.uaR,J.shR,J.elR);limb(P.faL,J.elL,J.hdL);limb(P.faR,J.elR,J.hdR);P.hdL.position.set(...J.hdL);P.hdR.position.set(...J.hdR);
     limb(P.thL,J.hpL,J.knL);limb(P.thR,J.hpR,J.knR);limb(P.shL,J.knL,J.ftL);limb(P.shR,J.knR,J.ftR);
     P.ftL.position.set(J.ftL[0]+fwd[0]*.06,J.ftL[1],J.ftL[2]+fwd[2]*.06);P.ftR.position.set(J.ftR[0]+fwd[0]*.06,J.ftR[1],J.ftR[2]+fwd[2]*.06);const yaw=Math.atan2(fwd[0],fwd[2]);P.ftL.rotation.y=yaw;P.ftR.rotation.y=yaw}}}
 /* the keeper's joints come from the physics model, so what you see is exactly what the ball hits */
-function pkKeeperJ(dv,t,kid){const K=pnKeeper(dv,t,kid),J=K.J,u=J.u,sd=[-u[1],u[0]],z=J.hip[2],idle=t<-(kid?PN_KP.kid:PN_KP.adult).pre?Math.sin(performance.now()/160)*.03:0,o=(p,dx,dy,dz=0)=>[p[0]+dx,p[1]+dy+idle,p[2]+dz];
+function pkKeeperJ(dv,t,kp){const K=pnKeeper(dv,t,kp),J=K.J,u=J.u,sd=[-u[1],u[0]],z=J.hip[2],idle=t<-kp.pre?Math.sin(performance.now()/160)*.03:0,o=(p,dx,dy,dz=0)=>[p[0]+dx,p[1]+dy+idle,p[2]+dz];
   const sh=J.sh,shL=o(sh,sd[0]*.21,sd[1]*.21),shR=o(sh,-sd[0]*.21,-sd[1]*.21),hp=J.hip;
   return{head:o(J.head,0,0),neck:o(J.head,-u[0]*.17,-u[1]*.17),chest:o(J.chest,0,0),hip:o(hp,0,0),shL,shR,hdL:o(J.handL,0,0),hdR:o(J.handR,0,0),elL:PV.lerp(shL,o(J.handL,0,0),.5).map((v,i)=>i===2?v+.05:v),elR:PV.lerp(shR,o(J.handR,0,0),.5).map((v,i)=>i===2?v+.05:v),
     hpL:o(hp,sd[0]*.1,sd[1]*.1),hpR:o(hp,-sd[0]*.1,-sd[1]*.1),knL:o(J.kneeL,0,0,.04),knR:o(J.kneeR,0,0,.04),ftL:J.footL,ftR:J.footR,parts:K.parts}}
@@ -3609,48 +3633,51 @@ function pk3Scene(r){const T=THREE,S=new T.Scene(),M=(c,o)=>new T.MeshLambertMat
   const blob=new T.Mesh(new T.CircleGeometry(PN.br*1.15,24),new T.MeshBasicMaterial({color:0,transparent:true,opacity:.3,depthWrite:false}));blob.rotation.x=-Math.PI/2;S.add(blob);
   /* aim marker on the goal, and a glove marker for where the keeper chose */
   const aim=new T.Mesh(new T.RingGeometry(.14,.22,28),new T.MeshBasicMaterial({color:0xffd23f,transparent:true,opacity:.9,depthTest:false}));aim.renderOrder=5;aim.visible=false;S.add(aim);
-  const glove=new T.Mesh(new T.CircleGeometry(.2,24),new T.MeshBasicMaterial({color:0x2ef26b,transparent:true,opacity:.55,depthTest:false}));glove.renderOrder=5;glove.visible=false;S.add(glove);
+  
   const spot=add(new T.CircleGeometry(.12,20),new T.MeshBasicMaterial({color:0xffffff}),0,.01,11);spot.rotation.x=-Math.PI/2;
   const keepers={X:pkRig(S,0xff8a1c,0x111827,0xff8a1c,0xf1c7a3,0x3b2314,0xd9f99d),O:pkRig(S,0x22c55e,0x111827,0x22c55e,0xf3cfae,0x6b3f1f,0xfef08a)};
   const shooters={X:pkRig(S,0x2563eb,0xffffff,0x2563eb,0xf1c7a3,0x3b2314),O:pkRig(S,0xdc2626,0xffffff,0xdc2626,0xf3cfae,0x6b3f1f)};
-  S.userData={ball,blob,aim,glove,net,ng,nodes,segs,keepers,shooters,scr};return S}
+  S.userData={ball,blob,aim,net,ng,nodes,segs,keepers,shooters,scr};return S}
 function pkBoard(a,b){const key=a+"|"+b+"|"+(SOLO?SOLO_NM:ON0());if(!PKR||PKR.sb===key)return;PKR.sb=key;const t=PKR.scene.userData.scr,x=t._c.getContext("2d"),w=512,h=200;
   x.fillStyle="#0b0d12";x.fillRect(0,0,w,h);x.fillStyle="#ffd23f";x.font="900 34px Outfit,Arial,sans-serif";x.textAlign="center";x.fillText("PENALTIES",w/2,44);
   x.font="900 30px Outfit,Arial,sans-serif";x.fillStyle="#fff";x.fillText("YOU",w*.22,100);x.fillText((SOLO?"SHADOW":ON0()).toUpperCase().slice(0,8),w*.78,100);
   x.font="900 84px 'Courier New',monospace";x.fillStyle="#ff2a1a";x.shadowColor="#ff2010";x.shadowBlur=16;x.fillText(a+" - "+b,w/2,178);x.shadowBlur=0;t.needsUpdate=true}
 const pkFov=(C,asp)=>Math.min(95,Math.max(C.fv,2*Math.atan(Math.tan((C.hf||C.fv*.8)*Math.PI/360)/asp)*180/Math.PI));
-function pkCamFor(i){const s=(p,l,o)=>({p,l,...(o||{})});switch(i){
-  case 1:return s([0,1.75,-3.4],[0,1.1,11],{fv:52});case 2:return s([-15,8,14],[0,1,4.5],{fv:40,hf:46});case 3:return s([-9.5,1.6,3.5],[0,1.1,2],{fv:50,hf:44});case 4:return s([0,9.5,19],[0,0,4.5],{fv:50});
-  case 5:return s([3.35,.35,-1.7],[-1,1.1,9],{fv:70});case 6:return s([.55,.2,12.7],[0,1.3,0],{fv:62});case 7:return s([0,24,5.6],[0,0,5.5],{fv:50,top:1});case 8:return s([2.6,1.6,3.6],[-.3,1.1,0],{fv:60});
-  case 9:return s([6.5,2.8,15.5],[-.3,1.1,3],{fv:44,hf:40});default:return s([.5,2.3,17.2],[0,1.15,0],{fv:40,hf:31})}}
+/* your own eyes: the shooter stands behind the ball and runs up; the keeper is on his line, and the view moves with his dive */
+function pkPov(who,A,t){if(who==="s"){const idle=[.1,1.55,13.1],kick=[-.3,1.55,11.8];if(!A||t<-1.05)return{p:idle,l:[0,.95,0],fv:40,hf:34};
+    const k=Math.max(0,Math.min(1,(t+1.05)/1.0)),e=k*k*(3-2*k),p=PV.lerp(idle,kick,e);let l=[0,.95,0];if(t>0){const f=Math.min(1,t/.5);l=PV.lerp(l,PKR.ballP||l,.35*f)}return{p,l,fv:40,hf:34}}
+  const base=[0,1.72,.15];if(!A)return{p:base,l:[0,.75,11],fv:46,hf:46};const KJ=pnKeeper(A.dv,t,A.kp).J,hd=KJ.head,p=PV.lerp(base,[hd[0],Math.max(.7,hd[1]),.1],.45);
+  const bp=PKR.ballP||[0,0,11],f=Math.max(0,Math.min(1,(6-bp[2])/4));/* turn your head to follow the ball into your gloves */
+  return{p,l:PV.lerp([p[0]*.6,.75+(p[1]-1.72)*.4,11],bp,f*f*(3-2*f)),fv:46,hf:46,roll:Math.atan2(KJ.u[0],KJ.u[1])*.18}}
 /* every frame */
-function pk3Frame(dt){if(!PKR||!PKD)return;const T=THREE,U=PKR.scene.userData,D=PKD,A=PKA,n=A?A.i:(D.res||[]).length,sp=A?A.R.sp:pkShooter(n),kp=sp==="X"?"O":"X",part=pkMyPart();
-  /* who is on the pitch */
-  for(const p of ["X","O"]){U.keepers[p].g.visible=p===kp;U.shooters[p].g.visible=p===sp}
-  let t=-1.2,bp=[0,PN.br,PN.spot],bv=[0,0,0],dv=null,kidK=false;
-  if(A){if(!window.HP_FREEZE)A.t+=dt;t=A.t;dv=A.R.d;kidK=!!A.R.d.kid;
+function pk3Frame(dt){if(!PKR||!PKD)return;const T=THREE,U=PKR.scene.userData,D=PKD,A=PKA,n=A?A.i:(D.res||[]).length,sp=A?A.R.sp:pkShooter(n),kp=sp==="X"?"O":"X",mine=me(),iShoot=sp===mine;
+  pkBarDraw();
+  /* who is on the pitch: you don't see yourself (except your gloves when you're in goal) */
+  for(const p of ["X","O"]){U.keepers[p].g.visible=p===kp;U.shooters[p].g.visible=p===sp&&p!==mine;const own=p===kp&&p===mine;U.keepers[p].only(own?["hdL","hdR"]:null)}
+  let t=-1.2,bp=[0,PN.br,PN.spot],bv=[0,0,0];
+  if(A){if(!window.HP_FREEZE)A.t+=dt;t=A.t;
     if(t>=0){if(!A.kicked){A.kicked=1;sfx("b_punch")}const F=A.r.frames;let j=A.fi||0;while(j<F.length-2&&F[j+1].t<t)j++;A.fi=j;const f0=F[j],f1=F[Math.min(F.length-1,j+1)],u=f1.t>f0.t?Math.max(0,Math.min(1,(t-f0.t)/(f1.t-f0.t))):0;
       bp=[0,1,2].map(k=>f0.p[k]+(f1.p[k]-f0.p[k])*u);bv=f1.t>f0.t?[0,1,2].map(k=>(f1.p[k]-f0.p[k])/(f1.t-f0.t)):[0,0,0];
       const w=f0.w,wl=Math.hypot(w[0],w[1],w[2]);if(wl>1e-4)U.ball.quaternion.premultiply(new T.Quaternion().setFromAxisAngle(new T.Vector3(w[0]/wl,w[1]/wl,w[2]/wl),wl*dt));
       while(A.evi<A.r.ev.length&&A.r.ev[A.evi].t<=t){const e=A.r.ev[A.evi++];if(e.k==="post"||e.k==="bar")sfx("b_clang");else if(e.k==="keeper")sfx(e.part==="hand"?"hit":"b_punch");else if(e.k==="catch")sfx("b_pclang");else if(e.k==="net")sfx("b_swish");else if(e.k==="ground"&&e.sp>2)sfx("tap")}}
     if(!A.said&&t>=A.tSay){A.said=1;pkMsgFor(A);pkUpd()}
     if(t>=A.end){PKA=null;PKL=A.i+1;pkUpd()}}
-  
-  /* keeper: physics pose (idle before the kick) */
-  const KJ=pkKeeperJ(dv||{x:0,y:1},A?t:-1,kidK);U.keepers[kp].pose(KJ,[0,0,1]);
+  PKR.ballP=bp;
+  const KJ=pkKeeperJ(A?A.dv:{x:0,y:1},A?t:-1,A?A.kp:PN_KP.adult);if(kp===mine&&(!A||t<-A.kp.pre)){/* your own gloves, up in front of you */const bob=Math.sin(performance.now()/260)*.02;KJ.hdL=[.34,1.38+bob,1.15];KJ.hdR=[-.34,1.38-bob,1.15]}U.keepers[kp].pose(KJ,[0,0,1]);
   const SJ=pkShooterJ(A?t:-1.2,A&&A.R.ok&&A.said);U.shooters[sp].pose(SJ,[0,0,-1]);
   U.ball.position.set(...bp);U.blob.position.set(bp[0],.008,bp[2]);const hh=Math.max(0,bp[1]-PN.br);U.blob.scale.setScalar(1+hh*.3);U.blob.material.opacity=.32/(1+hh*.8);
-  /* the glove marker shows the keeper's own choice to the keeper only */
-  const myDive=!A&&D.d&&D.d.n===n&&pkKeeperOf(n)===me()?D.d:null;U.glove.visible=!!myDive;if(myDive)U.glove.position.set(myDive.x,myDive.y,.03);
+  /* the spot you picked on the goal */
+  const showSpot=!A&&PKSPOT&&pkMyPart()==="s";U.aim.visible=!!showSpot;if(showSpot){U.aim.position.set(PKSPOT.x,PKSPOT.y,.02);const inG=Math.abs(PKSPOT.x)<PN.gw&&PKSPOT.y<PN.gh;U.aim.material.color.set(inG?0xffd23f:0xff4d4d)}
   /* net: each knot springs back; the ball pushes knots it touches */
   {const N=U.nodes,st=Math.min(dt,.04);for(const q of N){if(q.fix){q.o=0;continue}const rel=[bp[0]-q.r[0],bp[1]-q.r[1],bp[2]-q.r[2]],dn=rel[0]*q.n[0]+rel[1]*q.n[1]+rel[2]*q.n[2],pl=Math.hypot(rel[0]-dn*q.n[0],rel[1]-dn*q.n[1],rel[2]-dn*q.n[2]);
       if(pl<.45&&dn>-PN.br-.05&&dn<.6){const vn=bv[0]*q.n[0]+bv[1]*q.n[1]+bv[2]*q.n[2],f=1-pl/.45;q.v+=Math.max(0,vn)*f*.9*st*12;q.o=Math.max(q.o,(dn+PN.br+.02)*f)}
       q.v+=(-q.o*90-q.v*7)*st;q.o+=q.v*st}
     const a=U.ng.attributes.position.array;U.segs.forEach((ix,j)=>{const q=N[ix];a[j*3]=q.r[0]+q.n[0]*q.o;a[j*3+1]=q.r[1]+q.n[1]*q.o;a[j*3+2]=q.r[2]+q.n[2]*q.o});U.ng.attributes.position.needsUpdate=true}
-  /* camera: choosing uses the view from behind the ball; replays use the view you picked */
-  const ci=A?pkCamI:0,C=pkCamFor(ci),cam=PKR.cam,asp=cam.aspect,fv=pkFov(C,asp);if(Math.abs(cam.fov-fv)>.1){cam.fov=fv;cam.updateProjectionMatrix()}
-  if(!PKR.camP){PKR.camP=new T.Vector3(...C.p);PKR.camL=new T.Vector3(...C.l)}const e=1-Math.exp(-dt*4);PKR.camP.lerp(new T.Vector3(...C.p),e);PKR.camL.lerp(new T.Vector3(...C.l),e);
-  cam.position.copy(PKR.camP);if(C.top)cam.up.set(0,0,-1);else cam.up.set(0,1,0);cam.lookAt(PKR.camL);PKR.r.render(PKR.scene,cam)}
+  /* camera: always your own eyes */
+  const C=pkPov(iShoot?"s":"k",A,t),cam=PKR.cam,fv=pkFov(C,cam.aspect);if(Math.abs(cam.fov-fv)>.1){cam.fov=fv;cam.updateProjectionMatrix()}
+  if(!PKR.camP||PKR.camWho!==(iShoot?"s":"k")){PKR.camP=new T.Vector3(...C.p);PKR.camL=new T.Vector3(...C.l);PKR.camWho=iShoot?"s":"k"}
+  const e=1-Math.exp(-dt*(A?14:5));PKR.camP.lerp(new T.Vector3(...C.p),e);PKR.camL.lerp(new T.Vector3(...C.l),e);cam.position.copy(PKR.camP);
+  const rl=C.roll||0;cam.up.set(Math.sin(rl),Math.cos(rl),0);cam.lookAt(PKR.camL);PKR.r.render(PKR.scene,cam)}
 
 /* ---------------- SMACKERBALL: smack the ball into their goal. Your hand stays in your half. 2 touches max or it's a penalty. First to 5. ---------------- */
 const SMFW=360,SMFH=600,SMBR=14,SMGW=150,SMHALF=SMFH/2,SMW=5;

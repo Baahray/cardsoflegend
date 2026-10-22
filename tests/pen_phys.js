@@ -4,16 +4,18 @@
 const PN={g:9.81,dt:1/240,br:.11,mass:.43,kd:.0135,mag:.02,spot:11,gw:3.66,gh:2.44,postR:.062,netD:1.9,eGround:.58,ePost:.62,eNet:.12,eBody:.3,eHand:.45,kz:.42};
 PN.I=2/3*PN.mass*PN.br*PN.br;
 /* keeper: Cass gets a slightly quicker, longer dive (his hidden advantage) */
+/* when the keeper picked the right save area he goes early and gets there in time; otherwise the ball goes past him */
+const PN_KSAVE={pre:.3,T:.48,travel:3.3,catchV:40};
 const PN_KP={kid:{pre:.1,T:.56,travel:2.1,catchV:21},adult:{pre:.09,T:.57,travel:1.8,catchV:19}};
 const PV={add:(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]],sub:(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]],mul:(a,k)=>[a[0]*k,a[1]*k,a[2]*k],dot:(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2],
   cross:(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]],len:a=>Math.hypot(a[0],a[1],a[2]),lerp:(a,b,k)=>[a[0]+(b[0]-a[0])*k,a[1]+(b[1]-a[1])*k,a[2]+(b[2]-a[2])*k]};
 const pnEase=s=>s<=0?0:s>=1?1:s*s*(3-2*s);
 /* The keeper's body at time t (t = 0 is the kick). dv = where he dives to on the goal {x,y}. Returns spheres for the physics and joints for drawing. */
-function pnKeeper(dv,t,kid){const P=kid?PN_KP.kid:PN_KP.adult,s=pnEase((t+P.pre)/P.T),z=PN.kz,H0=[0,.98],T=[dv.x,Math.max(.15,Math.min(2.6,dv.y))];
+function pnKeeper(dv,t,kid){const P=typeof kid==='object'?kid:kid?PN_KP.kid:PN_KP.adult,s=pnEase((t+P.pre)/P.T),z=PN.kz,H0=[0,.98],T=[dv.x,Math.max(.15,Math.min(2.6,dv.y))];
   let hip,u,hands,mid=Math.abs(T[0])<.75;
   if(mid){/* stays in the middle: steps, crouches or jumps, and brings the gloves to the ball */
-    const hy=.98+(T[1]>1.75?(T[1]-1.75)*.75:T[1]<.55?-.32:0)*s;hip=[T[0]*.45*s,hy];u=[0,1];
-    const sh=[hip[0],hip[1]+.55],ready=[[sh[0]-.32,hip[1]+.25],[sh[0]+.32,hip[1]+.25]],tg=(()=>{const d=[T[0]-sh[0],T[1]-sh[1]],l=Math.hypot(d[0],d[1]),m=Math.min(l,.78);return l>1e-6?[sh[0]+d[0]/l*m,sh[1]+d[1]/l*m]:sh})();
+    const hy=.98+(T[1]>1.75?(T[1]-1.75)*.75:T[1]<.55?-.5:T[1]<.9?-.25:0)*s;hip=[T[0]*.45*s,hy];u=[0,1];
+    const sh=[hip[0],hip[1]+.55],ready=[[sh[0]-.32,hip[1]+.25],[sh[0]+.32,hip[1]+.25]],tg=(()=>{const d=[T[0]-sh[0],T[1]-sh[1]],l=Math.hypot(d[0],d[1]),m=Math.min(l,.86);return l>1e-6?[sh[0]+d[0]/l*m,sh[1]+d[1]/l*m]:sh})();
     hands=ready.map((r,i)=>[r[0]+(tg[0]+(i?.1:-.1)-r[0])*s,r[1]+(tg[1]-r[1])*s])}
   else{/* full dive: the body flies along the line from his hips towards the target, arms stretched out in front */
     const d=[T[0]-H0[0],T[1]-H0[1]],L=Math.hypot(d[0],d[1]),n=[d[0]/L,d[1]/L],go=Math.max(0,Math.min(P.travel,L-1.22)),hf=[H0[0]+n[0]*go,Math.max(.32,H0[1]+n[1]*go)],
@@ -34,7 +36,7 @@ function pnAssist(sh,kid){const soft=(v,lim,k)=>Math.sign(v)*(Math.abs(v)<lim?Ma
 function pnFree(v,w,stopZ){/* flight with no obstacles, to aim the kick */const S={p:[0,PN.br,PN.spot],v:v.slice(),w:w.slice()};for(let i=0;i<4*240;i++){pnStep(S);if(S.p[2]<=stopZ)return S.p}return S.p}
 function pnStep(S){const sp=PV.len(S.v),dt=PN.dt,a=PV.add(PV.mul(S.v,-PN.kd*sp),PV.mul(PV.cross(S.w,S.v),PN.mag));a[1]-=PN.g;S.v=PV.add(S.v,PV.mul(a,dt));S.p=PV.add(S.p,PV.mul(S.v,dt));S.w=PV.mul(S.w,1-.25*dt)}
 /* turn the kick into a starting velocity and spin. Hitting it too hard makes it rise (and maybe fly over). */
-function pnLaunch(sh,kid){const V=Math.max(9,Math.min(34,25*sh.pw)),lift=Math.max(0,sh.pw-(kid?1.15:1.08))*(kid?3.5:5),T=[sh.tx,sh.ty+lift],w=[-12*Math.min(1,Math.max(0,sh.pw-.5)),-(sh.cu||0)*34,0];
+function pnLaunch(sh,kid){const V=Math.max(9,Math.min(34,25*sh.pw)),lift=sh.lift!=null?sh.lift:Math.max(0,sh.pw-(kid?1.15:1.08))*(kid?3.5:5),T=[sh.tx,sh.ty+lift],w=[-12*Math.min(1,Math.max(0,sh.pw-.5)),-(sh.cu||0)*34,0];
   const P0=[0,PN.br,PN.spot],dz=-PN.spot,tf=PN.spot/V;let v=[(T[0]-P0[0])/tf,(T[1]-P0[1])/tf+PN.g*tf/2,dz/tf];
   for(let it=0;it<6;it++){const p=pnFree(v,w,0),tt=PN.spot/Math.max(5,-v[2]);v=[v[0]+(T[0]-p[0])/tt,v[1]+(T[1]-p[1])/tt,v[2]]}
   return{v:v.map(x=>+x.toFixed(4)),w}}
@@ -43,18 +45,18 @@ function pnBounce(S,n,e,mu,vel){const rv=PV.sub(S.v,vel||[0,0,0]),r=PV.mul(n,-PN
   if(l>1e-6){const jt=Math.min(l*PN.mass/2.5,mu*(1+e)*Math.abs(vn)*PN.mass),J=PV.mul(vt,-jt/l);S.v=PV.add(S.v,PV.mul(J,1/PN.mass));S.w=PV.add(S.w,PV.mul(PV.cross(r,J),1/PN.I))}return -vn}
 function pnSeg(p,a,b){const ab=PV.sub(b,a),k=Math.max(0,Math.min(1,PV.dot(PV.sub(p,a),ab)/PV.dot(ab,ab)));return PV.add(a,PV.mul(ab,k))}
 /* run the whole kick. kick = launch from pnLaunch, dv = keeper's dive target, kidK = is the keeper Cass */
-function pnSim(kick,dv,kidK,rec){const S={p:[0,PN.br,PN.spot],v:kick.v.slice(),w:kick.w.slice()},ev=[],fr=[],G=PN,KP=kidK?PN_KP.kid:PN_KP.adult;
+function pnSim(kick,dv,kidK,rec,opt){opt=opt||{};const S={p:[0,PN.br,PN.spot],v:kick.v.slice(),w:kick.w.slice()},ev=[],fr=[],G=PN,KP=opt.save?PN_KSAVE:kidK?PN_KP.kid:PN_KP.adult;
   let t=0,goal=false,goalT=-1,caught=null,rest=0,cross=null,prevK=null,touched=false;
   const add=(k,sp,x)=>{const e=ev[ev.length-1];if(e&&e.k===k&&t-e.t2<.08){e.t2=t;return}ev.push({k,t,t2:t,sp:+sp.toFixed(2),...(x||{})})};
   const posts=[[[-G.gw-G.postR,0,0],[-G.gw-G.postR,G.gh+G.postR,0],"post"],[[G.gw+G.postR,0,0],[G.gw+G.postR,G.gh+G.postR,0],"post"],[[-G.gw-G.postR,G.gh+G.postR,0],[G.gw+G.postR,G.gh+G.postR,0],"bar"]];
   for(let i=0;i<240*5;i++){t=i*G.dt;const pp=S.p.slice();
-    const K=pnKeeper(dv,t,kidK);if(!prevK)prevK=K;
+    const K=pnKeeper(dv,t,KP);if(!prevK)prevK=K;
     if(caught){/* held in the keeper's gloves */const c=K.J[caught.at];S.p=PV.add(c,caught.off);S.v=PV.mul(PV.sub(S.p,pp),1/G.dt)}
     else{pnStep(S);
       /* posts and crossbar: round bars */
       for(const [a,b,k] of posts){const q=pnSeg(S.p,a,b),d=PV.sub(S.p,q),l=PV.len(d);if(l<G.br+G.postR){const n=PV.mul(d,1/l);S.p=PV.add(q,PV.mul(n,G.br+G.postR+1e-4));const sp=pnBounce(S,n,G.ePost,.25);if(sp>.3)add(k,sp,{x:+q[0].toFixed(2),y:+q[1].toFixed(2)})}}
       /* keeper: every body part is a moving ball shape */
-      for(let j=0;j<K.parts.length;j++){const P=K.parts[j],d=PV.sub(S.p,P.c),l=PV.len(d);if(l<G.br+P.r&&l>1e-6){const n=PV.mul(d,1/l),vel=PV.mul(PV.sub(P.c,prevK.parts[j].c),1/G.dt),rel=PV.len(PV.sub(S.v,vel));
+      for(let j=0;j<(opt.ghost?0:K.parts.length);j++){const P=K.parts[j],d=PV.sub(S.p,P.c),l=PV.len(d);if(l<G.br+P.r&&l>1e-6){const n=PV.mul(d,1/l),vel=PV.mul(PV.sub(P.c,prevK.parts[j].c),1/G.dt),rel=PV.len(PV.sub(S.v,vel));
         S.p=PV.add(P.c,PV.mul(n,G.br+P.r+1e-4));
         const at=P.k==="hand"?(j===0?"handL":"handR"):P.k==="body"&&j>=4&&j<=6?"chest":null;
         if(!goal&&at&&rel<KP.catchV*(P.k==="hand"?.8:1)&&S.p[2]>-.05){caught={at,off:PV.sub(S.p,K.J[at])};S.v=vel;S.w=PV.mul(S.w,.1);add("catch",rel);touched=true;break}
@@ -85,4 +87,20 @@ function pnKind(r){const c=r.cross,hit=r.ev.filter(e=>e.k!=="ground"&&e.k!=="net
     if(c&&Math.abs(c.x)>2.3&&c.y>1.5)return"top-corner";if(c&&Math.abs(c.x)>2.3&&c.y<.7)return"low-corner";if(c&&Math.abs(c.x)<1)return"middle";return"goal"}
   if(r.caught)return"caught";if(f&&f.k==="keeper")return"saved";if(f&&f.k==="post")return"post";if(f&&f.k==="bar")return"bar";
   if(c){if(Math.abs(c.x)>=PN.gw)return c.y>=PN.gh?"over":"wide";if(c.y>=PN.gh)return"over"}return"short"}
-if(typeof module!=="undefined")module.exports={PN,PN_KP,pnKeeper,pnAssist,pnLaunch,pnSim,pnKind,pnStep};
+/* ---- the 7 save areas, as the SHOOTER sees the goal (minus x = shooter's left) ---- */
+const PN_Z=[{n:"LEFT TOP",x:-2.4,y:1.85},{n:"LEFT MIDDLE",x:-2.4,y:1.15},{n:"LEFT BOTTOM",x:-2.4,y:.42},{n:"CENTRE",x:0,y:1.05},{n:"RIGHT TOP",x:2.4,y:1.85},{n:"RIGHT MIDDLE",x:2.4,y:1.15},{n:"RIGHT BOTTOM",x:2.4,y:.42}];
+const pnZone=(x,y)=>{let b=0,bd=1e9;PN_Z.forEach((z,i)=>{const d=Math.hypot(x-z.x,y-z.y);if(d<bd){bd=d;b=i}});return b};
+/* power bar: 0 = empty, 1 = full. The green middle is perfect. Cass's green is a bit wider. */
+const PN_BAR={mid:.56,kid:.11,adult:.075};
+function pnPower(p,kid){const h=kid?PN_BAR.kid:PN_BAR.adult,top=PN_BAR.mid+h,bot=PN_BAR.mid-h;
+  if(p>=bot&&p<=top)return{pw:1,lift:0,q:"perfect"};if(p>top){const e=p-top;return{pw:+(1+e*.7).toFixed(3),lift:+(e*4.6).toFixed(3),q:e<.1?"hard":"too hard"}}
+  const e=bot-p;return{pw:+Math.max(.5,1-e*1.15).toFixed(3),lift:+(-e*1.4).toFixed(3),q:e<.1?"soft":"too soft"}}
+/* a whole kick decided: where it would cross the line, and whether the keeper's area was the closest one */
+function pnPlan(s,d){const L=pnLaunch(s,s.kid),c=pnFree(L.v,L.w,0),cross={x:c[0],y:c[1]},inG=Math.abs(c[0])<PN.gw-.03&&c[1]<PN.gh-.03&&c[1]>0,zi=pnZone(c[0],c[1]),kz=PN_Z[d.z];
+  const near=zi===d.z||(d.kid&&Math.hypot(c[0]-kz.x,c[1]-kz.y)-Math.hypot(c[0]-PN_Z[zi].x,c[1]-PN_Z[zi].y)<.35),save=inG&&near;
+  return{L,cross,zone:zi,save,dv:save?{x:+c[0].toFixed(3),y:+Math.max(.2,c[1]).toFixed(3)}:{x:kz.x,y:kz.y},opt:save?{save:1}:{ghost:1}}}
+function pnRun(s,d,rec){const P=pnPlan(s,d);let r=pnSim(P.L,P.dv,!!d.kid,rec,P.opt);
+  /* right area: the keeper must get it. If his first dive misses (rare, e.g. low under him), he goes again slightly differently */
+  if(P.save&&r.goal)for(const o of [[0,-.25],[0,.25],[.2,0],[-.2,0],[0,-.5]]){const dv={x:P.dv.x+o[0],y:Math.max(.12,P.dv.y+o[1])},r2=pnSim(P.L,dv,!!d.kid,rec,P.opt);if(!r2.goal){r=r2;P.dv=dv;break}}
+  r.plan=P;return r}
+if(typeof module!=="undefined")module.exports={PN,PN_KP,PN_KSAVE,PN_Z,PN_BAR,pnZone,pnPower,pnPlan,pnRun,pnFree,pnKeeper,pnAssist,pnLaunch,pnSim,pnKind,pnStep};
