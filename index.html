@@ -3704,87 +3704,274 @@ function pk3Frame(dt){if(!PKR||!PKD)return;const T=THREE,U=PKR.scene.userData,D=
   const e=1-Math.exp(-dt*(A?14:5));PKR.camP.lerp(new T.Vector3(...C.p),e);PKR.camL.lerp(new T.Vector3(...C.l),e);cam.position.copy(PKR.camP);
   const rl=C.roll||0;cam.up.set(Math.sin(rl),Math.cos(rl),0);cam.lookAt(PKR.camL);PKR.r.render(PKR.scene,cam)}
 
-/* ---------------- SMACKERBALL: smack the ball into their goal. Your hand stays in your half. 2 touches max or it's a penalty. First to 5. ---------------- */
-const SMFW=360,SMFH=600,SMBR=14,SMGW=150,SMHALF=SMFH/2,SMW=5;
-let SM=null;   /* local game: {b,me,hand,hv,opp,touch,pen,ev,last} */
-const smHR=r=>r==="child"?42:36,smMax=r=>r==="child"?1150:1020;
-const smMine=()=>SM&&SM.solo?"X":me(),smOwner=b=>b.y>SMHALF?"X":"O";
-function smStep(b,dt){b.x+=b.vx*dt;b.y+=b.vy*dt;const f=Math.pow(.5,dt);b.vx*=f;b.vy*=f;
-  const inG=Math.abs(b.x-SMFW/2)<SMGW/2-SMBR*.4;
-  if(b.x<SMBR){b.x=SMBR;b.vx=Math.abs(b.vx)*.85}if(b.x>SMFW-SMBR){b.x=SMFW-SMBR;b.vx=-Math.abs(b.vx)*.85}
-  if(!inG){if(b.y<SMBR){b.y=SMBR;b.vy=Math.abs(b.vy)*.85}if(b.y>SMFH-SMBR){b.y=SMFH-SMBR;b.vy=-Math.abs(b.vy)*.85}}
-  else{if(b.y<0||b.y>SMFH){const gl=SMFW/2-SMGW/2+SMBR,gr=SMFW/2+SMGW/2-SMBR;if(b.x<gl){b.x=gl;b.vx=Math.abs(b.vx)*.5}if(b.x>gr){b.x=gr;b.vx=-Math.abs(b.vx)*.5}}
-    if(b.y<-46){b.y=-46;b.vy=0;b.vx*=.5}if(b.y>SMFH+46){b.y=SMFH+46;b.vy=0;b.vx*=.5}}
-  return b.y<-SMBR?"X":b.y>SMFH+SMBR?"O":null}   /* who scored */
-function smHit(b,h,hv,R,mx){const dx=b.x-h[0],dy=b.y-h[1],d=Math.hypot(dx,dy);if(d>=R+SMBR||d<.01)return false;const nx=dx/d,ny=dy/d,rv=(b.vx-hv[0])*nx+(b.vy-hv[1])*ny;
-  b.x=h[0]+nx*(R+SMBR+.5);b.y=h[1]+ny*(R+SMBR+.5);if(rv<0){b.vx-=1.55*rv*nx;b.vy-=1.55*rv*ny}const hs=Math.hypot(hv[0],hv[1]);if(hs>260){b.vx*=1.12;b.vy*=1.12}
-  const s=Math.hypot(b.vx,b.vy);if(s>mx){b.vx*=mx/s;b.vy*=mx/s}return true}
-const smNew=()=>({id:Date.now(),sc:{X:0,O:0},pen:"",w:"",ev:{id:"s"+Date.now(),by:"",k:"start",b:{x:SMFW/2,y:SMHALF+70,vx:0,vy:0}}});
+/* ===== Smackerball physics (pure, no drawing). Used by the game, the Shadow Knight and the tests. =====
+   A room 6 m long and 3.6 m wide, metres, y up. Dad (X) sits at the +z end, Cass (O) at the -z end, halfway is z = 0.
+   Your goal is the whole back wall behind you, up to head height. Two red boxes stand by the side walls at halfway,
+   with a gap behind them: a ball that drops behind a box, or lands on top of one, is stuck and the play is dead. */
+const SR={g:9.81,dt:1/240,br:.1,L:3,W:1.8,GH:.9,WH:2.4,bx0:.95,bx1:1.5,bz:.9,bh:.45,eFloor:.72,eWall:.78,eBox:.4,eHand:.86,drag:.06,roll:.5,hy:.11};
+const SR_HAND={kid:{r:.19,max:9.6,sp:5.5},adult:{r:.16,max:8.6,sp:5.5}};
+const SV={add:(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]],sub:(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]],mul:(a,k)=>[a[0]*k,a[1]*k,a[2]*k],dot:(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2],len:a=>Math.hypot(a[0],a[1],a[2])};
+const srOwner=p=>p[2]>0?"X":"O";            /* whose half the ball is in */
+const srWallOf=w=>w==="X"?SR.L:-SR.L;         /* the z of someone's goal wall */
+/* seeded random numbers, so a test (or a replay) can repeat exactly */
+function srRng(seed){let s=(Math.imul(seed|0,2654435761)^0x9e3779b9)>>>0||1;return()=>{s^=s<<13;s>>>=0;s^=s>>17;s^=s<<5;s>>>=0;return s/4294967296}}
+function srBounce(S,n,e,mu){const vn=SV.dot(S.v,n);if(vn>=0)return 0;S.v=SV.add(S.v,SV.mul(n,-(1+e)*vn));const vt=SV.sub(S.v,SV.mul(n,SV.dot(S.v,n))),l=SV.len(vt);
+  /* friction takes off speed along the surface in proportion to how hard it hit */if(l>1e-6){const cut=Math.min(l,mu*(1+e)*-vn);S.v=SV.sub(S.v,SV.mul(vt,cut/l))}return -vn}
+/* is the ball trapped: behind a box (in the gap by the wall) or sitting on top of one */
+function srTrapped(p){const ax=Math.abs(p[0]),az=Math.abs(p[2]);if(az>SR.bz+.02)return"";if(p[1]>SR.bh&&ax>SR.bx0-.02&&ax<SR.bx1+.02)return"top";if(ax>SR.bx1-.01&&p[1]<SR.bh+.05)return"behind";return""}
+/* one small step. hands = [{who,p,v,r,max}], rnd = random 0..1 for a little spin on rebounds. Returns events. */
+function srStep(S,hands,rnd){const R=SR,dt=R.dt,ev=[],pp=S.p.slice();
+  S.v[1]-=R.g*dt;S.v=SV.mul(S.v,1-R.drag*dt);S.p=SV.add(S.p,SV.mul(S.v,dt));
+  /* floor */
+  if(S.p[1]<R.br){S.p[1]=R.br;const sp=srBounce(S,[0,1,0],R.eFloor,.04);if(sp>.5)ev.push({k:"floor",sp});else{S.v[1]=Math.max(0,S.v[1]);const f=1-R.roll*dt;S.v[0]*=f;S.v[2]*=f}}
+  if(S.p[1]>R.WH-R.br){S.p[1]=R.WH-R.br;srBounce(S,[0,-1,0],.6,.1)}
+  /* side walls */
+  for(const sg of [-1,1])if(sg*S.p[0]>R.W-R.br){S.p[0]=sg*(R.W-R.br);const sp=srBounce(S,[-sg,0,0],R.eWall,.08);if(sp>.4)ev.push({k:"wall",sp})}
+  /* back walls: under head height it's a GOAL for the other player; above, it bounces off */
+  for(const w of ["X","O"]){const z=srWallOf(w),sg=Math.sign(z);if(sg*S.p[2]>sg*z-R.br){if(S.p[1]<R.GH&&!S.dead){ev.push({k:"goal",by:w==="X"?"O":"X",at:[S.p[0],S.p[1]]});S.p[2]=z-sg*R.br;S.v=[0,0,0];S.dead=1;return ev}
+      S.p[2]=z-sg*R.br;const sp=srBounce(S,[0,0,-sg],R.eWall,.08);if(sp>.4)ev.push({k:"wall",sp,high:1})}}
+  /* the two red boxes: soft, not very bouncy, and grippy on top */
+  for(const sg of [-1,1]){const lo=[sg>0?R.bx0:-R.bx1,0,-R.bz],hi=[sg>0?R.bx1:-R.bx0,R.bh,R.bz],q=[0,1,2].map(i=>Math.max(lo[i],Math.min(hi[i],S.p[i]))),d=SV.sub(S.p,q),l=SV.len(d);
+    if(l<R.br){let n;if(l>1e-6)n=SV.mul(d,1/l);else{/* inside: push out the nearest way */const dz=[S.p[0]-lo[0],hi[0]-S.p[0],hi[1]-S.p[1],S.p[2]-lo[2],hi[2]-S.p[2]],m=Math.min(...dz),k=dz.indexOf(m);n=[[-1,0,0],[1,0,0],[0,1,0],[0,0,-1],[0,0,1]][k]}
+      S.p=SV.add(q,SV.mul(n,R.br+1e-4));const top=n[1]>.7,sp=srBounce(S,n,top?.25:R.eBox,top?.5:.15);if(sp>.3)ev.push({k:"box",sp,top})}}
+  /* hands: a slap sends the ball off fast and pops it up; a still hand blocks it with a lively rebound */
+  for(const H of hands||[]){const d=SV.sub(S.p,H.p),l=SV.len(d),rr=R.br+H.r;if(l<rr&&l>1e-6){let n=SV.mul(d,1/l);n=[n[0],Math.max(n[1],.05),n[2]];const nl=SV.len(n);n=SV.mul(n,1/nl);
+      S.p=SV.add(H.p,SV.mul(n,rr+1e-3));const rel=SV.sub(S.v,H.v),vn=SV.dot(rel,n);if(vn<0){S.v=SV.add(S.v,SV.mul(n,-(1+R.eHand)*vn));
+        const hs=Math.hypot(H.v[0],H.v[2]);S.v[1]+=hs*.16+Math.abs(vn)*.12;/* a little random spin so blocks fly off at different angles */
+        const a=((rnd?rnd():.5)-.5)*.6,c=Math.cos(a),s=Math.sin(a),vx=S.v[0],vz=S.v[2];S.v[0]=vx*c-vz*s;S.v[2]=vx*s+vz*c;
+        const sp=SV.len(S.v);if(sp>H.max)S.v=SV.mul(S.v,H.max/sp);ev.push({k:"touch",who:H.who,sp:+sp.toFixed(2),smack:hs>1.2})}}}
+  /* stuck behind or on a box: dead ball after a moment */
+  const tr=srTrapped(S.p);if(tr&&SV.len(S.v)<.6){S.st=(S.st||0)+dt;if(S.st>.5&&!S.dead){S.dead=1;ev.push({k:"stuck",where:tr})}}else S.st=0;
+  if(!S.dead&&srOwner(pp)!==srOwner(S.p))ev.push({k:"cross",to:srOwner(S.p)});
+  return ev}
+/* run the ball on its own (no hands moving) for a while; used by tests and to look ahead */
+function srRun(S,secs,hands,rnd){const out=[];for(let i=0;i<secs*240;i++){const e=srStep(S,hands,rnd);e.forEach(x=>{x.t=+(i*SR.dt).toFixed(4);out.push(x)});if(S.dead)break}return out}
+
+/* ---- one game tick for the whole table: moves the ball in small steps against both hands.
+   Touches only count in the toucher's own half; a 3rd touch gives the other player a penalty. ---- */
+function srTick(G,dt,rnd){const out=[],n=Math.max(1,Math.round(dt/SR.dt)),hs=[G.hands.X,G.hands.O].filter(h=>h&&!h.ghost);if(G.ball.dead||G.pen)return out;
+  const ends=hs.map(h=>h.p.slice()),starts=hs.map(h=>h.pp||h.p);
+  for(let i=0;i<n;i++){/* move the hands a bit each small step too, so a fast swipe can't jump over the ball */hs.forEach((h,j)=>{const k=(i+1)/n;h.p=[starts[j][0]+(ends[j][0]-starts[j][0])*k,ends[j][1],starts[j][2]+(ends[j][2]-starts[j][2])*k]});
+    const e=srStep(G.ball,hs,rnd);for(const x of e){if(x.k==="touch"){const now=G.t||0,H=G.hands[x.who];if(srOwner(G.ball.p)!==x.who&&srOwner(H.p)!==x.who)continue;
+        if(now-(H.lastT||-1)<.18)continue;H.lastT=now;x.res=srTouch(G,x.who)}else if(x.k==="cross")srCross(G,x.to);out.push(x)}
+    G.t=(G.t||0)+SR.dt;if(G.ball.dead||G.pen)break}hs.forEach((h,j)=>{h.p=ends[j];h.pp=ends[j].slice()});return out}
+/* ---- the 2-touch rule: count touches in your own half; the count resets when the ball crosses to the other half ---- */
+function srTouch(G,who){if(G.pen)return null;G.touch=G.touch||{X:0,O:0};G.touch[who]++;if(G.touch[who]>2){G.touch={X:0,O:0};G.pen=who==="X"?"O":"X";return"pen"}return"ok"}
+function srCross(G,to){G.touch=G.touch||{X:0,O:0};G.touch[to]=0;G.touch[to==="X"?"O":"X"]=0}
+
+/* ---- the Shadow Knight's hand. It never just gives up: with 2 touches used, if the ball sits in its half it has to hit it, and that's a penalty ---- */
+function srAI(G,dt,kidOpp,rnd){const A=G.ai=G.ai||{wait:0,slow:0,aim:0},H=G.hands.O,b=G.ball.p,v=G.ball.v,P=kidOpp?{sp:2.7}:{sp:3.4},home=[b[0]*.55,SR.hy,-SR.L+.55];
+  const inMine=b[2]<0,used=(G.touch&&G.touch.O)||0,sp=Math.hypot(v[0],v[2]);let tgt=home;A.wait=Math.max(0,A.wait-dt);
+  if(inMine&&!G.pen&&A.wait<=0){A.slow=sp<.45&&b[1]<.2?A.slow+dt:0;
+    const may=used<2||A.slow>.9;   /* the fix: after 0.9 s of a dead ball it must play it (3rd touch = penalty to you) */
+    if(may){if(!A.aimSet){A.aim=((rnd?rnd():.5)-.5)*2.6;A.aimSet=1}const to=[A.aim,0,SR.L],dx=to[0]-b[0],dz=to[2]-b[2],dl=Math.hypot(dx,dz),wind=b[2]<-.5?.32:.22;
+      /* get behind the ball, then swing through it towards your goal */
+      const behind=[b[0]-dx/dl*wind,SR.hy,b[2]-dz/dl*wind],dist=Math.hypot(H.p[0]-behind[0],H.p[2]-behind[2]);tgt=dist<.12||A.swing?[b[0]+dx/dl*.5,SR.hy,b[2]+dz/dl*.5]:behind;if(dist<.12)A.swing=.35}}
+  else{A.slow=0;A.aimSet=0}
+  if(A.swing){A.swing-=dt;if(A.swing<=0)A.swing=0}
+  const fast=A.swing?2.4:1,mx=P.sp*fast*dt;tgt=[Math.max(-SR.W+H.r,Math.min(SR.W-H.r,tgt[0])),SR.hy,Math.max(-SR.L+.1,Math.min(-H.r,tgt[2]))];
+  const d=[tgt[0]-H.p[0],0,tgt[2]-H.p[2]],l=Math.hypot(d[0],d[2]),st=Math.min(l,mx),np=l>1e-6?[H.p[0]+d[0]/l*st,SR.hy,H.p[2]+d[2]/l*st]:H.p.slice();
+  H.v=[(np[0]-H.p[0])/dt,0,(np[2]-H.p[2])/dt];H.p=np}
+
+/* ---- penalties: taken from the halfway line, same controls as Penalties (tap a spot, flick on the power bar; keeper picks an area) ----
+   Worked out as if the shooter is at halfway shooting at the wall at z = -L; the game mirrors it for the other end. */
+const SR_Z=[{n:"LEFT TOP",x:-1.2,y:.68},{n:"LEFT MIDDLE",x:-1.2,y:.4},{n:"LEFT BOTTOM",x:-1.2,y:.12},{n:"CENTRE",x:0,y:.35},{n:"RIGHT TOP",x:1.2,y:.68},{n:"RIGHT MIDDLE",x:1.2,y:.4},{n:"RIGHT BOTTOM",x:1.2,y:.12}];
+const srZone=(x,y)=>{let b=0,bd=1e9;SR_Z.forEach((z,i)=>{const d=Math.hypot(x-z.x,(y-z.y)*1.6);if(d<bd){bd=d;b=i}});return b};
+const srZd=(x,y,z)=>Math.hypot(x-z.x,(y-z.y)*1.6);
+/* power bar (same bar as Penalties): green perfect; too hard flies above head height; a bit soft is slower and easier to save; far too soft rolls and stops short */
+function srPower(p,kid){const h=kid?.11:.075,mid=.56,top=mid+h,bot=mid-h,f=v=>+v.toFixed(3);if(p>=bot&&p<=top)return{pw:1,lift:0,slack:0,q:"perfect"};
+  if(p>top){const e=p-top;return e<.1?{pw:f(1+e*.5),lift:f(e*1.4),slack:0,q:"hard"}:{pw:f(1.08+e*.3),lift:f(.55+e*1.6),slack:0,q:"too hard"}}
+  const e=bot-p;return e<.12?{pw:f(Math.max(.62,1-e*2.8)),lift:f(-e*.4),slack:.5,q:"soft"}:{pw:.2,lift:0,slack:0,roll:1,rv:f(Math.max(1.5,2.1-(e-.12)*2)),q:"too soft"}}
+function srFree(v,stopZ){const S={p:[0,SR.br,0],v:v.slice()};for(let i=0;i<3*240;i++){S.v[1]-=SR.g*SR.dt;S.v=SV.mul(S.v,1-SR.drag*SR.dt);S.p=SV.add(S.p,SV.mul(S.v,SR.dt));if(S.p[2]<=stopZ)return S.p}return S.p}
+function srPenLaunch(s){if(s.roll){const V=s.rv||1.8,L=Math.hypot(s.tx,SR.L);return[s.tx/L*V,0,-SR.L/L*V]}
+  const V=Math.max(3,Math.min(13,8.5*s.pw)),T=[s.tx,Math.max(SR.br,s.ty+(s.lift||0))],zf=-SR.L+SR.br,tf=-zf/V;let v=[T[0]/tf,(T[1]-SR.br)/tf+SR.g*tf/2,-V];
+  for(let i=0;i<6;i++){const p=srFree(v,zf);v=[v[0]+(T[0]-p[0])/tf,v[1]+(T[1]-p[1])/tf,v[2]]}return v.map(x=>+x.toFixed(4))}
+/* the keeper's hand: slides from its spot to the area it picked */
+const SR_KZ=-SR.L+.38;
+function srKeeperHand(dv,t,save){const pre=save?.25:.1,T=save?.28:.38,k=Math.max(0,Math.min(1,(t+pre)/T)),e=k*k*(3-2*k);return[dv.x*e,SR.hy+(Math.max(SR.hy,dv.y)-SR.hy)*e,SR_KZ]}
+function srPenRun(s,d,rec){const v=srPenLaunch(s),cross=s.roll?null:srFree(v,SR_KZ),inG=cross&&Math.abs(cross[0])<SR.W-SR.br&&cross[1]<SR.GH-.02;
+  const zi=cross?srZone(cross[0],cross[1]):-1,kz=SR_Z[d.z],near=cross&&(zi===d.z||srZd(cross[0],cross[1],kz)-srZd(cross[0],cross[1],SR_Z[zi])<(s.slack||0)+(d.kid?.25:0)),save=!!(inG&&near);
+  const tries=save?[[0,0],[0,-.08],[0,.08],[.1,0],[-.1,0]]:[[0,0]];let best=null;
+  for(const o of tries){const dv=save?{x:cross[0]+o[0],y:cross[1]+o[1]}:{x:kz.x,y:kz.y},S={p:[0,SR.br,0],v:v.slice()},ev=[],fr=[];let goal=false,t=0,touched=false,hp=srKeeperHand(dv,-1,save);
+    for(let i=0;i<5*240;i++){t=i*SR.dt;const np=srKeeperHand(dv,t,save),H={who:"K",p:np,v:SV.mul(SV.sub(np,hp),1/SR.dt),r:.19,max:9};hp=np;
+      const e=srStep(S,save?[H]:[],null);e.forEach(x=>{x.t=t;ev.push(x)});if(rec&&i%4===0)fr.push({t,p:S.p.slice(),h:np});if(e.some(x=>x.k==="touch")&&!touched)touched=t;/* once the keeper has stopped it, the penalty is over: a rebound that rolls in later does not count */
+      if(e.some(x=>x.k==="goal")&&touched===false){goal=true}if(touched!==false&&t>touched+1.1)break;if(e.some(x=>x.k==="wall"&&x.high)&&!goal){S.dead=1;S.high=1}
+      if(S.dead&&(goal||S.high||t>2)){if(S.high){for(let j=0;j<120;j++){const e2=srStep({...S,dead:0,p:S.p,v:S.v},[],null);if(rec&&j%4===0)fr.push({t:t+j*SR.dt,p:S.p.slice(),h:np})}}break}if(!goal&&t>1.2&&SV.len(S.v)<.08)break;if(t>3.2)break}
+    best={goal,save,ev,frames:fr,end:t,cross,zone:zi,dv,kind:goal?"goal":s.roll?"short":save?"saved":S.high?"over":"miss"};if(!save||!goal)break}
+  return best}
+if(typeof module!=="undefined")module.exports={srTick,SR,SR_HAND,SR_Z,srOwner,srWallOf,srRng,srStep,srRun,srTrapped,srTouch,srCross,srAI,srZone,srPower,srPenLaunch,srPenRun,srKeeperHand,srFree};
+
+/* ---------------- SMACKERBALL 3D: sitting at opposite ends of a room, smack the ball into the other one's wall. ----------------
+   Your hand stays in your half. 2 touches max, a 3rd is a penalty (taken from the halfway line, Penalties controls). First to 5.
+   Two red boxes at halfway: if the ball gets stuck behind or on top of one, it's a dead ball. Physics: sm_phys.js above. */
+const SMW=5;let SM=null,SMR=null;
+const smKid=r=>(r==="child"?SR_HAND.kid:SR_HAND.adult);
+const smMine=()=>SM&&SM.solo?"X":me(),smThem=()=>smMine()==="X"?"O":"X";
+const smOppName=()=>(SM&&SM.solo?SOLO_NM:ON0()).toUpperCase();
+const smNew=()=>({id:Date.now(),sc:{X:0,O:0},pen:"",pid:0,w:"",pks:null,pkd:null,ev:{id:"s"+Date.now(),by:"",k:"start",b:{p:[0,SR.br,1],v:[0,0,0]}}});
+function smMkHand(who,role_){const k=smKid(role_);return{who,p:[0,SR.hy,who==="X"?2.4:-2.4],v:[0,0,0],r:k.r,max:k.max}}
 function vSm(){const solo=!!SOLO;if(!solo&&!SMD){db.doc("games/sm").set(smNew()).catch(er);return}
-  const D=solo?smNew():SMD;SM={solo,id:D.id,sc:{...D.sc},pen:D.pen||"",b:{...D.ev.b},evId:D.ev.id,hand:[SMFW/2,(solo||me()==="X")?SMFH-70:70],hv:[0,0],opp:[SMFW/2,(solo||me()==="X")?70:SMFH-70],oppT:[SMFW/2,(solo||me()==="X")?70:SMFH-70],touch:0,lastT:0,goalT:0,msg:"",msgT:0,w:D.w||"",ai:{v:[0,0],touch:0,wait:0},lastOwn:smOwner(D.ev.b),hb:0};
-  g2Shell("smc",`<div class="g2top" id="g2t"></div><div class="g2msg" id="g2m"></div><div class="g2bot" id="g2b"></div>`);const c=$("#g2c");let x=g2Fit(SMFW,SMFH,48),fp=null;
-  window.onresize=()=>{if($("#g2c"))x=g2Fit(SMFW,SMFH,48)};
-  const toW=e=>{let p=g2W(c,e);if(smMine()==="O"&&!SM.solo)p=[SMFW-p[0],SMFH-p[1]];return p};
-  c.onpointerdown=e=>{fp=toW(e);try{c.setPointerCapture(e.pointerId)}catch(_){}};c.onpointermove=e=>{if(fp)fp=toW(e)};c.onpointerup=c.onpointercancel=()=>{fp=null};
-  smUI();
-  g2Loop(dt=>{if(!SM)return;const mine=smMine(),R=smHR(role),them=mine==="X"?"O":"X";
-    /* my hand follows my finger, stays in my half; on a penalty against me it stays on my goal line */
-    if(fp){const yMin=mine==="X"?SMHALF+R:R,yMax=mine==="X"?SMFH-R:SMHALF-R;let tx=Math.max(R,Math.min(SMFW-R,fp[0])),ty=Math.max(yMin,Math.min(yMax,fp[1]));
-      if(SM.pen===them)ty=mine==="X"?SMFH-R-6:R+6;const nh=[SM.hand[0]+(tx-SM.hand[0])*Math.min(1,dt*28),SM.hand[1]+(ty-SM.hand[1])*Math.min(1,dt*28)];
-      SM.hv=[SM.hv[0]*.5+(nh[0]-SM.hand[0])/Math.max(dt,.008)*.5,SM.hv[1]*.5+(nh[1]-SM.hand[1])/Math.max(dt,.008)*.5];SM.hand=nh}else SM.hv=[SM.hv[0]*.8,SM.hv[1]*.8];
-    if(SM.solo)smAI(dt);else{SM.opp[0]+=(SM.oppT[0]-SM.opp[0])*Math.min(1,dt*10);SM.opp[1]+=(SM.oppT[1]-SM.opp[1])*Math.min(1,dt*10)}
-    if(!SM.w&&performance.now()>SM.goalT){const steps=Math.max(1,Math.round(dt*120));for(let i=0;i<steps;i++){
-      const own=smOwner(SM.b);if(own!==SM.lastOwn){SM.lastOwn=own;if(own!==mine)SM.touch=0;if(SM.solo&&own!=="O")SM.ai.touch=0}
-      const sc=smStep(SM.b,dt/steps);
-      if(own===mine&&performance.now()-SM.lastT>120&&smHit(SM.b,SM.hand,SM.hv,R,smMax(role))){SM.lastT=performance.now();SM.touch++;sfx(Math.hypot(SM.hv[0],SM.hv[1])>260?"b_punch":"tap");
-        if(SM.touch>2){smPen(mine);break}if(SM.pen===them)SM.pen="";smSend("touch")}
-      if(sc&&(SM.solo||smOwner({y:sc==="X"?0:SMFH})===mine)){smGoal(sc);break}}}
-    if(!SM.solo&&smOwner(SM.b)===mine&&performance.now()-SM.hb>260){SM.hb=performance.now();db.doc("games/smh").update({[mine]:{x:Math.round(SM.hand[0]),y:Math.round(SM.hand[1]),i:SM.id}}).catch(()=>{})}
-    smDraw(x)});
-  if(!solo)smOn(SMD)}
-function smSend(k,extra){if(SM.solo)return;const ev={id:Math.random().toString(36).slice(2),by:smMine(),k,b:{x:+SM.b.x.toFixed(1),y:+SM.b.y.toFixed(1),vx:Math.round(SM.b.vx),vy:Math.round(SM.b.vy)}};SM.evId=ev.id;
-  db.doc("games/sm").update({ev,pen:SM.pen,...(extra||{})}).catch(er)}
-function smPen(off){const tk=off==="X"?"O":"X";SM.pen=tk;SM.touch=0;SM.b={x:SMFW/2,y:tk==="X"?SMHALF+40:SMHALF-40,vx:0,vy:0};SM.lastOwn=tk;smSay("3 TOUCHES! PENALTY!");sfx("b_warn");if(SM.solo&&tk==="O")SM.ai.wait=performance.now()+900;smSend("pen")}
-function smGoal(by){const c=by==="X"?"O":"X";SM.sc[by]++;SM.pen="";SM.touch=0;SM.ai.touch=0;SM.b={x:SMFW/2,y:c==="X"?SMHALF+70:SMHALF-70,vx:0,vy:0};SM.lastOwn=c;SM.goalT=performance.now()+1200;
-  const mine=smMine();smSay(by===mine?"GOAL!!! ⚽":(SM.solo?SOLO_NM:ON0()).toUpperCase()+" SCORES!");sfx(by===mine?"b_win":"b_ko");
-  if(SM.sc[by]>=SMW)SM.w=by;if(SM.solo&&c==="O")SM.ai.wait=performance.now()+1500;smSend("goal",{sc:{...SM.sc},w:SM.w});smUI()}
-function smSay(t){SM.msg=t;SM.msgT=performance.now()+1500;const m=$("#g2m");if(m){m.textContent=t;m.classList.remove("on");void m.offsetWidth;m.classList.add("on")}}
-function smOn(d){if(!SM||SM.solo||!d)return;if(d.id!==SM.id){SM=null;if(g==="sm")view();return}
-  if(d.ev&&d.ev.id!==SM.evId){SM.evId=d.ev.id;if(d.ev.by!==smMine()){SM.b={...d.ev.b};SM.lastOwn=smOwner(SM.b);if(d.ev.k==="goal"){SM.goalT=performance.now()+1200;const by=d.sc.X>SM.sc.X?"X":"O";smSay(by===smMine()?"GOAL!!! ⚽":ON0().toUpperCase()+" SCORES!");sfx(by===smMine()?"b_win":"b_ko")}
-    if(d.ev.k==="pen")smSay(d.pen===smMine()?"PENALTY TO YOU! SMACK IT!":"PENALTY! KEEP IT OUT!");if(d.ev.k==="touch")sfx("tap")}}
-  SM.sc={...d.sc};SM.pen=d.pen||"";SM.w=d.w||"";smUI()}
-function smUI(){if(!SM)return;const mine=smMine(),them=mine==="X"?"O":"X",t=$("#g2t");if(t)t.innerHTML=`<b>YOU ${SM.sc[mine]}</b><span>FIRST TO ${SMW}</span><b>${(SM.solo?SOLO_NM:ON0()).toUpperCase()} ${SM.sc[them]}</b>`;
-  if(SM.w&&!document.querySelector(".g2ov")){const win=SM.w===mine;if(win&&scored["sm"+SM.id]!==1){scored["sm"+SM.id]=1;gamePts(2)}setTimeout(()=>{if(!$("#smc")||document.querySelector(".g2ov"))return;sfx(win?"b_win":"b_lose");
-    $("#smc").insertAdjacentHTML("beforeend",g2Over(win,win?"YOU WIN!"+gpTxt():(SM.solo?SOLO_NM:ON0()).toUpperCase()+" WINS!"));
-    $("#g2again").onclick=()=>{if(SM.solo){vSm()}else db.doc("games/sm").set(smNew()).catch(er)};$("#g2back").onclick=()=>{g2Stop();SM=null;g=null;view()}},900)}}
-/* Shadow Knight: guards its goal, runs at the ball when it's in its half, smacks it at your goal */
-function smAI(dt){const a=SM.ai,b=SM.b,K=G2K(),sp=K?330:430,R=40;let tx,ty;const inMine=b.y<SMHALF;
-  if(performance.now()<a.wait||!inMine){tx=SMFW/2+(b.x-SMFW/2)*.6;ty=SM.pen==="X"?R+6:70}
-  else{const aim=[SMFW/2+(Math.random()-.5)*SMGW*.6,SMFH],dx=aim[0]-b.x,dy=aim[1]-b.y,d=Math.hypot(dx,dy);tx=b.x-dx/d*(R+SMBR-4);ty=b.y-dy/d*(R+SMBR-4);if(a.touch>=2){tx=SMFW/2;ty=60}}
-  ty=Math.max(R,Math.min(SMHALF-R,ty));const ox=SM.opp[0],oy=SM.opp[1],dx=tx-ox,dy=ty-oy,d=Math.hypot(dx,dy),st=Math.min(d,sp*dt);
-  SM.opp=[ox+(d?dx/d*st:0),oy+(d?dy/d*st:0)];const v=[(SM.opp[0]-ox)/Math.max(dt,.008),(SM.opp[1]-oy)/Math.max(dt,.008)];
-  if(inMine&&performance.now()>a.wait&&performance.now()-(a.lt||0)>150){const hit=smHit(b,SM.opp,[v[0]*1.6,v[1]*1.6+(d<6?420:0)],R,K?820:930);if(hit){a.lt=performance.now();a.touch++;sfx("b_punch");if(SM.pen==="X")SM.pen=""}}}
-function smDraw(x){const mine=smMine(),flip=mine==="O"&&!SM.solo,P=(px,py)=>flip?[SMFW-px,SMFH-py]:[px,py],them=mine==="X"?"O":"X";
-  x.fillStyle="#0d0e22";x.fillRect(-400,-200,SMFW+800,SMFH+400);
-  /* wooden floor */
-  for(let i=0;i<12;i++){x.fillStyle=i%2?"#b9864f":"#c4925a";x.fillRect(i*30,0,30,SMFH)}x.strokeStyle="rgba(0,0,0,.12)";for(let i=0;i<12;i++){x.beginPath();x.moveTo(i*30,0);x.lineTo(i*30,SMFH);x.stroke()}
-  x.strokeStyle="#4a2e14";x.lineWidth=10;x.strokeRect(-5,-5,SMFW+10,SMFH+10);
-  x.setLineDash([12,10]);x.strokeStyle="rgba(255,255,255,.85)";x.lineWidth=4;x.beginPath();x.moveTo(0,SMHALF);x.lineTo(SMFW,SMHALF);x.stroke();x.setLineDash([]);
-  /* goals: mine at the bottom of my screen */
-  const goal=(yy,col,lab)=>{x.fillStyle="rgba(255,255,255,.18)";x.fillRect(SMFW/2-SMGW/2,yy<SMHALF?-46:SMFH,SMGW,46);x.strokeStyle="rgba(255,255,255,.6)";x.lineWidth=1;
-    for(let i=0;i<=SMGW;i+=12){x.beginPath();x.moveTo(SMFW/2-SMGW/2+i,yy<SMHALF?-46:SMFH);x.lineTo(SMFW/2-SMGW/2+i,yy<SMHALF?0:SMFH+46);x.stroke()}
-    x.strokeStyle=col;x.lineWidth=8;x.beginPath();x.moveTo(SMFW/2-SMGW/2,yy);x.lineTo(SMFW/2+SMGW/2,yy);x.stroke();x.fillStyle=col;x.font="900 13px Outfit,sans-serif";x.textAlign="center";x.fillText(lab,SMFW/2,yy<SMHALF?yy+22:yy-12)};
-  goal(0,"#ff3d77",(SM.solo?"SHADOW KNIGHT'S":ON0().toUpperCase()+"'S")+" GOAL");goal(SMFH,"#2ef2c5","YOUR GOAL");
-  x.save();if(flip){x.translate(SMFW,SMFH);x.rotate(Math.PI)}
-  /* hands */
-  const hand=(p,R,col,emo)=>{x.save();if(flip)x.translate(0,0);x.fillStyle="rgba(0,0,0,.25)";x.beginPath();x.arc(p[0]+3,p[1]+4,R,0,7);x.fill();x.fillStyle=col;x.beginPath();x.arc(p[0],p[1],R,0,7);x.fill();x.strokeStyle="#fff";x.lineWidth=3;x.stroke();
-    x.translate(p[0],p[1]);if(flip)x.rotate(Math.PI);x.font=Math.round(R*1.2)+"px serif";x.textAlign="center";x.textBaseline="middle";x.fillText(emo,0,2);x.restore()};
-  hand(SM.opp,SM.solo?40:smHR(role==="child"?"parent":"child"),"#7c3aed",SM.solo?"🛡️":"🖐️");hand(SM.hand,smHR(role),"#0ea5e9","🖐️");
-  /* ball */
-  const b=SM.b;x.fillStyle="rgba(0,0,0,.3)";x.beginPath();x.arc(b.x+3,b.y+4,SMBR,0,7);x.fill();const bg=x.createRadialGradient(b.x-4,b.y-5,2,b.x,b.y,SMBR);bg.addColorStop(0,"#ff9a9a");bg.addColorStop(1,"#d61f3c");x.fillStyle=bg;x.beginPath();x.arc(b.x,b.y,SMBR,0,7);x.fill();
-  x.strokeStyle="#fff";x.lineWidth=2;x.beginPath();x.arc(b.x,b.y,SMBR*.55,0,7);x.stroke();x.restore();
-  const hud=`<span>TOUCHES ${[0,1].map(i=>`<i class="${i<SM.touch?"on":""}"></i>`).join("")}</span>${SM.pen?`<b>${SM.pen===mine?"PENALTY: SMACK IT!":"PENALTY: SAVE IT!"}</b>`:`<em>2 touches max!</em>`}`;
-  if(hud!==SM.hud){SM.hud=hud;const e=$("#g2b");if(e)e.innerHTML=hud}}
+  const D=solo?smNew():SMD,mine=solo?"X":me(),oppRole=solo?"parent":(role==="child"?"parent":"child");
+  SM={solo,id:D.id,sc:{...D.sc},w:D.w||"",evId:D.ev.id,pid:D.pid||0,
+    G:{ball:{p:D.ev.b.p.slice(),v:D.ev.b.v.slice()},hands:{X:smMkHand("X",mine==="X"?role:oppRole),O:smMkHand("O",mine==="O"?role:oppRole)},touch:{X:0,O:0},pen:D.pen||"",t:0},
+    oppT:null,pause:performance.now()+900,PK:null,pkPlayed:-1,hb:0,rnd:srRng(D.id%100000),fp:null,doc:D};
+  if(!solo)SM.G.hands[smThem()].ghost=1;
+  g2Shell("smc",`<div class="g2top" id="g2t"></div><div class="g2msg" id="g2m"></div><div class="g2bot" id="g2b"></div><div class="hplv" id="smrole"></div>
+    <div class="pkz" id="pkz"><div class="pkzt">PENALTY! WHERE WILL YOU SAVE?</div><div class="pkzg">${PK_ZBTN.map(([z,x,y])=>`<button class="${z===3?"c":""}" data-smz="${z}" style="left:${x}%;top:${y}%" aria-label="${SR_Z[z].n}"><span>🖐️</span></button>`).join("")}</div></div>
+    <div class="pkbar" id="pkbar"><div class="pkbg" id="pkbg"></div><b class="pkok" id="pkok">PERFECT</b><div class="pkn" id="pkn"></div><span>POWER</span></div>
+    <div class="hptip" id="hptip"></div><div class="hpload" id="hpload" style="background:linear-gradient(#f5e6cf,#c4925a)">Setting up the room…</div>`);
+  document.querySelectorAll("[data-smz]").forEach(b=>b.onclick=e=>{e.stopPropagation();if(smPenPart()!=="d")return;sfx("tap");smPenSubmit("d",{z:+b.dataset.smz,kid:role==="child"?1:0});b.classList.add("on");$("#pkz").classList.add("picked")});
+  hpThree(()=>{if(!$("#smc"))return;const L=$("#hpload");if(L)L.remove();try{sm3Init()}catch(e){console.error(e);const m=document.createElement("div");m.className="hpload";m.textContent="3D isn't working on this phone.";$("#smc").appendChild(m);return}
+    g2Loop(sm3Frame);smUI()});
+  smUI();if(!solo)smOn(SMD)}
+/* ---- sending and receiving (live games). Whoever's half the ball is in is in charge of it; they tell the other phone what happened ---- */
+function smSend(k,extra){if(SM.solo)return;const B=SM.G.ball,ev={id:Math.random().toString(36).slice(2),by:smMine(),k,b:{p:B.p.map(v=>+v.toFixed(3)),v:B.v.map(v=>+v.toFixed(3))}};SM.evId=ev.id;
+  db.doc("games/sm").update({ev,pen:SM.G.pen,...(extra||{})}).catch(er)}
+function smOn(d){if(!SM||SM.solo||!d)return;if(d.id!==SM.id){SM=null;if(g==="sm")view();return}SM.doc=d;
+  if(d.ev&&d.ev.id!==SM.evId){SM.evId=d.ev.id;if(d.ev.by!==smMine()){const B=SM.G.ball;B.p=d.ev.b.p.slice();B.v=d.ev.b.v.slice();B.dead=0;B.st=0;
+      if(d.ev.k==="touch"){sfx("tap");SM.G.touch[smMine()]=0}
+      if(d.ev.k==="goal"){SM.pause=performance.now()+1300;const by=d.sc.X>SM.sc.X?"X":"O";smSay(by===smMine()?"GOAL!!!":smOppName()+" SCORES!");sfx(by===smMine()?"b_win":"b_ko")}
+      if(d.ev.k==="stuck"){SM.pause=performance.now()+1300;smSay("STUCK! DEAD BALL");sfx("b_warn")}
+      if(d.ev.k==="start"||d.ev.k==="goal"||d.ev.k==="stuck"){SM.G.touch={X:0,O:0}}
+      if(d.ev.k==="pen"){SM.G.touch={X:0,O:0};smSay(d.pen===smMine()?"PENALTY TO YOU!":"PENALTY TO "+smOppName()+"!");sfx("b_warn")}}}
+  if(!SM.PK){SM.sc={...d.sc};SM.w=d.w||"";SM.G.pen=d.pen||"";SM.pid=d.pid||0}smUI()}
+/* ---- penalty: shooter taps a spot on their wall and flicks on the power bar; keeper picks a save area ---- */
+function smPenPart(){if(!SM||!SM.G.pen||SM.PK||!SMR)return null;const d=SM.solo?SM.doc:SMD;if(!d)return null;const sh=SM.G.pen,mine=smMine();
+  if(sh===mine)return d.pks&&d.pks.pid===SM.pid?"wait":"s";return d.pkd&&d.pkd.pid===SM.pid?"wait":"d"}
+function smPenSubmit(part,val){const v={...val,pid:SM.pid};if(SM.solo){SM.doc["pk"+part]=v;smPenCheck();smUI();return}db.doc("games/sm").update({["pk"+part]:v}).catch(er)}
+function smPenCheck(){const d=SM.solo?SM.doc:SMD;if(!d||!SM.G.pen||SM.PK||SM.pkPlayed===SM.pid)return;if(d.pks&&d.pkd&&d.pks.pid===SM.pid&&d.pkd.pid===SM.pid){SM.pkPlayed=SM.pid;smPenPlay(d.pks,d.pkd)}}
+function smPenPlay(s,dd){const sh=SM.G.pen,r=srPenRun(s,dd,true),flip=sh==="O";/* worked out as if shooting at the -z wall; Cass's penalties are turned round */
+  SM.PK={sh,s,d:dd,r,flip,t:-.75,said:0,evi:0,kicked:0,tSay:r.goal?(r.ev.find(e=>e.k==="goal")||{t:.5}).t:r.kind==="short"?Math.max(1,r.end-.6):((r.ev.find(e=>e.k==="touch"||(e.k==="wall"&&e.high))||{t:.5}).t+.25)};SM.PK.end=Math.min(r.end+.2,SM.PK.tSay+1.9);smUI()}
+function smPenEnd(){const P=SM.PK,sh=P.sh,keeper=sh==="X"?"O":"X";SM.PK=null;const D=SM.solo?null:SMD;
+  if(SM.solo||sh===smMine()){/* the shooter's phone writes it down */if(P.r.goal){SM.sc[sh]++;if(SM.sc[sh]>=SMW)SM.w=sh}SM.G.pen="";smServe(keeper);
+    if(SM.solo){SM.doc.pks=null;SM.doc.pkd=null}else smSend("start",{sc:{...SM.sc},w:SM.w,pen:"",pks:null,pkd:null})}
+  else if(D){SM.sc={...D.sc};SM.w=D.w||"";SM.G.pen=D.pen||""}
+  smUI()}
+/* put the ball down in someone's half for a fresh start */
+function smServe(to){const B=SM.G.ball;B.p=[0,SR.br,to==="X"?1.1:-1.1];B.v=[0,0,0];B.dead=0;B.st=0;SM.G.touch={X:0,O:0};SM.pause=performance.now()+1000;if(SM.G.ai){SM.G.ai.wait=.6;SM.G.ai.slow=0}}
+function smSay(t,sub){hpMsg(t,sub)}
+function smUI(){if(!SM)return;const mine=smMine(),them=smThem(),t=$("#g2t");if(t)t.innerHTML=`<b>YOU ${SM.sc[mine]}</b><span>FIRST TO ${SMW}</span><b>${smOppName()} ${SM.sc[them]}</b>`;
+  const part=smPenPart(),Z=$("#pkz"),bar=$("#pkbar"),tip=$("#hptip"),rl=$("#smrole"),pen=SM.G.pen;
+  if(Z){Z.classList.toggle("on",part==="d"||(part==="wait"&&pen!==mine));if(part==="d"&&Z.classList.contains("picked")){Z.classList.remove("picked");Z.querySelectorAll("button").forEach(b=>b.classList.remove("on"))}}
+  if(bar)bar.classList.toggle("on",part==="s"&&!!SM.spot);if(part!=="s")SM.spot=null;
+  if(rl)rl.innerHTML=pen&&!SM.PK?(pen===mine?"<b>YOUR PENALTY</b> from the halfway line":`<b>PENALTY TO ${smOppName()}</b> save it!`):"";
+  if(tip){tip.textContent=SM.w||SM.PK?"":part==="s"?(SM.spot?"Flick UP when the bar is GREEN! ⚡":"Tap where on their wall you want to hit it"):part==="d"?"Pick where you'll save 🖐️":part==="wait"?"Waiting for "+smOppName()+"…":"";tip.classList.toggle("my",part==="s"||part==="d")}
+  const b=$("#g2b");if(b){const n=SM.G.touch[mine]||0,h=pen?"":`<span>TOUCHES ${[0,1].map(i=>`<i class="${i<n?"on":""}"></i>`).join("")}</span><em>${n>=2?"<b>NO MORE! Next one is a penalty</b>":"2 touches max!"}</em>`;if(h!==SM.hud){SM.hud=h;b.innerHTML=h}}
+  if(SM.w&&!SM.PK&&!document.querySelector(".g2ov")){const win=SM.w===mine;if(win&&scored["sm"+SM.id]!==1){scored["sm"+SM.id]=1;gamePts(2)}setTimeout(()=>{if(!$("#smc")||document.querySelector(".g2ov"))return;sfx(win?"b_win":"b_lose");
+    $("#smc").insertAdjacentHTML("beforeend",g2Over(win,win?"YOU WIN!"+gpTxt():smOppName()+" WINS!"));
+    $("#g2again").onclick=()=>{if(SM.solo){vSm()}else db.doc("games/sm").set(smNew()).catch(er)};$("#g2back").onclick=()=>{g2Stop();SM=null;g=null;view()}},900)}
+  if(SM.solo&&pen&&!SM.PK)smBotPen()}
+/* Shadow Knight's penalties: picks a spot and stops the bar like a person, or guesses a save area */
+function smBotPen(){const d=SM.doc,bot="O";if(SM.botPenT&&SM.botPenT>Date.now())return;SM.botPenT=Date.now()+1200;const g=()=>Math.sqrt(-2*Math.log(Math.random()+1e-9))*Math.cos(6.2832*Math.random());
+  if(SM.G.pen===bot&&!(d.pks&&d.pks.pid===SM.pid))setTimeout(()=>{if(!SM||SM.G.pen!==bot||(d.pks&&d.pks.pid===SM.pid))return;const P=srPower(.56+g()*.1,false);
+    smPenSubmit("s",{tx:+((Math.random()<.5?-1:1)*(.5+Math.random()*1.1)).toFixed(2),ty:+(.1+Math.random()*.6).toFixed(2),...P,kid:0})},900);
+  else if(SM.G.pen!==bot&&!(d.pkd&&d.pkd.pid===SM.pid))setTimeout(()=>{if(!SM||!SM.G.pen||(d.pkd&&d.pkd.pid===SM.pid))return;smPenSubmit("d",{z:Math.floor(Math.random()*7),kid:0})},700)}
+
+/* ================= the 3D room ================= */
+function sm3Init(){const T=THREE;
+  if(!SMR){const r=new T.WebGLRenderer({antialias:true,powerPreference:"high-performance"});r.setPixelRatio(Math.min(2,window.devicePixelRatio||1));r.outputEncoding=T.sRGBEncoding;r.shadowMap.enabled=true;r.shadowMap.type=T.PCFSoftShadowMap;
+    SMR={r,cam:new T.PerspectiveCamera(60,1,.05,200),camP:null,camL:null};SMR.scene=sm3Scene(r)}
+  const old=$("#g2c"),cv=SMR.r.domElement;cv.id="g2c";old.replaceWith(cv);smInput(cv);sm3Size();window.onresize=()=>{if($("#g2c"))sm3Size()};SMR.camP=null;
+  const U=SMR.scene.userData,mine=smMine();U.hands.X.setLook(mine==="X"||!SM.solo?"you":"knight",mine==="X");U.hands.O.setLook(SM.solo?"knight":"you",mine==="O")}
+function sm3Size(){const c=SMR.r.domElement,w=c.parentNode?c.parentNode.clientWidth:innerWidth,h=c.parentNode?c.parentNode.clientHeight:innerHeight;SMR.r.setSize(w,h,false);SMR.cam.aspect=w/h;SMR.cam.updateProjectionMatrix()}
+/* a hand: palm, four fingers, thumb and an arm going back to its owner */
+function smHandMesh(S){const T=THREE,g=new T.Group(),skin=new T.MeshStandardMaterial({color:0xf1c7a3,roughness:.7}),sleeve=new T.MeshStandardMaterial({color:0x2563eb,roughness:.8}),
+    palm=new T.Mesh(new T.SphereGeometry(1,20,14),skin);palm.scale.set(.085,.032,.1);palm.castShadow=true;g.add(palm);const fingers=[];
+  [-.054,-.018,.018,.054].forEach((x,i)=>{const L=[.075,.088,.085,.068][i],f=new T.Mesh(new T.CylinderGeometry(.016,.017,L,8),skin);f.rotation.x=Math.PI/2;f.position.set(x,.004,-.1-L/2+.01);f.castShadow=true;g.add(f);
+    const tip=new T.Mesh(new T.SphereGeometry(.0165,8,6),skin);tip.position.set(x,.004,-.1-L+.01);g.add(tip);fingers.push(f,tip)});
+  const th=new T.Mesh(new T.CylinderGeometry(.018,.02,.08,8),skin);th.rotation.set(Math.PI/2,0,-.9);th.position.set(.095,0,-.03);th.castShadow=true;g.add(th);
+  const arm=new T.Mesh(new T.CylinderGeometry(.045,.055,.9,12),sleeve);arm.rotation.x=Math.PI/2-.35;arm.position.set(0,.16,.5);arm.castShadow=true;g.add(arm);
+  const cuff=new T.Mesh(new T.CylinderGeometry(.05,.05,.06,12),new T.MeshStandardMaterial({color:0xffffff}));cuff.rotation.x=Math.PI/2-.35;cuff.position.set(0,.03,.11);g.add(cuff);
+  const glow=new T.Mesh(new T.RingGeometry(.15,.19,32),new T.MeshBasicMaterial({color:0x2ef2c5,transparent:true,opacity:.6,depthWrite:false}));glow.rotation.x=-Math.PI/2;glow.position.y=-SR.hy+.012;g.add(glow);
+  S.add(g);return{g,setLook(kind,mine){/* you: skin and a blue sleeve. Shadow Knight: a dark metal gauntlet */const K=kind==="knight";skin.color.set(K?0x5b6170:0xf1c7a3);skin.metalness=K?.7:0;skin.roughness=K?.35:.7;sleeve.color.set(K?0x312e81:mine?0x2563eb:0xdc2626);
+      glow.material.color.set(mine?0x2ef2c5:0xff3d77);glow.visible=true},glow}}
+function sm3Scene(r){const T=THREE,S=new T.Scene(),M=(c,o)=>new T.MeshStandardMaterial({color:c,roughness:.85,...o}),{L,W,WH,GH}=SR;S.background=new T.Color(0x1b1c2e);
+  /* floor: wooden boards */
+  const fl=hpTex(512,1024,(x,w,h)=>{const cols=["#c4925a","#b9864f","#cf9d63","#b88250","#c89458"];for(let i=0;i<8;i++){let y=-(i*137%300);while(y<h){const len=180+((i*53+y)%140);x.fillStyle=cols[(i*3+Math.floor(y/97))%5];x.fillRect(i*64,y,64,len);
+      x.fillStyle="rgba(0,0,0,.18)";x.fillRect(i*64,y,64,2);for(let k=0;k<14;k++){x.fillStyle=`rgba(90,50,20,${Math.random()*.12})`;x.fillRect(i*64+Math.random()*60,y+Math.random()*len,2+Math.random()*30,1)}y+=len}x.fillStyle="rgba(0,0,0,.25)";x.fillRect(i*64,0,2,h)}});
+  fl.anisotropy=r.capabilities.getMaxAnisotropy();fl.wrapT=T.RepeatWrapping;fl.repeat.set(1,(2*L+3)/(2*L));const floor=new T.Mesh(new T.PlaneGeometry(2*W,2*L+3),new T.MeshStandardMaterial({map:fl,roughness:.6}));floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;S.add(floor);
+  /* halfway line: blue tape */
+  const tape=new T.Mesh(new T.PlaneGeometry(2*W,.06),new T.MeshStandardMaterial({color:0x1d4ed8,roughness:.5}));tape.rotation.x=-Math.PI/2;tape.position.y=.003;S.add(tape);
+  /* walls: painted, with skirting. Back walls only show from the front, so you can see through your own wall to play */
+  const paint=M(0xe9e2d4),wall=(w,h,x,y,z,ry,mat)=>{const m=new T.Mesh(new T.PlaneGeometry(w,h),mat||paint);m.position.set(x,y,z);m.rotation.y=ry;m.receiveShadow=true;S.add(m);return m};
+  wall(2*L,WH,-W,WH/2,0,Math.PI/2);wall(2*L,WH,W,WH/2,0,-Math.PI/2);
+  const ceil=new T.Mesh(new T.PlaneGeometry(2*W,2*L+3),new T.MeshBasicMaterial({color:0xe9e4da}));ceil.rotation.x=Math.PI/2;ceil.position.y=WH;S.add(ceil);
+  const back=(z,ry,col)=>{const t=hpTex(512,340,(x,w,h)=>{x.fillStyle="#e9e2d4";x.fillRect(0,0,w,h);const gy=h-(GH/WH)*h;x.fillStyle="rgba(46,242,107,.18)";x.fillRect(0,gy,w,h-gy);
+      x.strokeStyle="#22c55e";x.lineWidth=14;x.beginPath();x.moveTo(4,h);x.lineTo(4,gy);x.lineTo(w-4,gy);x.lineTo(w-4,h);x.stroke();x.fillStyle="#16a34a";x.font="900 40px Outfit,Arial,sans-serif";x.textAlign="center";x.fillText(col,w/2,gy-18)});
+    wall(2*W,WH,0,WH/2,z,ry,new T.MeshStandardMaterial({map:t,roughness:.9}))};
+  back(-L,0,"GOAL");back(L,Math.PI,"GOAL");
+  const skirt=M(0xffffff);for(const [w,x,z,ry] of [[2*L,-W+.01,0,Math.PI/2],[2*L,W-.01,0,-Math.PI/2]]){const s=new T.Mesh(new T.BoxGeometry(w,.09,.02),skirt);s.position.set(x,.045,z);s.rotation.y=ry;S.add(s)}
+  /* a window, pictures and a lamp so it feels like a room */
+  const sky=hpTex(256,256,(x,w,h)=>{const g=x.createLinearGradient(0,0,0,h);g.addColorStop(0,"#3b8ee8");g.addColorStop(1,"#bfe4ff");x.fillStyle=g;x.fillRect(0,0,w,h);x.fillStyle="#fff";for(let i=0;i<4;i++){x.beginPath();x.arc(40+i*60,80+(i%2)*40,26,0,7);x.fill()}x.fillStyle="#5fae4b";x.fillRect(0,h*.78,w,h*.22)});
+  const win=wall(1.3,1.0,W-.012,1.45,-1.6,-Math.PI/2,new T.MeshBasicMaterial({map:sky}));const fr=M(0xffffff);[[1.4,.06,1.95],[1.4,.06,.95],[.06,1.06,1.45,-2.25],[.06,1.06,1.45,-.95]].forEach(([w,h,y,z])=>{const b=new T.Mesh(new T.BoxGeometry(.04,h,w),fr);b.position.set(W-.02,y,z??-1.6);S.add(b)});
+  const pic=(x,z,ry,c1,c2)=>{const t=hpTex(128,96,(q,w,h)=>{q.fillStyle=c1;q.fillRect(0,0,w,h);q.fillStyle=c2;q.beginPath();q.arc(w*.35,h*.55,26,0,7);q.fill();q.fillRect(w*.55,h*.3,40,50)});const p=wall(.6,.45,x,1.5,z,ry,new T.MeshStandardMaterial({map:t}));
+    const f=new T.Mesh(new T.BoxGeometry(.66,.51,.03),M(0x4a2e14));f.position.set(x+(x>0?.01:-.01),1.5,z);f.rotation.y=ry;S.add(f)};
+  pic(-W+.012,1.6,Math.PI/2,"#fde68a","#ef4444");pic(-W+.012,-1.6,Math.PI/2,"#bfdbfe","#7c3aed");pic(W-.012,1.6,-Math.PI/2,"#bbf7d0","#0ea5e9");
+  /* the two red boxes, a little away from the side walls so the ball can drop behind */
+  const red=new T.MeshStandardMaterial({color:0xdc2626,roughness:.9});for(const sg of [-1,1]){const b=new T.Mesh(new T.BoxGeometry(SR.bx1-SR.bx0,SR.bh,2*SR.bz),red);b.position.set(sg*(SR.bx0+SR.bx1)/2,SR.bh/2,0);b.castShadow=true;b.receiveShadow=true;S.add(b);
+    const seam=new T.Mesh(new T.BoxGeometry(SR.bx1-SR.bx0+.004,.02,2*SR.bz+.004),new T.MeshStandardMaterial({color:0x991b1b}));seam.position.set(sg*(SR.bx0+SR.bx1)/2,SR.bh-.06,0);S.add(seam)}
+  /* light: a warm ceiling light with soft shadows, plus daylight from the window */
+  S.add(new T.HemisphereLight(0xfff5e6,0x6b4a2b,.55));const lamp=new T.PointLight(0xfff1d6,1.0,14,1.6);lamp.position.set(0,WH-.15,0);lamp.castShadow=true;lamp.shadow.mapSize.set(1024,1024);lamp.shadow.bias=-.002;S.add(lamp);
+  const shade=new T.Mesh(new T.CylinderGeometry(.18,.3,.22,20,1,true),new T.MeshStandardMaterial({color:0xfff7e0,emissive:0xffe9b0,emissiveIntensity:.6,side:T.DoubleSide}));shade.position.set(0,WH-.12,0);S.add(shade);
+  const sun=new T.DirectionalLight(0xffffff,.35);sun.position.set(6,4,-1.6);sun.target.position.set(0,0,0);S.add(sun,sun.target);
+  /* the ball: a red and white bouncy ball */
+  const bt=hpTex(256,128,(x,w,h)=>{x.fillStyle="#e11d48";x.fillRect(0,0,w,h);x.fillStyle="#fff";x.fillRect(0,h*.44,w,h*.12);for(let i=0;i<4;i++){x.beginPath();x.arc(i*w/4+w/8,h*.22,9,0,7);x.arc(i*w/4+w/8,h*.78,9,0,7);x.fill()}});
+  const ball=new T.Mesh(new T.SphereGeometry(SR.br,26,18),new T.MeshStandardMaterial({map:bt,roughness:.35}));ball.castShadow=true;S.add(ball);
+  const blob=new T.Mesh(new T.CircleGeometry(SR.br,20),new T.MeshBasicMaterial({color:0,transparent:true,opacity:.3,depthWrite:false}));blob.rotation.x=-Math.PI/2;S.add(blob);
+  const aim=new T.Mesh(new T.RingGeometry(.07,.11,24),new T.MeshBasicMaterial({color:0xffd23f,depthTest:false,transparent:true}));aim.renderOrder=5;aim.visible=false;S.add(aim);
+  S.userData={ball,blob,aim,hands:{X:smHandMesh(S),O:smHandMesh(S)}};return S}
+/* your own eyes: sitting at your end of the room, looking across. For your penalty you move up to the halfway line. */
+function smPov(){const mine=smMine(),sg=mine==="X"?1:-1,P=SM.PK,pen=SM.G.pen;
+  if(pen===mine&&(!P||P.t<1.4))return{p:[0,.95,sg*1.35],l:[0,.32,-sg*SR.L],fv:48,hf:44};
+  return{p:[0,1.75,sg*(SR.L+.75)],l:[0,.1,-sg*.4],fv:62,hf:62}}
+const smFov=(C,asp)=>Math.min(100,Math.max(C.fv,2*Math.atan(Math.tan(C.hf*Math.PI/360)/asp)*180/Math.PI));
+function smRay(cx,cy,plane){const c=SMR.r.domElement.getBoundingClientRect(),T=THREE,rc=new T.Raycaster();rc.setFromCamera(new T.Vector2((cx-c.left)/c.width*2-1,-(cy-c.top)/c.height*2+1),SMR.cam);const hit=new T.Vector3();return rc.ray.intersectPlane(plane,hit)?[hit.x,hit.y,hit.z]:null}
+function smInput(c){const T=THREE;
+  c.onpointerdown=e=>{if(!SM)return;SM.down={x:e.clientX,y:e.clientY};try{c.setPointerCapture(e.pointerId)}catch(_){}if(!SM.G.pen){SM.fp=smRay(e.clientX,e.clientY,new T.Plane(new T.Vector3(0,1,0),-SR.hy));/* lift your hand and put it down where you touch, instead of dragging it through the ball */
+    const H=SM.G.hands[smMine()];if(SM.fp&&Math.hypot(SM.fp[0]-H.p[0],SM.fp[2]-H.p[2])>.45){const sg=smMine()==="X"?1:-1;H.p=[Math.max(-SR.W+H.r,Math.min(SR.W-H.r,SM.fp[0])),SR.hy,Math.max(sg>0?H.r:-SR.L+.12,Math.min(sg>0?SR.L-.12:-H.r,SM.fp[2]))];H.v=[0,0,0];H.jump=1}}};
+  c.onpointermove=e=>{if(!SM||!SM.down||SM.G.pen)return;SM.fp=smRay(e.clientX,e.clientY,new T.Plane(new T.Vector3(0,1,0),-SR.hy))};
+  c.onpointerup=c.onpointercancel=e=>{if(!SM)return;const D=SM.down;SM.down=null;SM.fp=null;const part=smPenPart();if(part!=="s"||!D)return;const r=c.getBoundingClientRect(),dy=e.clientY-D.y,K=role==="child",mine=smMine(),sgn=mine==="X"?1:-1;
+    if(-dy>r.height*.06){if(!SM.spot){hpMsg("Tap their wall first!");return}const P=srPower(pkBarP(),K);sfx(P.q==="perfect"?"coin":"tap");hpMsg(P.q==="perfect"?"PERFECT POWER!":P.q.toUpperCase()+"!");
+      smPenSubmit("s",{tx:+(SM.spot[0]*sgn).toFixed(2),ty:SM.spot[1],...P,kid:K?1:0});SM.spot=null;smUI();return}
+    if(Math.abs(dy)<r.height*.04){const q=smRay(e.clientX,e.clientY,new T.Plane(new T.Vector3(0,0,sgn),SR.L));if(!q||Math.abs(q[0])>SR.W||q[1]<0||q[1]>SR.WH)return;
+      SM.spot=[+Math.max(-SR.W+.12,Math.min(SR.W-.12,q[0])).toFixed(2),+Math.max(.1,Math.min(1.3,q[1])).toFixed(2)];if(!$("#pkbar").classList.contains("on"))PKBAR0=performance.now();sfx("tap");smUI()}}}
+/* every frame */
+function sm3Frame(dt){if(!SM||!SMR)return;const T=THREE,U=SMR.scene.userData,G=SM.G,mine=smMine(),them=smThem(),now=performance.now(),H=G.hands[mine],live=!SM.solo;pkBarDraw();
+  /* my hand follows my finger, inside my half */
+  {const sg=mine==="X"?1:-1,lo=sg>0?H.r:-SR.L+.12,hi=sg>0?SR.L-.12:-H.r;let tp=H.p;if(SM.fp&&!G.pen)tp=[Math.max(-SR.W+H.r,Math.min(SR.W-H.r,SM.fp[0])),SR.hy,Math.max(lo,Math.min(hi,SM.fp[2]))];
+    H.pp=H.p.slice();if(H.jump){H.jump=0;tp=H.p}const k=Math.min(1,dt*26),np=[H.p[0]+(tp[0]-H.p[0])*k,SR.hy,H.p[2]+(tp[2]-H.p[2])*k];H.v=[(np[0]-H.p[0])/Math.max(dt,.008),0,(np[2]-H.p[2])/Math.max(dt,.008)];H.p=np}
+  /* the other hand: the Shadow Knight, or where the other phone says it is */
+  if(SM.solo){if(!G.pen&&now>SM.pause){const O=G.hands.O;O.pp=O.p.slice();srAI(G,dt,role==="child",SM.rnd)}}else if(SM.oppT){const O=G.hands[them],k=Math.min(1,dt*10);O.p=[O.p[0]+(SM.oppT[0]-O.p[0])*k,SR.hy,O.p[2]+(SM.oppT[1]-O.p[2])*k]}
+  /* the ball */
+  let bp=G.ball.p;
+  if(SM.PK){const P=SM.PK;if(!window.HP_FREEZE)P.t+=dt;const F=P.r.frames,fl=P.flip?(q=>[-q[0],q[1],-q[2]]):(q=>q);
+    if(P.t<0){bp=fl([0,SR.br,0]);const sh=G.hands[P.sh],w=Math.max(0,Math.min(1,(P.t+.75)/.75)),from=fl([.05,SR.hy,.55]),to=fl([0,SR.hy,.12]);sh.p=[from[0]+(to[0]-from[0])*w*w,SR.hy,from[2]+(to[2]-from[2])*w*w]}
+    else{if(!P.kicked){P.kicked=1;sfx("b_punch")}let j=P.fi||0;while(j<F.length-2&&F[j+1].t<P.t)j++;P.fi=j;const f0=F[j],f1=F[Math.min(F.length-1,j+1)],u=f1.t>f0.t?Math.max(0,Math.min(1,(P.t-f0.t)/(f1.t-f0.t))):0;
+      bp=fl([0,1,2].map(k=>f0.p[k]+(f1.p[k]-f0.p[k])*u));const kh=fl(f0.h);G.hands[P.sh==="X"?"O":"X"].p=kh;
+      while(P.evi<P.r.ev.length&&P.r.ev[P.evi].t<=P.t){const e=P.r.ev[P.evi++];if(e.k==="touch")sfx("b_punch");else if(e.k==="wall")sfx("b_clang");else if(e.k==="goal")sfx("b_swish");else if(e.k==="floor"&&e.sp>1)sfx("tap")}}
+    if(!P.said&&P.t>=P.tSay){P.said=1;const by=P.sh,me_=by===mine,k=P.r.kind;
+      if(P.r.goal){smSay(me_?"PENALTY SCORED!":smOppName()+" SCORES THE PENALTY!");sfx(me_?"b_win":"b_ko")}else smSay(k==="saved"?(me_?smOppName()+" SAVES IT!":"YOU SAVED IT!"):k==="over"?"OVER THE TOP!":k==="short"?"TOO SOFT! IT STOPPED":"MISSED!");}
+    if(P.t>=P.end)smPenEnd()}
+  else if(!G.pen&&!SM.w&&now>SM.pause){const ev=srTick(G,dt,SM.rnd);for(const e of ev){
+      if(e.k==="touch"){if(live&&e.who!==mine)continue;sfx(e.smack?"b_punch":"tap");if(e.res==="pen"){SM.G.pen=e.who==="X"?"O":"X";SM.pid=(SM.pid||0)+1;G.ball.v=[0,0,0];smSay("3 TOUCHES! PENALTY!",e.who===mine?smOppName()+" gets a penalty":"Penalty to YOU!");sfx("b_warn");
+          if(SM.solo){SM.doc.pks=null;SM.doc.pkd=null}smSend("pen",{pid:SM.pid,pks:null,pkd:null});break}if(live)smSend("touch")}
+      else if(e.k==="goal"){const conceded=e.by===mine?them:mine;if(live&&conceded!==mine)continue;/* the phone of whoever's wall it hit writes the goal */
+        SM.sc[e.by]++;if(SM.sc[e.by]>=SMW)SM.w=e.by;smSay(e.by===mine?"GOAL!!!":smOppName()+" SCORES!");sfx(e.by===mine?"b_win":"b_ko");sfx("b_clang");smServe(conceded);smSend("goal",{sc:{...SM.sc},w:SM.w})}
+      else if(e.k==="stuck"){if(live&&srOwner(G.ball.p)!==mine)continue;smSay("STUCK! DEAD BALL",e.where==="top"?"It landed on the box":"It's behind the box");sfx("b_warn");const last=G.lastBy||srOwner(G.ball.p);smServe(last==="X"?"O":"X");smSend("stuck")}
+      else if(e.k==="wall"&&e.sp>1.5)sfx("tap");else if(e.k==="box")sfx("b_punch")}
+    for(const e of ev)if(e.k==="touch")G.lastBy=e.who;
+    if(live&&srOwner(G.ball.p)===mine&&now-SM.hb>250){SM.hb=now;db.doc("games/smh").update({[mine]:{x:+H.p[0].toFixed(2),y:+H.p[2].toFixed(2),i:SM.id}}).catch(()=>{})}
+    bp=G.ball.p}
+  if(G.pen&&!SM.PK){bp=mine===G.pen?[0,SR.br,0]:[0,SR.br,0];smPenCheck()}
+  /* draw */
+  U.ball.position.set(...bp);U.blob.position.set(bp[0],.004,bp[2]);const hh=Math.max(0,bp[1]-SR.br);U.blob.scale.setScalar(1+hh*.8);U.blob.material.opacity=.32/(1+hh*2);
+  const sp=Math.hypot(G.ball.v[0],G.ball.v[2]);if(sp>.05&&!SM.PK)U.ball.rotateOnWorldAxis(new T.Vector3(G.ball.v[2],0,-G.ball.v[0]).normalize(),-sp/SR.br*dt);
+  for(const w of ["X","O"]){const h=G.hands[w],m=U.hands[w],face=w==="X"?0:Math.PI;m.g.position.set(h.p[0],h.p[1],h.p[2]);const lean=Math.max(-.5,Math.min(.5,(h.v[0]||0)*.08));m.g.rotation.set(0,face+lean,0);m.g.scale.setScalar(h.r/.16)}
+  const showAim=smPenPart()==="s"&&SM.spot;U.aim.visible=!!showAim;if(showAim){const sg=mine==="X"?1:-1;U.aim.position.set(SM.spot[0],SM.spot[1],-sg*(SR.L-.02));U.aim.rotation.y=sg>0?0:Math.PI}
+  const C=smPov(),cam=SMR.cam,fv=smFov(C,cam.aspect);if(Math.abs(cam.fov-fv)>.1){cam.fov=fv;cam.updateProjectionMatrix()}
+  if(!SMR.camP){SMR.camP=new T.Vector3(...C.p);SMR.camL=new T.Vector3(...C.l)}const e=1-Math.exp(-dt*5);SMR.camP.lerp(new T.Vector3(...C.p),e);SMR.camL.lerp(new T.Vector3(...C.l),e);
+  cam.position.copy(SMR.camP);cam.up.set(0,1,0);cam.lookAt(SMR.camL);SMR.r.render(SMR.scene,cam);
+  if(now-(SM.uiT||0)>200){SM.uiT=now;smUI()}}
 
 /* the two new tiles on the Play page, and starting a fresh game when a challenge is accepted */
 const g2Reset=n=>n==="pen"?db.doc("games/pen").set(pkNew()):n==="hoop"?db.doc("games/hoop").set(hpNew()):n==="sm"?db.doc("games/sm").set(smNew()):null;
