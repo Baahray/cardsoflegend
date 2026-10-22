@@ -35,7 +35,7 @@ function srStep(S,hands,rnd){const R=SR,dt=R.dt,ev=[],pp=S.p.slice();
   for(const H of hands||[]){const ex=H.ex||[H.r,H.r,H.r],c=[H.p[0],H.p[1]-SR.hy+ex[1],H.p[2]],d=SV.sub(S.p,c),A=[ex[0]+R.br,ex[1]+R.br,ex[2]+R.br],q=Math.hypot(d[0]/A[0],d[1]/A[1],d[2]/A[2]);
     if(q<1&&q>1e-6){let n=[d[0]/(A[0]*A[0]),Math.max(0,d[1]/(A[1]*A[1])),d[2]/(A[2]*A[2])];let nl=SV.len(n)||1;n=SV.mul(n,1/nl);
       /* the glove's flat side faces the other player: balls coming at it bounce back their way, not off sideways */const fz=H.who==="X"?-1:1;if(n[2]*fz>-.2){n=[n[0]*.45,n[1]*.45,n[2]+fz*1.2];nl=SV.len(n);n=SV.mul(n,1/nl)}S.p=SV.add(c,SV.mul(d,1/q*1.002));S.p[1]=Math.max(S.p[1],R.br);
-      const rel=SV.sub(S.v,H.v),vn=SV.dot(rel,n);{
+      /* a glove pulling back towards its own wall barely drags the ball with it */const fw=H.who==="X"?-1:1,hv=H.v[2]*fw<0?SV.mul(H.v,.25):H.v,rel=SV.sub(S.v,hv),vn=SV.dot(rel,n);{
         if(vn<0){/* SAVE: soak it up */S.v=SV.add(S.v,SV.mul(n,-1.3*vn));S.v[1]=Math.min(S.v[1],.3);const a=((rnd?rnd():.5)-.5)*.2,cs=Math.cos(a),sn=Math.sin(a),vx=S.v[0],vz=S.v[2];S.v[0]=vx*cs-vz*sn;S.v[2]=vx*sn+vz*cs;
           const sp=SV.len(S.v);if(sp>H.max)S.v=SV.mul(S.v,H.max/sp);ev.push({k:"touch",who:H.who,sp:+sp.toFixed(2),smack:false})}}}}
   /* stuck behind or on a box: dead ball after a moment */

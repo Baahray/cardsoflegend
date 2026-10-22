@@ -44,6 +44,7 @@ console.log("\nHands");
  G=mk();const ang=(()=>{R.srSwipeHit(G,"X",[-.3,0,1.6],[.5,0,.8],7);return Math.atan2(G.ball.v[0],-G.ball.v[2])*180/Math.PI})();t("10g ...a diagonal swipe sends it diagonally",Math.abs(ang-45)<2,ang.toFixed(1));
  G=mk();t("10h ...a swipe that passes well away from the ball does nothing",R.srSwipeHit(G,"X",[1.2,0,1.7],[1.2,0,.4],7)===null);
  G=mk();G.ball.p=[.1,.1,-1];t("10i ...and you can't swipe the ball when it's in their half",R.srSwipeHit(G,"X",[.1,0,1.7],[.1,0,-1.5],7)===null)}
+{const S={p:[0,.1,1.6],v:[0,0,0]};R.srRun(S,.05,[hand("X",[0,SR.hy,1.4],[0,0,5])],null);t("10y A glove pulling back towards your own wall hardly drags the ball (no hitting it backwards)",S.v[2]<1.6,S.v.map(v=>v.toFixed(2)).join(","))}
 console.log("\nRules");
 {const G={touch:{X:0,O:0}};const a=[R.srTouch(G,"X"),R.srTouch(G,"X"),R.srTouch(G,"X")];t("12 Two touches are fine; the third is a penalty to the other player",a.join()==="ok,ok,pen"&&G.pen==="O",a.join()+" pen:"+G.pen)}
 {const G={touch:{X:0,O:0}};R.srTouch(G,"X");R.srTouch(G,"X");R.srCross(G,"O");R.srCross(G,"X");t("13 Touches reset when the ball goes into the other half",G.touch.X===0&&R.srTouch(G,"X")==="ok")}
