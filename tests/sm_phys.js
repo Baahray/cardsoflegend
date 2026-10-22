@@ -3,7 +3,7 @@
    Your goal is the whole back wall behind you, up to head height. Two red boxes stand by the side walls at halfway,
    with a gap behind them: a ball that drops behind a box, or lands on top of one, is stuck and the play is dead. */
 const SR={g:9.81,dt:1/240,br:.1,L:3,W:1.8,GH:.9,WH:2.4,bx0:.95,bx1:1.5,bz:.9,bh:.45,eFloor:.72,eWall:.78,eBox:.4,eHand:.86,drag:.06,roll:.5,hy:.11};
-const SR_HAND={kid:{r:.19,max:9.6,sp:5.5},adult:{r:.16,max:8.6,sp:5.5}};
+const SR_HAND={kid:{r:.19,max:9.6,sp:5.5,reach:.58},adult:{r:.16,max:8.6,sp:5.5,reach:.5}};
 const SV={add:(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]],sub:(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]],mul:(a,k)=>[a[0]*k,a[1]*k,a[2]*k],dot:(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2],len:a=>Math.hypot(a[0],a[1],a[2])};
 const srOwner=p=>p[2]>0?"X":"O";            /* whose half the ball is in */
 const srWallOf=w=>w==="X"?SR.L:-SR.L;         /* the z of someone's goal wall */
@@ -28,16 +28,24 @@ function srStep(S,hands,rnd){const R=SR,dt=R.dt,ev=[],pp=S.p.slice();
   for(const sg of [-1,1]){const lo=[sg>0?R.bx0:-R.bx1,0,-R.bz],hi=[sg>0?R.bx1:-R.bx0,R.bh,R.bz],q=[0,1,2].map(i=>Math.max(lo[i],Math.min(hi[i],S.p[i]))),d=SV.sub(S.p,q),l=SV.len(d);
     if(l<R.br){let n;if(l>1e-6)n=SV.mul(d,1/l);else{/* inside: push out the nearest way */const dz=[S.p[0]-lo[0],hi[0]-S.p[0],hi[1]-S.p[1],S.p[2]-lo[2],hi[2]-S.p[2]],m=Math.min(...dz),k=dz.indexOf(m);n=[[-1,0,0],[1,0,0],[0,1,0],[0,0,-1],[0,0,1]][k]}
       S.p=SV.add(q,SV.mul(n,R.br+1e-4));const top=n[1]>.7,sp=srBounce(S,n,top?.25:R.eBox,top?.5:.15);if(sp>.3)ev.push({k:"box",sp,top})}}
-  /* hands: a slap sends the ball off fast and pops it up; a still hand blocks it with a lively rebound */
-  for(const H of hands||[]){const d=SV.sub(S.p,H.p),l=SV.len(d),rr=R.br+H.r;if(l<rr&&l>1e-6){let n=SV.mul(d,1/l);n=[n[0],Math.max(n[1],.05),n[2]];const nl=SV.len(n);n=SV.mul(n,1/nl);
-      S.p=SV.add(H.p,SV.mul(n,rr+1e-3));const rel=SV.sub(S.v,H.v),vn=SV.dot(rel,n);if(vn<0){S.v=SV.add(S.v,SV.mul(n,-(1+R.eHand)*vn));
-        const hs=Math.hypot(H.v[0],H.v[2]);S.v[1]+=hs*.16+Math.abs(vn)*.12;/* a little random spin so blocks fly off at different angles */
-        const a=((rnd?rnd():.5)-.5)*.6,c=Math.cos(a),s=Math.sin(a),vx=S.v[0],vz=S.v[2];S.v[0]=vx*c-vz*s;S.v[2]=vx*s+vz*c;
-        const sp=SV.len(S.v);if(sp>H.max)S.v=SV.mul(S.v,H.max/sp);ev.push({k:"touch",who:H.who,sp:+sp.toFixed(2),smack:hs>1.2})}}}
+  /* hands touching the ball: a still hand stops it softly (so you can stop it, then slap it); a moving hand pushes it along, low */
+  for(const H of hands||[]){const d=SV.sub(S.p,H.p),l=SV.len(d),rr=R.br+H.r;if(l<rr&&l>1e-6){let n=SV.mul(d,1/l);n=[n[0],Math.max(n[1],0),n[2]];const nl=SV.len(n)||1;n=SV.mul(n,1/nl);
+      S.p=SV.add(H.p,SV.mul(n,rr+1e-3));S.p[1]=Math.max(S.p[1],R.br);const rel=SV.sub(S.v,H.v),vn=SV.dot(rel,n);if(vn<0){const hs=Math.hypot(H.v[0],H.v[2]),e=hs>1.5?.65:.35;
+        S.v=SV.add(S.v,SV.mul(n,-(1+e)*vn));S.v[1]=Math.min(S.v[1],.25+hs*.04);/* stays low */
+        const a=((rnd?rnd():.5)-.5)*.2,c=Math.cos(a),s=Math.sin(a),vx=S.v[0],vz=S.v[2];S.v[0]=vx*c-vz*s;S.v[2]=vx*s+vz*c;
+        const sp=SV.len(S.v);if(sp>H.max)S.v=SV.mul(S.v,H.max/sp);ev.push({k:"touch",who:H.who,sp:+sp.toFixed(2),smack:false})}}}
   /* stuck behind or on a box: dead ball after a moment */
   const tr=srTrapped(S.p);if(tr&&SV.len(S.v)<.6){S.st=(S.st||0)+dt;if(tr==="behind"&&S.st>.5&&!S.dead){S.dead=1;ev.push({k:"stuck",where:tr})}}else S.st=0;S.top=tr==="top"&&SV.len(S.v)<.6;
   if(!S.dead&&srOwner(pp)!==srOwner(S.p))ev.push({k:"cross",to:srOwner(S.p)});
   return ev}
+/* ---- a SLAP: you tap (straight at their wall) or flick (the way you flicked). The hand winds up and swings; 0.08 s later,
+   if the ball is within reach, it flies off low along the floor in that direction. Easy to hit with purpose. ---- */
+const SR_SLAP_T=.08;
+function srSlap(G,who,dir,power){const l=Math.hypot(dir[0],dir[1])||1;G.slaps=G.slaps||[];G.slaps.push({who,at:(G.t||0)+SR_SLAP_T,dir:[dir[0]/l,dir[1]/l],power})}
+function srSlapHit(G,s){const H=G.hands[s.who],B=G.ball,dx=B.p[0]-H.p[0],dz=B.p[2]-H.p[2],reach=H.reach||.5;
+  if(Math.hypot(dx,dz)>reach||B.p[1]>Math.max(.75,H.p[1]+.45)||B.dead)return null;
+  if(srOwner(B.p)!==s.who&&srOwner(H.p)!==s.who)return null;
+  const P=Math.min(H.max,s.power);B.v=[s.dir[0]*P,.3+P*.03,s.dir[1]*P];B.dead=0;B.st=0;H.lastT=G.t;return{k:"touch",who:s.who,sp:+P.toFixed(2),smack:true,slap:1,res:srTouch(G,s.who)}}
 /* a hand over a red box rests on top of it (so it can reach a ball sitting up there) */
 function srHandY(p,r){const ax=Math.abs(p[0]),az=Math.abs(p[2]);return ax>SR.bx0-r*.5&&ax<SR.bx1+r*.5&&az<SR.bz+r*.5?SR.bh+SR.hy*.7:SR.hy}
 /* run the ball on its own (no hands moving) for a while; used by tests and to look ahead */
@@ -47,9 +55,10 @@ function srRun(S,secs,hands,rnd){const out=[];for(let i=0;i<secs*240;i++){const 
    Touches only count in the toucher's own half; a 3rd touch gives the other player a penalty. ---- */
 function srTick(G,dt,rnd){const out=[],n=Math.max(1,Math.round(dt/SR.dt)),hs=[G.hands.X,G.hands.O].filter(h=>h&&!h.ghost);if(G.ball.dead||G.pen)return out;
   const ends=hs.map(h=>h.p.slice()),starts=hs.map(h=>h.pp||h.p);
-  for(let i=0;i<n;i++){/* move the hands a bit each small step too, so a fast swipe can't jump over the ball */hs.forEach((h,j)=>{const k=(i+1)/n,q=[starts[j][0]+(ends[j][0]-starts[j][0])*k,0,starts[j][2]+(ends[j][2]-starts[j][2])*k];q[1]=srHandY(q,h.r);h.p=q});
+  for(let i=0;i<n;i++){/* slaps whose moment of impact has come */if(G.slaps&&G.slaps.length){const due=G.slaps.filter(q=>q.at<=(G.t||0));G.slaps=G.slaps.filter(q=>q.at>(G.t||0));for(const q of due){const h=srSlapHit(G,q);if(h){out.push(h);if(G.pen)break}}if(G.pen)break}
+    /* move the hands a bit each small step too, so a fast swipe can't jump over the ball */hs.forEach((h,j)=>{const k=(i+1)/n,q=[starts[j][0]+(ends[j][0]-starts[j][0])*k,0,starts[j][2]+(ends[j][2]-starts[j][2])*k];q[1]=srHandY(q,h.r);h.p=q});
     const e=srStep(G.ball,hs,rnd);for(const x of e){if(x.k==="touch"){const now=G.t||0,H=G.hands[x.who];if(srOwner(G.ball.p)!==x.who&&srOwner(H.p)!==x.who)continue;
-        if(now-(H.lastT||-1)<.18)continue;H.lastT=now;x.res=srTouch(G,x.who)}else if(x.k==="cross")srCross(G,x.to);out.push(x)}
+        if(now-(H.lastT||-1)<.35)continue;H.lastT=now;x.res=srTouch(G,x.who)}else if(x.k==="cross")srCross(G,x.to);out.push(x)}
     /* a ball sitting on top of a box: still playable if that half's player has a touch left; otherwise (or if nobody plays it for 6 s) it's dead */
     const B=G.ball;if(B.top&&!B.dead){B.topT=(B.topT||0)+SR.dt;const own=srOwner(B.p),used=(G.touch&&G.touch[own])||0;if((used>=2&&B.topT>.6)||B.topT>6){B.dead=1;out.push({k:"stuck",where:"top"})}}else B.topT=0;
     G.t=(G.t||0)+SR.dt;if(G.ball.dead||G.pen)break}hs.forEach((h,j)=>{h.p=ends[j];h.p[1]=srHandY(h.p,h.r);h.pp=h.p.slice()});return out}
@@ -58,16 +67,16 @@ function srTouch(G,who){if(G.pen)return null;G.touch=G.touch||{X:0,O:0};G.touch[
 function srCross(G,to){G.touch=G.touch||{X:0,O:0};G.touch[to]=0;G.touch[to==="X"?"O":"X"]=0}
 
 /* ---- the Shadow Knight's hand. It never just gives up: with 2 touches used, if the ball sits in its half it has to hit it, and that's a penalty ---- */
-function srAI(G,dt,kidOpp,rnd){const A=G.ai=G.ai||{wait:0,slow:0,aim:0},H=G.hands.O,b=G.ball.p,v=G.ball.v,P=kidOpp?{sp:2.7}:{sp:3.4},home=[b[0]*.55,SR.hy,-2.15];
-  const inMine=b[2]<0,used=(G.touch&&G.touch.O)||0,sp=Math.hypot(v[0],v[2]);let tgt=home;A.wait=Math.max(0,A.wait-dt);
+function srAI(G,dt,kidOpp,rnd){const A=G.ai=G.ai||{wait:0,slow:0,aim:0,cool:0},H=G.hands.O,b=G.ball.p,v=G.ball.v,P=kidOpp?{sp:2.7,pw:5.4}:{sp:3.4,pw:6.6},home=[b[0]*.55,SR.hy,-2.15];
+  const inMine=b[2]<0,used=(G.touch&&G.touch.O)||0,sp=Math.hypot(v[0],v[2]);let tgt=home;A.wait=Math.max(0,A.wait-dt);A.cool=Math.max(0,A.cool-dt);
   if(inMine&&!G.pen&&A.wait<=0){A.slow=sp<.45&&b[1]<.2?A.slow+dt:0;
     const may=used<2||A.slow>.9;   /* the fix: after 0.9 s of a dead ball it must play it (3rd touch = penalty to you) */
-    if(may){if(!A.aimSet){A.aim=((rnd?rnd():.5)-.5)*2.6;A.aimSet=1}const to=[A.aim,0,SR.L],dx=to[0]-b[0],dz=to[2]-b[2],dl=Math.hypot(dx,dz),wind=b[2]<-.5?.32:.22;
-      /* get behind the ball, then swing through it towards your goal */
-      const behind=[b[0]-dx/dl*wind,SR.hy,b[2]-dz/dl*wind],dist=Math.hypot(H.p[0]-behind[0],H.p[2]-behind[2]);tgt=dist<.12||A.swing?[b[0]+dx/dl*.5,SR.hy,b[2]+dz/dl*.5]:behind;if(dist<.12)A.swing=.35}}
+    if(may){if(!A.aimSet){A.aim=((rnd?rnd():.5)-.5)*2.6;A.aimSet=1}const to=[A.aim,0,SR.L],dx=to[0]-b[0],dz=to[2]-b[2],dl=Math.hypot(dx,dz);
+      /* stand just behind the ball, then slap it towards your wall */
+      const behind=[b[0]-dx/dl*.28,SR.hy,b[2]-dz/dl*.28];tgt=behind;
+      if(A.cool<=0&&Math.hypot(H.p[0]-b[0],H.p[2]-b[2])<(H.reach||.5)*.85&&sp<3){srSlap(G,"O",[dx,dz],P.pw*(.85+(rnd?rnd():.5)*.3));A.cool=.6;A.aimSet=0;A.slapped=1}}}
   else{A.slow=0;A.aimSet=0}
-  if(A.swing){A.swing-=dt;if(A.swing<=0)A.swing=0}
-  const fast=A.swing?2.4:1,mx=P.sp*fast*dt;tgt=[Math.max(-SR.W+H.r,Math.min(SR.W-H.r,tgt[0])),SR.hy,Math.max(-2.3,Math.min(-H.r,tgt[2]))];
+  const mx=P.sp*dt;tgt=[Math.max(-SR.W+H.r,Math.min(SR.W-H.r,tgt[0])),SR.hy,Math.max(-2.3,Math.min(-H.r,tgt[2]))];
   const d=[tgt[0]-H.p[0],0,tgt[2]-H.p[2]],l=Math.hypot(d[0],d[2]),st=Math.min(l,mx),np=l>1e-6?[H.p[0]+d[0]/l*st,SR.hy,H.p[2]+d[2]/l*st]:H.p.slice();
   H.v=[(np[0]-H.p[0])/dt,0,(np[2]-H.p[2])/dt];H.p=np}
 
@@ -97,4 +106,4 @@ function srPenRun(s,d,rec){const v=srPenLaunch(s),cross=s.roll?null:srFree(v,SR_
       if(S.dead&&(goal||S.high||t>2)){if(S.high){for(let j=0;j<120;j++){const e2=srStep({...S,dead:0,p:S.p,v:S.v},[],null);if(rec&&j%4===0)fr.push({t:t+j*SR.dt,p:S.p.slice(),h:np})}}break}if(!goal&&t>1.2&&SV.len(S.v)<.08)break;if(t>3.2)break}
     best={goal,save,ev,frames:fr,end:t,cross,zone:zi,dv,kind:goal?"goal":s.roll?"short":save?"saved":S.high?"over":"miss"};if(!save||!goal)break}
   return best}
-if(typeof module!=="undefined")module.exports={srHandY,srTick,SR,SR_HAND,SR_Z,srOwner,srWallOf,srRng,srStep,srRun,srTrapped,srTouch,srCross,srAI,srZone,srPower,srPenLaunch,srPenRun,srKeeperHand,srFree};
+if(typeof module!=="undefined")module.exports={srSlap,srSlapHit,srHandY,srTick,SR,SR_HAND,SR_Z,srOwner,srWallOf,srRng,srStep,srRun,srTrapped,srTouch,srCross,srAI,srZone,srPower,srPenLaunch,srPenRun,srKeeperHand,srFree};
