@@ -30,14 +30,13 @@ function srStep(S,hands,rnd){const R=SR,dt=R.dt,ev=[],pp=S.p.slice();
     if(l<R.br){let n;if(l>1e-6)n=SV.mul(d,1/l);else{/* inside: push out the nearest way */const dz=[S.p[0]-lo[0],hi[0]-S.p[0],hi[1]-S.p[1],S.p[2]-lo[2],hi[2]-S.p[2]],m=Math.min(...dz),k=dz.indexOf(m);n=[[-1,0,0],[1,0,0],[0,1,0],[0,0,-1],[0,0,1]][k]}
       S.p=SV.add(q,SV.mul(n,R.br+1e-4));const top=n[1]>.7,sp=srBounce(S,n,top?.25:R.eBox,top?.5:.15);if(sp>.3)ev.push({k:"box",sp,top})}}
   /* hands touching the ball: a still hand stops it softly (so you can stop it, then slap it); a moving hand pushes it along, low */
-  /* gloves are solid, the size of the picture (an egg shape: wide, half a metre tall, fairly deep). A still or slow glove SAVES the ball softly;
-     a glove moving fast into the ball SLAPS it the way the glove is going, with some air. */
+  /* gloves are solid, the size of the picture (an egg shape: wide, half a metre tall, fairly deep). Bumping into the ball only SAVES or nudges it softly:
+     slapping is always on purpose (tap or swipe the ball, see srHitBall). */
   for(const H of hands||[]){const ex=H.ex||[H.r,H.r,H.r],c=[H.p[0],H.p[1]-SR.hy+ex[1],H.p[2]],d=SV.sub(S.p,c),A=[ex[0]+R.br,ex[1]+R.br,ex[2]+R.br],q=Math.hypot(d[0]/A[0],d[1]/A[1],d[2]/A[2]);
     if(q<1&&q>1e-6){let n=[d[0]/(A[0]*A[0]),Math.max(0,d[1]/(A[1]*A[1])),d[2]/(A[2]*A[2])];let nl=SV.len(n)||1;n=SV.mul(n,1/nl);
       /* the glove's flat side faces the other player: balls coming at it bounce back their way, not off sideways */const fz=H.who==="X"?-1:1;if(n[2]*fz>-.2){n=[n[0]*.45,n[1]*.45,n[2]+fz*1.2];nl=SV.len(n);n=SV.mul(n,1/nl)}S.p=SV.add(c,SV.mul(d,1/q*1.002));S.p[1]=Math.max(S.p[1],R.br);
-      const hs=Math.hypot(H.v[0],H.v[2]),rel=SV.sub(S.v,H.v),vn=SV.dot(rel,n);if(vn<0||hs>1.5){
-        if(hs>1.5&&SV.dot(H.v,n)>0){/* SLAP */const P=Math.min(H.max,Math.max(3.5,2.4+hs*1.0)),dir=[H.v[0]/hs,H.v[2]/hs];S.v=[dir[0]*P,srLift(P),dir[1]*P];ev.push({k:"touch",who:H.who,sp:+P.toFixed(2),smack:true,slap:1,dir})}
-        else if(vn<0){/* SAVE: soak it up */S.v=SV.add(S.v,SV.mul(n,-1.3*vn));S.v[1]=Math.min(S.v[1],.3);const a=((rnd?rnd():.5)-.5)*.2,cs=Math.cos(a),sn=Math.sin(a),vx=S.v[0],vz=S.v[2];S.v[0]=vx*cs-vz*sn;S.v[2]=vx*sn+vz*cs;
+      const rel=SV.sub(S.v,H.v),vn=SV.dot(rel,n);{
+        if(vn<0){/* SAVE: soak it up */S.v=SV.add(S.v,SV.mul(n,-1.3*vn));S.v[1]=Math.min(S.v[1],.3);const a=((rnd?rnd():.5)-.5)*.2,cs=Math.cos(a),sn=Math.sin(a),vx=S.v[0],vz=S.v[2];S.v[0]=vx*cs-vz*sn;S.v[2]=vx*sn+vz*cs;
           const sp=SV.len(S.v);if(sp>H.max)S.v=SV.mul(S.v,H.max/sp);ev.push({k:"touch",who:H.who,sp:+sp.toFixed(2),smack:false})}}}}
   /* stuck behind or on a box: dead ball after a moment */
   const tr=srTrapped(S.p);if(tr&&SV.len(S.v)<.6){S.st=(S.st||0)+dt;if(tr==="behind"&&S.st>.5&&!S.dead){S.dead=1;ev.push({k:"stuck",where:tr})}}else S.st=0;S.top=tr==="top"&&SV.len(S.v)<.6;
@@ -53,12 +52,15 @@ function srSlapHit(G,s){const H=G.hands[s.who],B=G.ball,dx=B.p[0]-H.p[0],dz=B.p[
   const P=Math.min(H.max,s.power);B.v=[s.dir[0]*P,srLift(P),s.dir[1]*P];B.dead=0;B.st=0;H.lastT=G.t;return{k:"touch",who:s.who,sp:+P.toFixed(2),smack:true,slap:1,res:srTouch(G,s.who)}}
 /* every slap lifts the ball into a low arc: it flies and bounces, but mostly stays under head height */
 const srLift=P=>1.0+P*.22;
+/* hit the ball on purpose: off it goes that way at speed P, with a little air. Counts as a touch. */
+function srHitBall(G,who,dir,P){const B=G.ball,H=G.hands[who],l=Math.hypot(dir[0],dir[1])||1,d=[dir[0]/l,dir[1]/l];P=Math.min(H.max,Math.max(3.5,P));B.v=[d[0]*P,srLift(P),d[1]*P];B.dead=0;B.st=0;H.lastT=G.t;
+  return{k:"touch",who,sp:+P.toFixed(2),smack:true,slap:1,dir:d,res:srTouch(G,who)}}
 /* a SWIPE through the ball: your finger's path on the floor (a -> b). If it passes near the ball (in your half), the ball goes
    along that line at a speed set by how fast you swiped. This is the flick. */
 function srSwipeHit(G,who,a,b,power){const B=G.ball,H=G.hands[who];if(B.dead||G.pen)return null;if(srOwner(B.p)!==who)return null;
   const ab=[b[0]-a[0],b[2]-a[2]],l=Math.hypot(ab[0],ab[1]);if(l<.05)return null;const ap=[B.p[0]-a[0],B.p[2]-a[2]],k=Math.max(0,Math.min(1,(ap[0]*ab[0]+ap[1]*ab[1])/(l*l))),
     cx=a[0]+ab[0]*k-B.p[0],cz=a[2]+ab[1]*k-B.p[2],near=Math.hypot(cx,cz);if(near>(H.reach||.6)*.75||B.p[1]>.8)return null;
-  const P=Math.min(H.max,Math.max(3.5,power)),d=[ab[0]/l,ab[1]/l];B.v=[d[0]*P,srLift(P),d[1]*P];B.dead=0;B.st=0;H.lastT=G.t;return{k:"touch",who,sp:+P.toFixed(2),smack:true,slap:1,dir:d,res:srTouch(G,who)}}
+  return srHitBall(G,who,ab,power)}
 /* a hand over a red box rests on top of it (so it can reach a ball sitting up there) */
 function srHandY(p,r){const ax=Math.abs(p[0]),az=Math.abs(p[2]);return ax>SR.bx0-r*.5&&ax<SR.bx1+r*.5&&az<SR.bz+r*.5?SR.bh+SR.hy*.7:SR.hy}
 /* run the ball on its own (no hands moving) for a while; used by tests and to look ahead */
@@ -120,4 +122,4 @@ function srPenRun(s,d,rec){const v=srPenLaunch(s),cross=s.roll?null:srFree(v,SR_
       if(S.dead&&(goal||S.high||t>2)){if(S.high){for(let j=0;j<120;j++){const e2=srStep({...S,dead:0,p:S.p,v:S.v},[],null);if(rec&&j%4===0)fr.push({t:t+j*SR.dt,p:S.p.slice(),h:np})}}break}if(!goal&&t>1.2&&SV.len(S.v)<.08)break;if(t>3.2)break}
     best={goal,save,ev,frames:fr,end:t,cross,zone:zi,dv,kind:goal?"goal":s.roll?"short":save?"saved":S.high?"over":"miss"};if(!save||!goal)break}
   return best}
-if(typeof module!=="undefined")module.exports={srSwipeHit,srLift,srSlap,srSlapHit,srHandY,srTick,SR,SR_HAND,SR_Z,srOwner,srWallOf,srRng,srStep,srRun,srTrapped,srTouch,srCross,srAI,srZone,srPower,srPenLaunch,srPenRun,srKeeperHand,srFree};
+if(typeof module!=="undefined")module.exports={srHitBall,srSwipeHit,srLift,srSlap,srSlapHit,srHandY,srTick,SR,SR_HAND,SR_Z,srOwner,srWallOf,srRng,srStep,srRun,srTrapped,srTouch,srCross,srAI,srZone,srPower,srPenLaunch,srPenRun,srKeeperHand,srFree};

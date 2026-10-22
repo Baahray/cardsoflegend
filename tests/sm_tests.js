@@ -22,8 +22,9 @@ console.log("\nHands");
  const sp=outs.map(v=>Math.hypot(v[0],v[2])),ang=outs.map(v=>Math.atan2(v[0],v[2])*180/Math.PI);
  t("8  A still glove stops a shot softly, so you can stop it and then flick it",sp.every(s=>s<2.3),sp.map(s=>s.toFixed(1)).join(" "));
  t("9  ...and it comes off at slightly different angles each time",Math.max(...ang)-Math.min(...ang)>4,ang.map(a=>a.toFixed(0)).join(" "))}
-{const S={p:[0,.1,1.6],v:[0,0,0]};R.srRun(S,.05,[hand("X",[0,SR.hy,1.8],[0,0,-6])],null);let top=0;const S2={p:S.p.slice(),v:S.v.slice()};for(let i=0;i<120;i++){R.srStep(S2,[],null);top=Math.max(top,S2.p[1])}
- t("10 A glove moving fast into the ball SLAPS it hard the way the glove is going, with air",S.v[2]<-6&&top>.3&&top<SR.GH,S.v.map(v=>v.toFixed(2)).join(",")+" highest "+top.toFixed(2))}
+{const S={p:[0,.1,1.6],v:[0,0,0]};R.srRun(S,.05,[hand("X",[0,SR.hy,1.8],[0,0,-6])],null);t("10 Bumping the ball with a moving glove only nudges it on, low (slaps are on purpose)",S.v[2]<-1&&S.v[1]<.35,S.v.map(v=>v.toFixed(2)).join(","))}
+{const G={ball:{p:[0,.1,1.2],v:[0,0,0]},hands:{X:hand("X",[0,SR.hy,1.6]),O:hand("O",[0,SR.hy,-2.4])},touch:{X:0,O:0},t:0};const e=R.srHitBall(G,"X",[.3,-1],8);let top=0;for(let i=0;i<60;i++){R.srTick(G,1/60,null);top=Math.max(top,G.ball.p[1])}
+ t("10t A TAP slap sends the ball off fast towards their end with a little air",e&&e.res==="ok"&&top>.3&&top<SR.GH,"highest "+top.toFixed(2))}
 {let saves=0,n=0;for(const x of [-.25,-.12,0,.12,.25])for(const vy of [0,1.5,2.5]){n++;const S={p:[x,.1,.2],v:[0,vy,6]};R.srRun(S,.45,[hand("X",[0,SR.hy,1.4])],R.srRng(3));if(S.p[2]<1.4&&S.v[2]<=0)saves++}
  t("10z A still glove saves shots that hit anywhere on it, even bouncing ones",saves===n,saves+"/"+n)}
 {const mk=kid=>({ball:{p:[0,.1,1.2],v:[0,0,0]},hands:{X:{...hand("X",[0,SR.hy,1.6],[0,0,0],kid),reach:(kid?R.SR_HAND.kid:R.SR_HAND.adult).reach},O:hand("O",[0,SR.hy,-2.4])},touch:{X:0,O:0},t:0}),A=mk(true),B=mk(false),kid=A.hands.X,dad=B.hands.X;
