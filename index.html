@@ -376,6 +376,14 @@ body.dfon{overflow:hidden}
 .g2msg.on{animation:g2m 1.5s ease-out}@keyframes g2m{0%{opacity:0;transform:translate(-50%,-50%) scale(.5)}15%{opacity:1;transform:translate(-50%,-50%) scale(1.1)}70%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-60%) scale(1)}}
 .g2bot{position:absolute;left:0;right:0;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:2;display:flex;justify-content:space-between;align-items:center;padding:0 16px;color:#fff;font:800 13px 'Outfit',sans-serif;pointer-events:none}
 .g2bot span{display:flex;align-items:center;gap:6px}.g2bot i{width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,.3);display:inline-block}.g2bot i.on{background:#ffd23f}.g2bot b{color:#ff3d77}.g2bot em{font-style:normal;color:var(--mut)}
+.hplv{position:absolute;top:calc(48px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);z-index:2;background:rgba(17,20,40,.75);color:#fff;border-radius:14px;padding:6px 14px;font:600 13px 'Outfit',sans-serif;white-space:nowrap;pointer-events:none}.hplv b{color:#ffd23f;font-weight:900}
+.g2msg small{display:block;font-size:17px;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.5);margin-top:2px}
+.hpcam{position:absolute;top:calc(84px + env(safe-area-inset-top,0px));right:10px;z-index:3;height:38px;padding:0 12px;border-radius:19px;border:1px solid rgba(255,255,255,.4);background:rgba(20,10,40,.5);color:#fff;font:800 11px 'Outfit',sans-serif;letter-spacing:.05em}
+.hpcm{position:absolute;top:calc(128px + env(safe-area-inset-top,0px));right:10px;z-index:4;display:none;flex-direction:column;gap:4px;background:rgba(15,12,35,.92);border-radius:14px;padding:6px;max-height:60vh;overflow:auto}.hpcm.on{display:flex}
+.hpcm button{border:0;border-radius:10px;background:rgba(255,255,255,.08);color:#fff;font:800 12px 'Outfit',sans-serif;padding:9px 14px;text-align:left;letter-spacing:.04em}
+.hparr{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none;opacity:0}.hparr.on{opacity:1}.hparr line{stroke-width:7;stroke-linecap:round;stroke-dasharray:2 13}
+.hptip{position:absolute;left:0;right:0;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:2;text-align:center;color:#fff;font:800 16px 'Outfit',sans-serif;text-shadow:0 2px 6px rgba(0,0,0,.7);pointer-events:none}.hptip.my{animation:hpt 1.2s ease-in-out infinite}@keyframes hpt{50%{transform:translateY(-5px)}}
+.hpload{position:absolute;inset:0;z-index:3;display:flex;align-items:center;justify-content:center;text-align:center;color:#fff;font:800 18px 'Outfit',sans-serif;background:linear-gradient(#2f7fe0,#bfe4ff);padding:30px}
 .g2ov{position:absolute;inset:0;z-index:4;background:rgba(10,8,30,.78);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px}
 </style></head><body><main>
 <div class="top"><div><h1 class="px" style="font-size:15px;line-height:1.2">CASS &amp; DAD&#39;S<br>CARDS OF LEGENDS</h1><div id="onl" class="onl"></div></div><div class="row" style="flex-wrap:nowrap"><button class="b d" id="snd" style="min-height:44px;padding:0 12px"><span class="ico ico-horn" style="width:28px;height:28px"></span></button><div class="b y" id="pt" style="cursor:default"><span class="pot" id="pot"></span><b id="ptn">0</b></div></div></div>
@@ -3062,72 +3070,264 @@ function g2Fit(WW,WH,pad=0){const c=$("#g2c"),r=c.getBoundingClientRect(),dpr=Ma
 const g2W=(c,e)=>{const f=c._f,r=c.getBoundingClientRect();return[(e.clientX-r.left-f.ox)/f.k,(e.clientY-r.top-f.oy)/f.k]};
 function g2Over(win,txt){return`<div class="g2ov"><div class="px" style="font-size:30px;color:${win?"#ffd23f":"#7c8cff"}">${txt}</div><div class="row ctr" style="margin-top:14px"><button class="b y" id="g2again">PLAY AGAIN</button><button class="b d" id="g2back">BACK</button></div></div>`}
 
-/* ---------------- HOOP SHOT: flick the ball into the hoop. 5 shots each, take turns. ---------------- */
-const HPW=360,HPH=600,HPR=22,HPRIM=170,HPG=1500;
-const hpRim=p=>p==="O"?88:72,hpRK=sh=>sh.bot?"X":sh.p;                       /* Cass's rim is a little wider (his quiet head start) */
-const hpX0=n=>180+((n*73)%5-2)*36;
-const hpHx=(n,t)=>n>=4?180+(n>=8?100:80)*Math.sin(t*(n>=8?2.1:1.5)+n):180;
-function hpSim(vx,vy,n,p,keep){const rw=hpRim(p),pts=[];let x=hpX0(n),y=520,t=0,ok=false,bounced=0,through=false;const dt=1/120;
-  for(let i=0;i<120*4.2;i++){t+=dt;const py=y;vy+=HPG*dt;x+=vx*dt;y+=vy*dt;const hx=hpHx(n,t),L=hx-rw/2,Rr=hx+rw/2;
-    for(const ex of[L,Rr]){const dx=x-ex,dy=y-HPRIM,d=Math.hypot(dx,dy);if(d<HPR+4){const nx=dx/d,ny=dy/d,dot=vx*nx+vy*ny;if(dot<0){vx-=1.6*dot*nx;vy-=1.6*dot*ny;vx*=.85;vy*=.85}x=ex+nx*(HPR+4.1);y=HPRIM+ny*(HPR+4.1)}}
-    if(!ok&&py<HPRIM&&y>=HPRIM&&vy>0&&Math.abs(x-hx)<rw/2-HPR*.45){ok=true;through=true}
-    if(x<HPR){x=HPR;vx=Math.abs(vx)*.7}if(x>HPW-HPR){x=HPW-HPR;vx=-Math.abs(vx)*.7}if(y<HPR){y=HPR;vy=Math.abs(vy)*.5}
-    if(y>560){y=560;vy=-Math.abs(vy)*.45;vx*=.8;bounced++}
-    if(keep&&i%2===0)pts.push([x,y,t]);if(bounced>=3||(bounced&&t>3))break}
-  return{ok,pts}}
-function hpBotShot(n,want){let best=null;for(let i=0;i<260;i++){const vx=(Math.random()-.5)*620,vy=-(1000+Math.random()*520),r=hpSim(vx,vy,n,"X",false);if(r.ok===want)return{vx,vy};if(!best)best={vx,vy}}return best}
+/* ===== Basketball physics (pure, no drawing). Reused by the game, the replays, the Shadow Knight and the tests. =====
+   World: metres, y up. Rim centre at (hx, 3.05+hy, 0). The backboard face is the plane z = -0.38. The shooter stands at +z.
+   Fixed time step, so the same shot always gives the same result (good for replays and tests). */
+const HP={g:9.81,dt:1/240,br:.12,mass:.6,rimR:.236,tube:.009,rimY:3.05,nRim:48,boardZ:-.38,boardW:1.83,boardBot:2.90,boardTop:3.97,
+  eRim:.58,y0:1.0,aimZ:-.04,cal:1,eBoard:.62,eGround:.74,mu:.45,netDepth:.45,netBot:.55,poleZ:-1.5,poleR:.1,fence:[-7.8,7.8,-4.6,13]};
+HP.I=2/3*HP.mass*HP.br*HP.br;   /* hollow sphere */
+/* rounds: distance, launch angle, hoop movement */
+const HP_ROUNDS=[{n:"EASY",D:2.6,tol:1.3},{n:"NORMAL",D:4,tol:1},{n:"HARD",D:5.4,tol:.8},{n:"MOVING HOOP",D:4,tol:.9,mx:.65,mT:4.4},{n:"UP & DOWN",D:4.4,tol:.9,my:.32,mT:3.6}];
+const HP_SUDDEN={n:"SUDDEN DEATH",D:5,tol:.85};
+const hpRound=n=>n>=10?HP_SUDDEN:HP_ROUNDS[Math.floor(n/2)];
+function hpHoop(cfg,t){const w=cfg.mT?2*Math.PI*t/cfg.mT:0;return{x:cfg.mx?cfg.mx*Math.sin(w):0,y:cfg.my?cfg.my*Math.sin(w):0}}
+/* the "ideal" throw from the ball to just behind the middle of the rim, at the round's launch angle */
+function hpIdeal(cfg,ph){const P0=[0,HP.y0,cfg.D];let tA=1.1,v=null;
+  for(let it=0;it<8;it++){const h0=hpHoop(cfg,ph),h1=hpHoop(cfg,ph+tA),lead=cfg.lead??1,hx=h0.x+(h1.x-h0.x)*lead,hy=h0.y+(h1.y-h0.y)*lead;
+    const T=[hx,HP.rimY+hy+.02,HP.aimZ],dx=T[0]-P0[0],dz=T[2]-P0[2],L=Math.hypot(dx,dz),H=T[1]-P0[1],th=Math.atan(2*H/L+Math.tan((cfg.entry||44)*Math.PI/180));
+    const sp=Math.sqrt(HP.g*L*L/(2*Math.cos(th)**2*(L*Math.tan(th)-H)));v=[dx/L*sp*Math.cos(th),sp*Math.sin(th),dz/L*sp*Math.cos(th)];tA=L/(sp*Math.cos(th))}
+  return v}
+/* turn a swipe into a throw. pw = power (1 = perfect), an = aim in degrees (0 = straight). A dead zone around perfect makes it forgiving. */
+function hpAssist(pw,an,kid,cfg){const tl=(cfg&&cfg.tol)||1,dz=(kid?.22:.14)*tl,k=kid?.35:.45,ad=(kid?7:4.5)*tl,ak=kid?.3:.4,e=pw-1,soft=(x,d,s)=>Math.sign(x)*Math.max(0,Math.abs(x)-d)*s;
+  return{pw:+(1+soft(e,dz,k)).toFixed(4),an:+soft(an,ad,ak).toFixed(3)}}
+function hpLaunch(cfg,ph,pw,an){const v=hpIdeal(cfg,ph),a=an*Math.PI/180,c=Math.cos(a),s=Math.sin(a);pw*=HP.cal;
+  return{v:[(v[0]*c-v[2]*s)*pw,v[1]*pw,(v[0]*s+v[2]*c)*pw],w:[12,-an*.6,0]}}
+const HV={add:(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]],sub:(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]],mul:(a,k)=>[a[0]*k,a[1]*k,a[2]*k],dot:(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2],
+  cross:(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]],len:a=>Math.hypot(a[0],a[1],a[2])};
+/* bounce the ball off a contact with outward normal n: restitution e, friction mu, spin taken into account */
+function hpBounce(S,n,e,mu){const r=HV.mul(n,-HP.br),vc=HV.add(S.v,HV.cross(S.w,r)),vn=HV.dot(vc,n);if(vn>=0)return 0;
+  S.v=HV.add(S.v,HV.mul(n,-(1+e)*vn));const vt=HV.sub(vc,HV.mul(n,vn)),vtl=HV.len(vt);
+  if(vtl>1e-6){const t=HV.mul(vt,1/vtl),jt=Math.min(vtl*HP.mass/2.5,mu*(1+e)*Math.abs(vn)*HP.mass),J=HV.mul(t,-jt);
+    S.v=HV.add(S.v,HV.mul(J,1/HP.mass));S.w=HV.add(S.w,HV.mul(HV.cross(r,J),1/HP.I))}
+  return -vn}
+/* run a whole shot. Returns whether it scored, every contact, and (if rec) the ball's path at 60 frames a second */
+function hpSim(cfg,ph,launch,rec){const S={p:launch.p?launch.p.slice():[0,HP.y0,cfg.D],v:launch.v.slice(),w:launch.w.slice()},ev=[],fr=[];let t=0,inside=false,scored=false,scoreT=-1,rest=0,last=null,grounds=0,roll=0,lastA=null,pcy=null;
+  const add=(k,a,sp)=>{const ex=ev[ev.length-1];if(ex&&ex.k===k&&t-ex.t2<.06){ex.t2=t;if(k==="rim"&&lastA!==null){let d=a-lastA;d=(d+540)%360-180;ex.arc+=Math.abs(d)}lastA=a;return}
+    ev.push({k,t,t2:t,a,pos:k==="rim"?(Math.abs(a)<45?"front":Math.abs(a)>135?"back":a>0?"right":"left"):"",sp:+sp.toFixed(2),arc:0});lastA=a};
+  for(let i=0;i<240*8;i++){t=i*HP.dt;const h=hpHoop(cfg,ph+t),cx=h.x,cy=HP.rimY+h.y,py=S.p[1];
+    /* gravity, a little air drag, spin slowly fading */
+    S.v[1]-=HP.g*HP.dt;const dr=1-.004*HP.dt;S.v=HV.mul(S.v,dr);S.w=HV.mul(S.w,1-.15*HP.dt);
+    S.p=HV.add(S.p,HV.mul(S.v,HP.dt));
+    /* net: softly slows the ball while it is inside */
+    const hd=Math.hypot(S.p[0]-cx,S.p[2]);if(hd<HP.rimR&&S.p[1]<cy&&S.p[1]>cy-HP.netDepth){const k=1-3.2*HP.dt;S.v[0]*=k;S.v[2]*=k;S.v[1]*=1-1.1*HP.dt}
+    /* the net catches a ball that has dropped in, and steers it down instead of letting it fly out the side */
+    if(inside&&S.p[1]<cy&&S.p[1]>cy-HP.netDepth){const nr=HP.rimR-(cy-S.p[1])/HP.netDepth*.08-HP.br*.45,dx=S.p[0]-cx,dz=S.p[2],d=Math.hypot(dx,dz);
+      if(d>nr){const nx=dx/d,nz=dz/d,vn=S.v[0]*nx+S.v[2]*nz,pen=d-nr;S.p[0]-=nx*pen*.35;S.p[2]-=nz*pen*.35;if(vn>0){S.v[0]-=nx*vn*.9;S.v[2]-=nz*vn*.9;S.v[1]*=1-.6*vn*HP.dt}}}
+    /* rim: a ring of small colliders. Check the closest few */
+    const ang=Math.atan2(S.p[0]-cx,S.p[2]),base=Math.round(ang/(2*Math.PI)*HP.nRim);let best=null,bd=1e9;
+    for(let j=base-2;j<=base+2;j++){const a=j/HP.nRim*2*Math.PI,c=[cx+HP.rimR*Math.sin(a),cy,HP.rimR*Math.cos(a)],d=HV.len(HV.sub(S.p,c));if(d<bd){bd=d;best=c}}
+    if(bd<HP.br+HP.tube){const n=HV.mul(HV.sub(S.p,best),1/bd);S.p=HV.add(best,HV.mul(n,HP.br+HP.tube+1e-4));const sp=hpBounce(S,n,HP.eRim,HP.mu);if(sp>.02||1)add("rim",Math.atan2(best[0]-cx,best[2])*180/Math.PI,sp)}
+    /* backboard: flat face */
+    const bz=HP.boardZ,by0=HP.boardBot+h.y,by1=HP.boardTop+h.y;
+    if(S.p[2]-bz<HP.br&&S.p[2]>bz-.05&&Math.abs(S.p[0]-cx)<HP.boardW/2&&S.p[1]>by0&&S.p[1]<by1){S.p[2]=bz+HP.br+1e-4;const sp=hpBounce(S,[0,0,1],HP.eBoard,.3);if(sp>.05)add("board",0,sp)}
+    /* the pole holding the hoop up, and the fence round the court */
+    {const dx=S.p[0],dz=S.p[2]-HP.poleZ,d=Math.hypot(dx,dz);if(d<HP.br+HP.poleR&&S.p[1]<4.3){const n=[dx/d,0,dz/d];S.p[0]=n[0]*(HP.br+HP.poleR+1e-4);S.p[2]=HP.poleZ+n[2]*(HP.br+HP.poleR+1e-4);const sp=hpBounce(S,n,.5,.3);if(sp>.05)add("pole",0,sp)}}
+    {const F=HP.fence;if(S.p[1]<3.4){if(S.p[0]<F[0]+HP.br){S.p[0]=F[0]+HP.br;if(hpBounce(S,[1,0,0],.3,.4)>.05)add("fence",0,1)}if(S.p[0]>F[1]-HP.br){S.p[0]=F[1]-HP.br;if(hpBounce(S,[-1,0,0],.3,.4)>.05)add("fence",0,1)}
+      if(S.p[2]<F[2]+HP.br){S.p[2]=F[2]+HP.br;if(hpBounce(S,[0,0,1],.3,.4)>.05)add("fence",0,1)}if(S.p[2]>F[3]-HP.br){S.p[2]=F[3]-HP.br;if(hpBounce(S,[0,0,-1],.3,.4)>.05)add("fence",0,1)}}}
+    /* ground */
+    if(S.p[1]<HP.br){S.p[1]=HP.br;const sp=hpBounce(S,[0,1,0],HP.eGround,.6);if(sp>.25){add("ground",0,sp);grounds++}else{S.v[1]=Math.max(0,S.v[1]);const f=1-1.2*HP.dt;S.v[0]*=f;S.v[2]*=f;
+      /* rolling: spin matches the speed along the ground */S.w=[ -S.v[2]/HP.br*-1,S.w[1]*.98,-S.v[0]/HP.br];}}
+    /* scoring: the centre of the ball must come DOWN through the ring, then drop below the net. Only once per shot. */
+    if(pcy===null)pcy=cy;if(!scored){if(py>pcy&&S.p[1]<=cy&&S.v[1]<0&&hd<HP.rimR-.03)inside=true;if(inside&&S.p[1]>cy+.06)inside=false;if(inside&&S.p[1]<cy-.3&&hd<HP.rimR+.06){scored=true;scoreT=t}}
+    pcy=cy;
+    if(rec&&i%4===0)fr.push({t,p:S.p.slice(),w:S.w.slice(),h:[h.x,h.y]});
+    const spd=HV.len(S.v);if(S.p[1]<=HP.br+.001&&spd<.15)rest+=HP.dt;else rest=0;
+    if(rest>.4||Math.abs(S.p[0])>14||S.p[2]>16||S.p[2]<-6)break}
+  return{ok:scored,scoreT,ev,frames:fr,end:t}}
+/* what kind of shot was it (for the commentary and for the tests) */
+function hpKind(r){const W=e=>e.k==="rim"||e.k==="board",c=r.ev.filter(e=>W(e)&&(!r.ok||e.t<=r.scoreT+.05)),f=c[0],rims=r.ev.filter(e=>e.k==="rim"),hoopHits=r.ev.filter(W),roll=Math.max(0,...rims.map(e=>e.arc));
+  const g=r.ev.filter(e=>e.k==="ground").length;let k;
+  if(r.ok)k=!c.length?"swish":f.k==="board"?"bank":roll>100?"roll-in":"rim-in";
+  else if(!hoopHits.length)k="airball";else if(roll>100)k="roll-out";else if(hoopHits.length>=3)k="multi";else if(hoopHits[0].k==="board")k="board";else k="rim-"+hoopHits[0].pos;
+  return{k,contacts:hoopHits.length,roll:Math.round(roll),grounds:g}}
+if(typeof module!=="undefined")module.exports={HP,HP_ROUNDS,HP_SUDDEN,hpRound,hpHoop,hpIdeal,hpAssist,hpLaunch,hpSim,hpKind};
+
+/* ---------------- HOOP SHOT 3D: a sunny street court. Swipe up to shoot. 5 rounds each, take turns, then sudden death. ----------------
+   The ball's flight comes from hpSim (real physics above). This part only draws it, so every camera shows the same shot. */
+const HP_SAY={swish:"SWISH!",bank:"BANK SHOT!","roll-in":"ROLLED IN!","rim-in":"IN OFF THE RIM!","rim-front":"FRONT RIM!","rim-back":"BACK RIM!","rim-left":"OFF THE SIDE!","rim-right":"OFF THE SIDE!",board:"OFF THE BOARD!","roll-out":"RIMMED OUT!",multi:"RATTLED OUT!",airball:"AIRBALL!"};
+const HP_CAMS=["BEHIND","CLOSE-UP","FRONT","TOP-DOWN","SIDE LEFT","SIDE RIGHT","WIDE","DIAGONAL","LOW","HIGH"];
 const hpNew=()=>({id:Date.now(),n:0,sh:[],w:""});
-let HPA=null,HPL=-1;           /* current animation; last shot index shown */
+let HPA=null,HPL=-1,HPT0=0,HPR=null,hpCamI=0,HPDRAG=null;
+try{hpCamI=Math.max(0,Math.min(9,+localStorage.getItem("hpcam")||0))}catch(_){}
 function hpTurn(d){return d.n%2===0?"X":"O"}
-function hpScore(d){const s={X:0,O:0};(d.sh||[]).forEach(q=>{if(q.ok)s[q.p]++});return s}
-function hpDone(d){const s=hpScore(d),n=d.n;if(n<10)return null;if(n%2)return null;return s.X===s.O?null:(s.X>s.O?"X":"O")}
+function hpScore(d,upto){const s={X:0,O:0};(d.sh||[]).forEach((q,i)=>{if(q.ok&&(upto==null||i<upto))s[q.p]++});return s}
+function hpDone(d){const s=hpScore(d),n=d.n;if(n<10||n%2)return null;return s.X===s.O?null:(s.X>s.O?"X":"O")}
+const hpWho=p=>p===me()?"YOU":(SOLO?SOLO_NM:ON0()).toUpperCase();
+/* Three.js is big, so it only loads when Hoop Shot opens */
+function hpThree(cb){if(window.THREE)return cb();if(hpThree.q){hpThree.q.push(cb);return}hpThree.q=[cb];const s=document.createElement("script");
+  s.src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js";s.onload=()=>{const q=hpThree.q||[];hpThree.q=null;q.forEach(f=>f())};
+  s.onerror=()=>{hpThree.q=null;s.remove();const m=$("#hpload");if(m)m.innerHTML="Couldn't load the 3D court.<br>Check the internet, then go back and try again."};document.head.appendChild(s)}
+
 function vHoop(){const d=HPD;if(!d){GD("hoop").set(hpNew());return}
-  g2Shell("hpc",`<div class="g2top" id="g2t"></div><div class="g2msg" id="g2m"></div>`);const c=$("#g2c");let x=g2Fit(HPW,HPH),samp=[],drag=false;HPL=(d.sh||[]).length;HPA=null;
-  window.onresize=()=>{if($("#g2c"))x=g2Fit(HPW,HPH)};
-  c.onpointerdown=e=>{const D=HPD;if(!D||HPA||hpTurn(D)!==me()||D.w)return;const p=g2W(c,e),bx=hpX0(D.n);if(Math.hypot(p[0]-bx,p[1]-520)>90)return;drag=true;samp=[[p[0],p[1],performance.now()]];try{c.setPointerCapture(e.pointerId)}catch(_){}};
-  c.onpointermove=e=>{if(!drag)return;const p=g2W(c,e);samp.push([p[0],p[1],performance.now()]);if(samp.length>12)samp.shift()};
-  c.onpointerup=c.onpointercancel=e=>{if(!drag)return;drag=false;const D=HPD;const now=performance.now(),s0=samp.find(s=>now-s[2]<110)||samp[0],s1=samp[samp.length-1];const dt=Math.max(16,s1[2]-s0[2]);
-    let vx=(s1[0]-s0[0])/dt*1000*.95,vy=(s1[1]-s0[1])/dt*1000*.95;const m=Math.hypot(vx,vy);if(m>2300){vx*=2300/m;vy*=2300/m}if(vy>-350){hpMsg("Flick it UP!");return}
-    const r=hpSim(vx,vy,D.n,me(),true),sh={p:me(),vx:Math.round(vx),vy:Math.round(vy),ok:r.ok};HPL=D.n+1;hpPlay(D.n,sh,r);sfx("b_throw");
-    GD("hoop").set({...D,n:D.n+1,sh:[...(D.sh||[]),sh]}).catch(er)};
-  g2Loop(dt=>hpDraw(x,dt));hpUpd()}
-function hpMsg(t){const m=$("#g2m");if(m){m.textContent=t;m.classList.remove("on");void m.offsetWidth;m.classList.add("on")}}
-function hpPlay(n,sh,r){HPA={n,sh,pts:(r||hpSim(sh.vx,sh.vy,n,hpRK(sh),true)).pts,t:0,ok:sh.ok,said:0}}
-function hpUpd(){const d=HPD;if(!d||!$("#hpc"))return;const s=hpScore(d),mine=me(),them=mine==="X"?"O":"X",w=hpDone(d);
+  g2Shell("hpc",`<div class="g2top" id="g2t"></div><div class="g2msg" id="g2m"></div><div class="hplv" id="hplv"></div>
+    <button class="hpcam" id="hpcam" aria-label="Camera">🎥 <span id="hpcamn">${HP_CAMS[hpCamI]}</span></button><div class="hpcm" id="hpcm">${HP_CAMS.map((c,i)=>`<button data-hpc="${i}">${c}</button>`).join("")}</div>
+    <svg class="hparr" id="hparr"><line id="hparl" x1="0" y1="0" x2="0" y2="0"/><circle id="hparc" r="10"/></svg><div class="hptip" id="hptip"></div><div class="hpload" id="hpload">Loading the court…</div>`);
+  HPL=(d.sh||[]).length;HPA=null;HPT0=performance.now();HPDRAG=null;
+  $("#hpcam").onclick=e=>{e.stopPropagation();$("#hpcm").classList.toggle("on")};
+  document.querySelectorAll("[data-hpc]").forEach(b=>b.onclick=e=>{e.stopPropagation();hpCamI=+b.dataset.hpc;try{localStorage.setItem("hpcam",hpCamI)}catch(_){}$("#hpcamn").textContent=HP_CAMS[hpCamI];$("#hpcm").classList.remove("on");sfx("tap")});
+  hpThree(()=>{if(!$("#hpc"))return;const L=$("#hpload");if(L)L.remove();try{hp3Init()}catch(e){console.error(e);const m=document.createElement("div");m.className="hpload";m.textContent="3D isn't working on this phone.";$("#hpc").appendChild(m);return}
+    g2Loop(hp3Frame);hpUpd()});
+  hpUpd()}
+
+/* ---- swipe: drag up from anywhere. Longer swipe = harder throw, sideways = aim. The arrow turns green when the power is right. ---- */
+function hpSwipeVals(dx,dy,H){const ref=Math.min(H,820)*.3,raw=Math.max(0,-dy)/ref,an=Math.atan2(dx,Math.max(1,-dy))*180/Math.PI*.6,cfg=hpRound(HPD?HPD.n:0);
+  return{raw,rawAn:an,a:hpAssist(raw,an,G2K(),cfg)}}
+function hpInput(c){
+  c.onpointerdown=e=>{const D=HPD;$("#hpcm")&&$("#hpcm").classList.remove("on");if(!D||!HPR||HPA||HPR.reset>0||hpTurn(D)!==me()||D.w||hpDone(D))return;
+    HPDRAG={x:e.clientX,y:e.clientY,cx:e.clientX,cy:e.clientY};try{c.setPointerCapture(e.pointerId)}catch(_){}hpArrow()};
+  c.onpointermove=e=>{if(!HPDRAG)return;HPDRAG.cx=e.clientX;HPDRAG.cy=e.clientY;hpArrow()};
+  c.onpointerup=c.onpointercancel=e=>{if(!HPDRAG)return;const S_=HPDRAG;HPDRAG=null;hpArrow();const D=HPD,r=c.getBoundingClientRect();if(!D||HPA||hpTurn(D)!==me())return;
+    const dy=S_.cy-S_.y,dx=S_.cx-S_.x;if(-dy<r.height*.06){hpMsg("Swipe UP! ↑");return}
+    const v=hpSwipeVals(dx,dy,r.height),ph=+((performance.now()-HPT0)/1000).toFixed(3),cfg=hpRound(D.n),pw=v.a.pw,an=v.a.an,res=hpSim(cfg,ph,hpLaunch(cfg,ph,pw,an),true);
+    const sh={p:me(),pw,an,ph,ok:res.ok};HPL=D.n+1;hpPlay(D.n,sh,res);sfx("b_throw");GD("hoop").set({...D,n:D.n+1,sh:[...(D.sh||[]),sh]}).catch(er)}}
+function hpArrow(){const s=$("#hparr");if(!s)return;const R=HPDRAG;if(!R){s.classList.remove("on");return}const c=$("#g2c").getBoundingClientRect(),dx=R.cx-R.x,dy=R.cy-R.y,v=hpSwipeVals(dx,dy,c.height),e=Math.abs(v.a.pw-1);
+  const col=-dy<c.height*.06?"rgba(255,255,255,.6)":e<.004?"#2ef26b":e<.03?"#ffd23f":"#ff4d4d";s.classList.add("on");
+  const L=$("#hparl"),C=$("#hparc");L.setAttribute("x1",R.x-c.left);L.setAttribute("y1",R.y-c.top);L.setAttribute("x2",R.cx-c.left);L.setAttribute("y2",R.cy-c.top);L.style.stroke=col;
+  C.setAttribute("cx",R.cx-c.left);C.setAttribute("cy",R.cy-c.top);C.style.fill=col}
+function hpMsg(t,sub){const m=$("#g2m");if(!m)return;m.innerHTML=t+(sub?`<small>${sub}</small>`:"");m.style.fontSize=t.length>13?"26px":"34px";m.classList.remove("on");void m.offsetWidth;m.classList.add("on")}
+
+/* ---- play a shot: the physics already happened, now show it ---- */
+function hpPlay(n,sh,r){const cfg=hpRound(n);r=r||hpSim(cfg,sh.ph,hpLaunch(cfg,sh.ph,sh.pw,sh.an),true);const k=hpKind(r);
+  let tMiss=r.end;if(!r.ok){const hits=r.ev.filter(e=>e.k==="rim"||e.k==="board");if(hits.length)tMiss=hits[hits.length-1].t2+.35;else{const f=r.frames.find(f=>f.t>.4&&f.p[1]<2.4);tMiss=f?f.t:1.4}}
+  const tSay=r.ok?r.scoreT:tMiss;HPA={n,i:n,sh,r,cfg,k:k.k,t:0,said:0,evi:0,tSay,end:Math.min(r.end,tSay+2.1,6),q:null};if(HPR)HPR.ballQ=null}
+function hpUpd(){const d=HPD;if(!d||!$("#hpc"))return;const mine=me(),them=mine==="X"?"O":"X",w=hpDone(d);
   if((d.sh||[]).length>HPL&&!HPA){const i=d.sh.length-1;HPL=d.sh.length;hpPlay(i,d.sh[i])}
-  if((d.sh||[]).length<HPL&&!HPA)HPL=(d.sh||[]).length;
-  const t=$("#g2t");if(t)t.innerHTML=`<b>YOU ${s[mine]}</b><span>${d.n>=10?"SUDDEN DEATH!":"ROUND "+Math.min(5,Math.floor(d.n/2)+1)+" OF 5"}</span><b>${ON().toUpperCase()} ${s[them]}</b>`;
+  if((d.sh||[]).length<HPL&&!HPA){HPL=(d.sh||[]).length;HPT0=performance.now()}
+  const s=hpScore(d,HPA&&!HPA.said?HPA.i:null),t=$("#g2t");if(t)t.innerHTML=`<b>YOU ${s[mine]}</b><span>${d.n>=10?"SUDDEN DEATH!":"ROUND "+Math.min(5,Math.floor(d.n/2)+1)+" OF 5"}</span><b>${(SOLO?SOLO_NM:ON0()).toUpperCase()} ${s[them]}</b>`;
+  if(HPR)hpBoards(s[mine],s[them]);
+  const cfg=hpRound(HPA?HPA.n:d.n),lv=$("#hplv");if(lv)lv.innerHTML=w?"":`<b>${cfg.n}</b> ${cfg.mx?"it moves side to side":cfg.my?"it moves up and down":cfg.D<3?"close":cfg.D<4.5?"middle":"far away"}`;
+  const tip=$("#hptip");if(tip){const my=hpTurn(d)===mine;tip.textContent=w||HPA?"":my?"YOUR SHOT! Swipe up ↑":(SOLO?SOLO_NM:ON0())+" is shooting…";tip.classList.toggle("my",!!(my&&!w&&!HPA))}
   if(w&&!HPA){if(!document.querySelector(".g2ov")){const win=w===mine;if(win&&scored["hp"+d.id]!==1){scored["hp"+d.id]=1;gamePts(2)}sfx(win?"b_win":"b_lose");
-    $("#hpc").insertAdjacentHTML("beforeend",g2Over(win,win?"YOU WIN!"+gpTxt():ON().toUpperCase()+" WINS!"));
+    $("#hpc").insertAdjacentHTML("beforeend",g2Over(win,win?"YOU WIN!"+gpTxt():(SOLO?SOLO_NM:ON0()).toUpperCase()+" WINS!"));
     $("#g2again").onclick=()=>{GD("hoop").set(hpNew())};$("#g2back").onclick=()=>{g2Stop();g=null;view()}}}
   else{const o=document.querySelector(".g2ov");if(o&&!w)o.remove()}
   if(SOLO&&!w&&!HPA&&hpTurn(d)!==me())hpBot()}
+/* Shadow Knight: picks a real swipe, checks with the physics whether it goes in, and keeps the one that matches how good it feels like being */
 let hpBotT=0;
-function hpBot(){const d=HPD;if(!SOLO||!d||Date.now()<hpBotT)return;hpBotT=Date.now()+2500;setTimeout(()=>{const D=HPD;if(!SOLO||!D||hpTurn(D)===me()||HPA)return;
-  const want=Math.random()<(G2K()?.42:.58),v=hpBotShot(D.n,want),r=hpSim(v.vx,v.vy,D.n,"X",true),sh={p:hpTurn(D),bot:1,vx:Math.round(v.vx),vy:Math.round(v.vy),ok:r.ok};HPL=D.n+1;hpPlay(D.n,sh,r);sfx("b_throw");
-  GD("hoop").set({...D,n:D.n+1,sh:[...(D.sh||[]),sh]})},1200)}
-function hpDraw(x,dt){const d=HPD;if(!d)return;const A=HPA,n=A?A.n:d.n,tt=A?A.t:performance.now()/1000,hx=hpHx(n,A?A.t:0),rw=hpRim(A?hpRK(A.sh):(SOLO&&hpTurn(d)!==me()?"X":hpTurn(d)));
-  const gr=x.createLinearGradient(0,0,0,HPH);gr.addColorStop(0,"#1b1640");gr.addColorStop(1,"#3a1d5e");x.fillStyle=gr;x.fillRect(-400,-200,HPW+800,HPH+400);
-  x.fillStyle="#5a3a1a";x.fillRect(-400,560+HPR,HPW+800,200);x.fillStyle="#7a5228";x.fillRect(-400,560+HPR,HPW+800,8);
-  for(let i=0;i<5;i++){x.fillStyle="rgba(255,255,255,.04)";x.beginPath();x.moveTo(40+i*70,-50);x.lineTo(10+i*70,560);x.lineTo(70+i*70,560);x.fill()}
-  /* backboard + rim + net */
-  x.fillStyle="#f4f6ff";x.fillRect(hx-70,HPRIM-110,140,96);x.strokeStyle="#ff3d77";x.lineWidth=4;x.strokeRect(hx-70,HPRIM-110,140,96);x.strokeRect(hx-26,HPRIM-62,52,40);
-  x.strokeStyle="#ff7a1a";x.lineWidth=7;x.beginPath();x.moveTo(hx-rw/2,HPRIM);x.lineTo(hx+rw/2,HPRIM);x.stroke();
-  x.strokeStyle="rgba(255,255,255,.8)";x.lineWidth=1.6;for(let i=0;i<=6;i++){const a=hx-rw/2+i*rw/6,b=hx-rw/2*.6+i*rw*.6/6;x.beginPath();x.moveTo(a,HPRIM);x.lineTo(b,HPRIM+52);x.stroke()}
-  for(let j=1;j<4;j++){const yy=HPRIM+j*13,w2=rw/2*(1-j*.1);x.beginPath();x.moveTo(hx-w2,yy);x.lineTo(hx+w2,yy);x.stroke()}
-  /* ball */
-  let bx=hpX0(n),by=520;
-  if(A){A.t+=dt;const p=A.pts.find(q=>q[2]>=A.t)||A.pts[A.pts.length-1];bx=p[0];by=p[1];
-    if(!A.said&&(A.ok?p[1]>HPRIM+20:A.t>1.6)){A.said=1;hpMsg(A.ok?(A.sh.p===me()?"SWISH! 🏀":ON().toUpperCase()+" SCORES!"):(A.sh.p===me()?"MISSED!":ON().toUpperCase()+" MISSED!"));sfx(A.ok?"win":"lose")}
-    if(A.t>A.pts[A.pts.length-1][2]+.4){HPA=null;hpUpd()}}
-  else if(d.w||hpDone(d)){by=560}
-  x.fillStyle="rgba(0,0,0,.35)";x.beginPath();x.ellipse(bx,560+HPR+2,HPR*.9,6,0,0,7);x.fill();
-  const bg=x.createRadialGradient(bx-7,by-8,4,bx,by,HPR);bg.addColorStop(0,"#ffb15a");bg.addColorStop(1,"#e0631a");x.fillStyle=bg;x.beginPath();x.arc(bx,by,HPR,0,7);x.fill();
-  x.strokeStyle="#5a2a0a";x.lineWidth=2;x.beginPath();x.arc(bx,by,HPR,0,7);x.moveTo(bx-HPR,by);x.lineTo(bx+HPR,by);x.moveTo(bx,by-HPR);x.lineTo(bx,by+HPR);x.stroke();
-  if(A&&A.ok&&by>HPRIM&&by<HPRIM+52){x.strokeStyle="#ff7a1a";x.lineWidth=7;x.beginPath();x.moveTo(hx-rw/2,HPRIM);x.lineTo(hx+rw/2,HPRIM);x.stroke()}
-  if(!A&&!hpDone(d)){x.fillStyle="#fff";x.font="800 18px Outfit,sans-serif";x.textAlign="center";
-    x.fillText(hpTurn(d)===me()?"YOUR SHOT! Flick the ball up ↑":(SOLO?SOLO_NM:ON0())+" is shooting...",HPW/2,600-8);
-    if(hpTurn(d)===me()){x.strokeStyle="rgba(255,255,255,"+(.4+.3*Math.sin(tt*5))+")";x.lineWidth=3;x.beginPath();x.arc(bx,by,HPR+10,0,7);x.stroke()}}}
+function hpBot(){const d=HPD;if(!SOLO||!d||Date.now()<hpBotT)return;hpBotT=Date.now()+2500;setTimeout(()=>{const D=HPD;if(!SOLO||!D||hpTurn(D)===me()||HPA||hpDone(D))return;
+  const ph=+((performance.now()-HPT0)/1000+.2).toFixed(3),cfg=hpRound(D.n),want=Math.random()<(G2K()?.45:.6),g=()=>Math.sqrt(-2*Math.log(Math.random()+1e-9))*Math.cos(6.2832*Math.random());
+  let pick=null,res=null;for(let i=0;i<40;i++){const a=hpAssist(1+g()*.2,g()*7,false,cfg),r=hpSim(cfg,ph,hpLaunch(cfg,ph,a.pw,a.an),false);if(r.ok===want||i===39){pick=a;break}}
+  res=hpSim(cfg,ph,hpLaunch(cfg,ph,pick.pw,pick.an),true);const sh={p:hpTurn(D),bot:1,pw:pick.pw,an:pick.an,ph,ok:res.ok};
+  HPT0=performance.now()-ph*1000;HPL=D.n+1;hpPlay(D.n,sh,res);sfx("b_throw");GD("hoop").set({...D,n:D.n+1,sh:[...(D.sh||[]),sh]})},1100)}
+
+/* ================= the 3D court ================= */
+function hpTex(w,h,f){const c=document.createElement("canvas");c.width=w;c.height=h;f(c.getContext("2d"),w,h);const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;t._c=c;return t}
+function hp3Init(){const T=THREE;
+  if(!HPR){const r=new T.WebGLRenderer({antialias:true,powerPreference:"high-performance"});r.setPixelRatio(Math.min(2,window.devicePixelRatio||1));r.outputEncoding=T.sRGBEncoding;
+    r.shadowMap.enabled=true;r.shadowMap.type=T.PCFSoftShadowMap;HPR={r,scene:hp3Scene(r),cam:new T.PerspectiveCamera(48,1,.05,600),camP:null,camL:null,reset:0,ballQ:null,sb:""};
+    HPR.cam.position.set(0,1.8,6)}
+  const old=$("#g2c"),cv=HPR.r.domElement;cv.id="g2c";old.replaceWith(cv);hpInput(cv);hp3Size();window.onresize=()=>{if($("#g2c"))hp3Size()};HPR.camP=null;HPR.sb="";HPR.reset=0;HPR.lastBall=null}
+function hp3Size(){const c=HPR.r.domElement,w=c.parentNode?c.parentNode.clientWidth:innerWidth,h=c.parentNode?c.parentNode.clientHeight:innerHeight;HPR.r.setSize(w,h,false);HPR.cam.aspect=w/h;HPR.cam.updateProjectionMatrix()}
+function hp3Scene(r){const T=THREE,S=new T.Scene(),M=(c,o)=>new T.MeshLambertMaterial({color:c,...o}),add=(g,m,x,y,z,sh)=>{const o=new T.Mesh(g,m);o.position.set(x,y,z);if(sh){o.castShadow=true;o.receiveShadow=true}S.add(o);return o};
+  S.fog=new T.Fog(0xcfe5ff,70,330);
+  /* sky: a big dome, deep blue on top, pale at the horizon, with soft clouds */
+  const sky=new T.ShaderMaterial({side:T.BackSide,depthWrite:false,fog:false,uniforms:{a:{value:new T.Color(0x1f6fe0)},b:{value:new T.Color(0xbfe4ff)}},
+    vertexShader:"varying vec3 p;void main(){p=normalize(position);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}",
+    fragmentShader:"uniform vec3 a;uniform vec3 b;varying vec3 p;void main(){float h=clamp(p.y*1.6,0.,1.);gl_FragColor=vec4(mix(b,a,pow(h,.7)),1.);}"});
+  S.add(new T.Mesh(new T.SphereGeometry(500,32,16),sky));
+  const cloud=hpTex(256,128,(x,w,h)=>{for(let i=0;i<14;i++){const cx=40+Math.random()*176,cy=60+Math.random()*30,rr=22+Math.random()*26,g=x.createRadialGradient(cx,cy,0,cx,cy,rr);g.addColorStop(0,"rgba(255,255,255,.95)");g.addColorStop(1,"rgba(255,255,255,0)");x.fillStyle=g;x.fillRect(0,0,w,h)}});
+  for(let i=0;i<14;i++){const sp=new T.Sprite(new T.SpriteMaterial({map:cloud,fog:false,transparent:true,depthWrite:false,opacity:.85})),a=i/14*Math.PI*2+Math.random()*.3,R=260+Math.random()*120;sp.position.set(Math.sin(a)*R,70+Math.random()*90,-Math.cos(a)*R);sp.scale.set(120+Math.random()*80,50+Math.random()*30,1);S.add(sp)}
+  /* light: bright sun with shadows, plus sky light */
+  S.add(new T.HemisphereLight(0xe3f2ff,0x7d8a6a,.72));const sun=new T.DirectionalLight(0xfff6e5,.95);sun.position.set(-7,16,9);sun.target.position.set(0,0,2);sun.castShadow=true;
+  Object.assign(sun.shadow.camera,{left:-10,right:10,top:10,bottom:-10,near:1,far:50});sun.shadow.mapSize.set(1024,1024);sun.shadow.bias=-.0008;S.add(sun,sun.target);
+  /* ground: grass outside, concrete court with white lines and a red key */
+  const grass=add(new T.PlaneGeometry(900,900),M(0x5f9a45),0,-.01,0);grass.rotation.x=-Math.PI/2;grass.receiveShadow=true;
+  const CW=17,CL=19,cz0=-5.3,ppm=60;
+  const court=hpTex(CW*ppm,CL*ppm,(x,w,h)=>{const X=m=>(m+CW/2)*ppm,Z=m=>(m-cz0)*ppm;x.fillStyle="#a7acb3";x.fillRect(0,0,w,h);
+    for(let i=0;i<9000;i++){x.fillStyle=`rgba(${Math.random()<.5?"255,255,255":"40,45,55"},${Math.random()*.08})`;x.fillRect(Math.random()*w,Math.random()*h,2+Math.random()*3,2+Math.random()*3)}
+    x.fillStyle="#8c95a1";x.fillRect(X(-7.5),Z(-1.6),15*ppm,14*ppm);x.fillStyle="#b9473c";x.fillRect(X(-2.45),Z(-1.6),4.9*ppm,5.8*ppm);
+    x.beginPath();x.arc(X(0),Z(4.2),1.8*ppm,0,Math.PI);x.fill();
+    x.strokeStyle="#f4f6f8";x.lineWidth=.05*ppm;x.strokeRect(X(-7.5),Z(-1.6),15*ppm,14*ppm);x.strokeRect(X(-2.45),Z(-1.6),4.9*ppm,5.8*ppm);
+    x.beginPath();x.arc(X(0),Z(4.2),1.8*ppm,0,Math.PI*2);x.stroke();x.beginPath();x.arc(X(0),Z(12.4),1.8*ppm,Math.PI,Math.PI*2);x.stroke();
+    x.beginPath();x.moveTo(X(-6.6),Z(-1.6));x.lineTo(X(-6.6),Z(1.3));const a0=Math.acos(6.6/6.75);x.arc(X(0),Z(0),6.75*ppm,Math.PI-a0,a0,true);x.lineTo(X(6.6),Z(-1.6));x.stroke();
+    x.beginPath();x.arc(X(0),Z(0),1.25*ppm,0,Math.PI);x.stroke()});
+  court.anisotropy=r.capabilities.getMaxAnisotropy();
+  const cm=add(new T.PlaneGeometry(CW,CL),new T.MeshLambertMaterial({map:court}),0,0,cz0+CL/2);cm.rotation.x=-Math.PI/2;cm.receiveShadow=true;
+  /* shooting spot */
+  HPR_spot=add(new T.RingGeometry(.22,.28,32),new T.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.75}),0,.006,4);HPR_spot.rotation.x=-Math.PI/2;
+  /* chain-link fence */
+  const wire=hpTex(64,64,(x,w,h)=>{x.clearRect(0,0,w,h);x.strokeStyle="#c9ced6";x.lineWidth=3;x.beginPath();x.moveTo(0,32);x.lineTo(32,0);x.lineTo(64,32);x.lineTo(32,64);x.closePath();x.stroke()});
+  wire.wrapS=wire.wrapT=T.RepeatWrapping;const F=HP.fence,FH=3.4,post=M(0x5d6670),pg=new T.CylinderGeometry(.045,.045,FH,8);
+  const fside=(x0,z0,x1,z1)=>{const L=Math.hypot(x1-x0,z1-z0),t=wire.clone();t.needsUpdate=true;t.repeat.set(L/.22,FH/.22);
+    const m=new T.Mesh(new T.PlaneGeometry(L,FH),new T.MeshLambertMaterial({map:t,transparent:true,alphaTest:.25,side:T.DoubleSide}));m.position.set((x0+x1)/2,FH/2,(z0+z1)/2);m.rotation.y=-Math.atan2(z1-z0,x1-x0);S.add(m);
+    const n=Math.ceil(L/2.6);for(let i=0;i<=n;i++)add(pg,post,x0+(x1-x0)*i/n,FH/2,z0+(z1-z0)*i/n);
+    const rail=add(new T.CylinderGeometry(.035,.035,L,6),post,(x0+x1)/2,FH,(z0+z1)/2);rail.rotation.z=Math.PI/2;rail.rotation.y=-Math.atan2(z1-z0,x1-x0)};
+  fside(F[0],F[2],F[1],F[2]);fside(F[0],F[2],F[0],F[3]);fside(F[1],F[2],F[1],F[3]);fside(F[0],F[3],F[1],F[3]);
+  /* city skyline all around, mostly behind the hoop */
+  const win=hpTex(64,128,(x,w,h)=>{x.fillStyle="#fff";x.fillRect(0,0,w,h);x.fillStyle="#5d7590";for(let r=0;r<8;r++)for(let c=0;c<4;c++)x.fillRect(5+c*15,6+r*15.5,9,10)});
+  win.wrapS=win.wrapT=T.RepeatWrapping;const cols=[0xd8cbb6,0xb9c6d6,0xc7b29a,0x9fb0c4,0xe2dccf,0xa9a39a,0xc9d3dd,0xb48f78];
+  for(let i=0;i<58;i++){const a=(i/58)*Math.PI*2+Math.random()*.06,R=55+Math.random()*70+(Math.cos(a)>.3?25:0),bw=8+Math.random()*12,bd=8+Math.random()*10,bh=12+Math.random()*(Math.cos(a)<-.5?55:32);
+    const t=win.clone();t.needsUpdate=true;t.repeat.set(Math.max(1,Math.round(bw/4)),Math.max(1,Math.round(bh/8)));
+    const b=new T.Mesh(new T.BoxGeometry(bw,bh,bd),[M(cols[i%8],{map:t}),M(cols[i%8],{map:t}),M(0x8a8f96),M(0x8a8f96),M(cols[i%8],{map:t}),M(cols[i%8],{map:t})]);b.position.set(Math.sin(a)*R,bh/2,-Math.cos(a)*R);b.rotation.y=-a;S.add(b)}
+  /* trees outside the fence */
+  const trunk=M(0x6b4a2b),leaf=[M(0x2f8f3a,{flatShading:true}),M(0x3fa34a,{flatShading:true}),M(0x2a7a35,{flatShading:true})];
+  for(let i=0;i<26;i++){const a=i/26*Math.PI*2+Math.random()*.2,R=13+Math.random()*12,x=Math.sin(a)*R,z=3+(-Math.cos(a))*R*.9,h=2+Math.random()*1.6;if(Math.abs(x)<9&&z>-6&&z<14)continue;
+    add(new T.CylinderGeometry(.14,.2,h,6),trunk,x,h/2,z);for(let k=0;k<3;k++)add(new T.IcosahedronGeometry(1.1+Math.random()*.7,0),leaf[k],x+(Math.random()-.5)*1.2,h+.6+k*.7,z+(Math.random()-.5)*1.2)}
+  /* the hoop: green pole, crossbar, white board, orange rim and a net */
+  const green=new T.MeshStandardMaterial({color:0x1f9a48,roughness:.45,metalness:.3});
+  const pole=add(new T.CylinderGeometry(HP.poleR,HP.poleR*1.15,4.25,16),green,0,2.125,HP.poleZ,1);
+  add(new T.CylinderGeometry(.28,.32,.12,16),green,0,.06,HP.poleZ,1);
+  const slide=new T.Group();S.add(slide);/* the bar the board slides on: follows the hoop up and down */
+  const bar=new T.Mesh(new T.BoxGeometry(3.4,.09,.09),green);bar.position.set(0,3.6,HP.poleZ+.14);bar.castShadow=true;slide.add(bar);
+  const sleeve=new T.Mesh(new T.CylinderGeometry(.14,.14,.4,12),green);sleeve.position.set(0,3.6,HP.poleZ);slide.add(sleeve);
+  const hoop=new T.Group();S.add(hoop);
+  const bt=hpTex(512,300,(x,w,h)=>{x.fillStyle="#fbfdff";x.fillRect(0,0,w,h);x.strokeStyle="#1d232c";x.lineWidth=14;x.strokeRect(7,7,w-14,h-14);
+    const sx=w/HP.boardW,sy=h/(HP.boardTop-HP.boardBot),Y=y=>(HP.boardTop-y)*sy;x.strokeStyle="#d43a2a";x.lineWidth=9;x.strokeRect(w/2-.295*sx,Y(3.55),.59*sx,.45*sy)});
+  const wm=new T.MeshStandardMaterial({color:0xe9edf2,roughness:.5}),board=new T.Mesh(new T.BoxGeometry(HP.boardW,HP.boardTop-HP.boardBot,.05),[wm,wm,wm,wm,new T.MeshStandardMaterial({map:bt,roughness:.35}),wm]);
+  board.position.set(0,(HP.boardTop+HP.boardBot)/2,HP.boardZ-.025);board.castShadow=true;board.receiveShadow=true;hoop.add(board);
+  for(const sx of [-.45,.45]){const arm=new T.Mesh(new T.BoxGeometry(.07,.07,Math.abs(HP.poleZ+.14-HP.boardZ+.06)),green);arm.position.set(sx,3.6,(HP.poleZ+.14+HP.boardZ-.06)/2);arm.castShadow=true;hoop.add(arm)}
+  const rimM=new T.MeshStandardMaterial({color:0xff5a0a,roughness:.35,metalness:.4,emissive:0x3a1000}),rim=new T.Mesh(new T.TorusGeometry(HP.rimR,.012,10,56),rimM);rim.rotation.x=Math.PI/2;rim.position.set(0,HP.rimY,0);rim.castShadow=true;hoop.add(rim);
+  const brk=new T.Mesh(new T.BoxGeometry(.16,.05,.15),rimM);brk.position.set(0,HP.rimY-.02,HP.boardZ+.07);hoop.add(brk);
+  /* net: 12 strings, 6 rows, a diamond pattern. Each knot is a little spring so the ball pushes it about */
+  const NS=12,NR=6,rest=[],segs=[];for(let k=0;k<NR;k++)for(let i=0;i<NS;i++){const a=(i+(k%2)*.5)/NS*Math.PI*2,rr=HP.rimR-(HP.rimR-.125)*Math.pow(k/(NR-1),.85);rest.push([Math.sin(a)*rr,-k/(NR-1)*HP.netDepth,Math.cos(a)*rr])}
+  for(let k=0;k<NR-1;k++)for(let i=0;i<NS;i++){const j=k%2?(i+1)%NS:(i+NS-1)%NS;segs.push(k*NS+i,(k+1)*NS+i,k*NS+i,(k+1)*NS+j)}
+  const ng=new T.BufferGeometry();ng.setAttribute("position",new T.BufferAttribute(new Float32Array(segs.length*3),3));
+  const net=new T.LineSegments(ng,new T.LineBasicMaterial({color:0xffffff,transparent:true,opacity:.92}));net.frustumCulled=false;S.add(net);
+  /* two scoreboards on posts, red digits */
+  const boards=[];for(const sx of [-1.28,1.28]){add(new T.CylinderGeometry(.05,.05,1.75,8),post,sx,.875,-.9,1);const t=hpTex(256,160,()=>{}),m=new T.Mesh(new T.BoxGeometry(.72,.48,.1),[M(0x15171c),M(0x15171c),M(0x15171c),M(0x15171c),new T.MeshBasicMaterial({map:t}),M(0x15171c)]);
+    m.position.set(sx,1.95,-.9);m.castShadow=true;S.add(m);boards.push(t)}
+  /* the ball: orange with black lines, and a soft shadow blob under it */
+  const bt2=hpTex(512,256,(x,w,h)=>{const g=x.createLinearGradient(0,0,0,h);g.addColorStop(0,"#c84a10");g.addColorStop(.5,"#ef6a1c");g.addColorStop(1,"#c84a10");x.fillStyle=g;x.fillRect(0,0,w,h);
+    for(let i=0;i<6000;i++){x.fillStyle=`rgba(0,0,0,${Math.random()*.12})`;x.fillRect(Math.random()*w,Math.random()*h,2,2)}
+    x.strokeStyle="#1b0d05";x.lineWidth=6;const ln=pts=>{x.beginPath();pts.forEach(([a,b],i)=>i?x.lineTo(a,b):x.moveTo(a,b));x.stroke()};
+    ln([[0,h/2],[w,h/2]]);for(const u of [w*.25,w*.75])ln([[u,0],[u,h]]);for(const u0 of [0,w*.5]){const P=[];for(let i=0;i<=40;i++){const v=i/40;P.push([u0+w*.25+Math.sin(v*Math.PI)*w*.16*(u0?1:-1)+(u0?0:w*.0),v*h])}ln(P)}});
+  const ball=new T.Mesh(new T.SphereGeometry(HP.br,32,20),new T.MeshStandardMaterial({map:bt2,roughness:.75}));ball.castShadow=true;S.add(ball);
+  const blob=new T.Mesh(new T.CircleGeometry(HP.br*1.1,24),new T.MeshBasicMaterial({color:0,transparent:true,opacity:.28,depthWrite:false}));blob.rotation.x=-Math.PI/2;S.add(blob);
+  S.userData={hoop,slide,net,ng,rest,nv:rest.map(()=>[0,0,0]),np:rest.map(p=>p.slice()),NS,NR,segs,boards,ball,blob,spot:HPR_spot};return S}
+let HPR_spot=null;
+function hpBoards(a,b){const key=a+"|"+b+"|"+(SOLO?SOLO_NM:ON0());if(!HPR||HPR.sb===key)return;HPR.sb=key;const U=HPR.scene.userData;
+  [[a,"YOU"],[b,(SOLO?"SHADOW":ON0()).toUpperCase()]].forEach(([v,lab],i)=>{const t=U.boards[i],x=t._c.getContext("2d"),w=256,h=160;x.fillStyle="#0c0d10";x.fillRect(0,0,w,h);x.fillStyle="#ffd23f";x.font="900 26px Outfit,Arial,sans-serif";x.textAlign="center";x.fillText(lab.slice(0,9),w/2,32);
+    x.font="900 104px 'Courier New',monospace";x.fillStyle="#3a0b08";x.fillText("88",w/2,140);x.shadowColor="#ff2010";x.shadowBlur=18;x.fillStyle="#ff2a1a";x.fillText(String(v).padStart(2,"0"),w/2,140);x.shadowBlur=0;t.needsUpdate=true})}
+function hpCamFor(i,D,hx,hy,bp){const z=D,m=z*.5;switch(i){
+  case 1:return{p:[hx+.75,3.45+hy,1.35],l:[hx,3.0+hy,0],fov:.75};case 2:return{p:[0,4.45,-.15],l:[0,1.3,z*.75]};case 3:return{p:[0,9+z*.9,m+.02],l:[0,0,m],top:1};
+  case 4:return{p:[-7.4,2.4,m],l:[0,2.15,m-.2],fov:1.15};case 5:return{p:[7.4,2.4,m],l:[0,2.15,m-.2],fov:1.15};case 6:return{p:[0,6,Math.min(12.6,z+8.2)],l:[0,1.6,.6]};
+  case 7:return{p:[4.4,3.3,z+3.4],l:[0,2.2,.9]};case 8:return{p:[.35,.32,z+1.2],l:[0,2.6,0]};case 9:return{p:[0,8.5,z+4.2],l:[0,1.6,.6]};
+  default:return{p:[0,1.75,z+1.5],l:[0,1.75-.035*(z+1.5),0],fov:.85}}}
+/* every frame: move the hoop, the ball, the net and the camera, then draw */
+function hp3Frame(dt){if(!HPR||!HPD)return;const T=THREE,U=HPR.scene.userData,d=HPD,A=HPA,n=A?A.n:d.n,cfg=hpRound(n),tt=A?A.sh.ph+A.t:(performance.now()-HPT0)/1000,h=hpHoop(cfg,tt);
+  U.hoop.position.set(h.x,h.y,0);U.slide.position.set(0,h.y,0);U.spot.position.z=cfg.D;
+  const B=U.ball;let bp,bv=[0,0,0];
+  if(A){if(!window.HP_FREEZE)A.t+=dt;const F=A.r.frames;let j=A.fi||0;while(j<F.length-2&&F[j+1].t<A.t)j++;A.fi=j;const f0=F[j],f1=F[Math.min(F.length-1,j+1)],u=f1.t>f0.t?Math.max(0,Math.min(1,(A.t-f0.t)/(f1.t-f0.t))):0;
+    bp=[0,1,2].map(k=>f0.p[k]+(f1.p[k]-f0.p[k])*u);bv=f1.t>f0.t?[0,1,2].map(k=>(f1.p[k]-f0.p[k])/(f1.t-f0.t)):[0,0,0];
+    /* spin the ball by its real angular velocity */const w=f0.w,wl=Math.hypot(w[0],w[1],w[2]);if(wl>1e-4){const q=new T.Quaternion().setFromAxisAngle(new T.Vector3(w[0]/wl,w[1]/wl,w[2]/wl),wl*dt);B.quaternion.premultiply(q)}
+    /* sounds as the ball hits things */while(A.evi<A.r.ev.length&&A.r.ev[A.evi].t<=A.t){const e=A.r.ev[A.evi++];if(e.k==="rim")sfx(e.sp>2?"b_clang":"b_pclang");else if(e.k==="board")sfx("b_punch");else if(e.k==="pole")sfx("b_pclang");else if(e.sp>1.2)sfx("tap")}
+    if(!A.said&&A.t>=A.tSay){A.said=1;const mine=A.sh.p===me(),say=HP_SAY[A.k]||"";if(A.sh.ok){sfx("b_swish");setTimeout(()=>sfx("win"),180);hpMsg(mine?say:hpWho(A.sh.p)+" SCORES!",mine?"":say)}else{sfx("lose");hpMsg(mine?say:hpWho(A.sh.p)+" MISSED!",mine?"":say)}hpUpd()}
+    if(A.t>=A.end){HPA=null;HPT0=performance.now()-tt*1000;HPR.reset=.5;HPR.lastBall=bp;hpUpd()}}
+  else if(HPR.reset>0){HPR.reset-=dt;const k=HPR.reset;if(k>.25&&HPR.lastBall){bp=HPR.lastBall;B.scale.setScalar(Math.max(.01,(k-.25)/.25))}else{bp=[0,HP.y0,cfg.D];B.scale.setScalar(Math.max(.01,1-k/.25))}if(HPR.reset<=0)B.scale.setScalar(1)}
+  else{const tm=performance.now()/1000,my=hpTurn(d)===me()&&!hpDone(d);bp=[0,HP.y0+(my?Math.sin(tm*2.4)*.025:0),cfg.D];
+    if(HPDRAG){const c=HPR.r.domElement.getBoundingClientRect(),k=Math.min(1,Math.max(0,HPDRAG.cy-HPDRAG.y)/c.height);bp=[(HPDRAG.cx-HPDRAG.x)/c.width*.12,HP.y0-k*.25+.03,cfg.D+Math.max(0,-(HPDRAG.cy-HPDRAG.y))/c.height*.1]}
+    B.rotation.y+=dt*.4}
+  B.position.set(bp[0],bp[1],bp[2]);U.blob.position.set(bp[0],.008,bp[2]);const hh=Math.max(0,bp[1]-HP.br);U.blob.scale.setScalar(1+hh*.35);U.blob.material.opacity=.3/(1+hh*.9);
+  /* net: springs back to its shape, pushed by the ball */
+  {const cx=h.x,cy=HP.rimY+h.y,P=U.np,Vv=U.nv,R=U.rest,N=U.NS,rb=[bp[0]-cx,bp[1]-cy,bp[2]],sub=2,st=Math.min(dt,.04)/sub;
+    for(let s=0;s<sub;s++)for(let i=N;i<P.length;i++){const p=P[i],v=Vv[i],r=R[i];for(let k=0;k<3;k++){v[k]+=((r[k]-p[k])*160-v[k]*9)*st;p[k]+=v[k]*st}
+      const dx=p[0]-rb[0],dy=p[1]-rb[1],dz=p[2]-rb[2],dd=Math.hypot(dx,dy,dz),rr=HP.br+.012;if(dd<rr&&dd>1e-5){p[0]=rb[0]+dx/dd*rr;p[1]=rb[1]+dy/dd*rr;p[2]=rb[2]+dz/dd*rr;for(let k=0;k<3;k++)v[k]+=(bv[k]*.6-v[k])*.25}}
+    const a=U.ng.attributes.position.array;U.segs.forEach((ix,j)=>{const p=P[ix];a[j*3]=p[0]+cx;a[j*3+1]=p[1]+cy;a[j*3+2]=p[2]});U.ng.attributes.position.needsUpdate=true}
+  /* camera: glide to the chosen view */
+  const C=hpCamFor(hpCamI,cfg.D,h.x,h.y,bp),cam=HPR.cam,asp=cam.aspect,fv=Math.min(100,Math.max(45,Math.min(75,2*Math.atan(Math.tan(26*Math.PI/180)/asp)*180/Math.PI))*(C.fov||1));if(Math.abs(cam.fov-fv)>.1){cam.fov=fv;cam.updateProjectionMatrix()}if(!HPR.camP){HPR.camP=new T.Vector3(...C.p);HPR.camL=new T.Vector3(...C.l)}
+  const e=1-Math.exp(-dt*5);HPR.camP.lerp(new T.Vector3(...C.p),e);HPR.camL.lerp(new T.Vector3(...C.l),e);cam.position.copy(HPR.camP);cam.up.set(0,C.top?0:1,C.top?-1:0);cam.lookAt(HPR.camL);
+  if(hpCamI===0&&A){/* behind view: lean a little towards the ball */cam.lookAt(HPR.camL.clone().lerp(new T.Vector3(bp[0],Math.max(1.6,bp[1]),bp[2]),.18))}
+  HPR.r.render(HPR.scene,cam)}
 
 /* ---------------- SMACKERBALL: smack the ball into their goal. Your hand stays in your half. 2 touches max or it's a penalty. First to 5. ---------------- */
 const SMFW=360,SMFH=600,SMBR=14,SMGW=150,SMHALF=SMFH/2,SMW=5;
