@@ -1,7 +1,7 @@
 /* Hoop Shot physics tests. Run:  node hoop_tests.js   (needs hoop_phys.js next to it or in ../)
    Every shot here is a real throw through the same physics the game uses. Nothing is faked. */
 let H;try{H=require("./hoop_phys.js")}catch(e){H=require("../hoop_phys.js")}
-const N=H.HP_ROUNDS[1];/* NORMAL distance */
+const N={n:"TEST",D:4,a:0,tol:1};/* 4 m straight in front */
 let pass=0,fail=0;const t=(name,cond,info)=>{if(cond){pass++;console.log("  ok   "+name)}else{fail++;console.log("  FAIL "+name+(info?"  ->  "+info:""))}};
 const shot=(pw,an,cfg=N,ph=0)=>{const r=H.hpSim(cfg,ph,H.hpLaunch(cfg,ph,pw,an),true);r.kind=H.hpKind(r);return r};
 const seq=r=>r.ev.filter(e=>e.k!=="ground").map(e=>e.k+(e.pos?"-"+e.pos:"")).join(",");
@@ -37,7 +37,8 @@ console.log("\nRules");
  t("Spin changes when the ball hits the rim (spin is kept and passed on)",b&&a&&Math.hypot(...a.w)>0&&JSON.stringify(b.w)!==JSON.stringify(a.w))}
 {const r=shot(.995,0),f=r.frames,i=f.findIndex(x=>x.p[1]<3.05&&Math.hypot(x.p[0],x.p[2])<.2);const g=f.slice(i,i+6),v=(g[5].p[1]-g[4].p[1])/(g[5].t-g[4].t),free=-Math.sqrt(Math.max(0,(f.reduce((m,x)=>Math.max(m,x.p[1]),0)-g[5].p[1])*2*9.81));
  t("The net slows the ball as it drops through",v>free,`speed ${v.toFixed(2)} vs free fall ${free.toFixed(2)}`)}
-{let ok=0;for(const ri of [0,1,2,3,4])for(const ph of [0,.7,1.4,2.1])if(H.hpSim(H.HP_ROUNDS[ri],ph,H.hpLaunch(H.HP_ROUNDS[ri],ph,1,0),false).ok)ok++;
- t("A perfect swipe scores in every round, even when the hoop moves",ok===20,ok+"/20")}
+{let ok=0,n=0;for(const c of [...H.HP_ROUNDS,...H.HP_SUDDEN])for(const ph of [0,.7,1.4,2.1]){n++;if(H.hpSim(c,ph,H.hpLaunch(c,ph,1,0),false).ok)ok++}
+ t("A perfect swipe scores from every spot (front, sides, corners, far) and when the hoop moves",ok===n,ok+"/"+n)}
+{const c=H.HP_ROUNDS.find(r=>r.a>60),p=H.hpP0(c),r=shot(1,0,c);t("Corner shots really start from the corner",p[0]>3.5&&p[2]<1.5&&r.frames[0].p[0]>3.5,JSON.stringify(p.map(v=>+v.toFixed(2))))}
 {const a=H.hpAssist(1.2,6,true,N),b=H.hpAssist(1.2,6,false,N);t("Flick help: Cass's small mistakes are forgiven",a.pw===1&&a.an===0,JSON.stringify(a));t("Flick help: Dad gets a little less",b.pw>1&&b.an>0,JSON.stringify(b))}
 console.log(`\n${pass} passed, ${fail} failed`);if(fail)process.exit(1);

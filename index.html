@@ -3077,12 +3077,18 @@ const HP={g:9.81,dt:1/240,br:.12,mass:.6,rimR:.236,tube:.009,rimY:3.05,nRim:48,b
   eRim:.58,y0:1.0,aimZ:-.04,cal:1,eBoard:.62,eGround:.74,mu:.45,netDepth:.45,netBot:.55,poleZ:-1.5,poleR:.1,fence:[-7.8,7.8,-4.6,13]};
 HP.I=2/3*HP.mass*HP.br*HP.br;   /* hollow sphere */
 /* rounds: distance, launch angle, hoop movement */
-const HP_ROUNDS=[{n:"EASY",D:2.6,tol:1.3},{n:"NORMAL",D:4,tol:1},{n:"HARD",D:5.4,tol:.8},{n:"MOVING HOOP",D:4,tol:.9,mx:.65,mT:4.4},{n:"UP & DOWN",D:4.4,tol:.9,my:.32,mT:3.6}];
-const HP_SUDDEN={n:"SUDDEN DEATH",D:5,tol:.85};
-const hpRound=n=>n>=10?HP_SUDDEN:HP_ROUNDS[Math.floor(n/2)];
+/* rounds: where you shoot from (D = metres from the hoop, a = angle: 0 straight in front, minus = left side, plus = right side) and whether the hoop moves */
+const HP_ROUNDS=[{n:"CLOSE UP",s:"right in front",D:2.6,a:0,tol:1.3},{n:"LEFT SIDE",s:"from the side",D:3.8,a:-55,tol:1},{n:"FAR AWAY",s:"long shot",D:5.6,a:0,tol:.8},
+  {n:"RIGHT CORNER",s:"from the corner",D:4.2,a:72,tol:.9},{n:"MOVING HOOP",s:"it slides side to side",D:4,a:-25,tol:.9,mx:.65,mT:4.4}];
+/* sudden death: a new spot every pair of shots */
+const HP_SUDDEN=[{n:"UP & DOWN",s:"the hoop bobs up and down",D:4.4,a:30,tol:.85,my:.32,mT:3.6},{n:"LEFT CORNER",s:"from the corner",D:4.2,a:-72,tol:.85},
+  {n:"DEEP RIGHT",s:"far, from the right",D:5.4,a:38,tol:.8},{n:"MIDDLE",s:"straight in front",D:5,a:0,tol:.85}];
+const hpRound=n=>n>=10?HP_SUDDEN[Math.floor((n-10)/2)%HP_SUDDEN.length]:HP_ROUNDS[Math.floor(n/2)];
+/* where the ball starts for this round */
+const hpP0=cfg=>{const a=(cfg.a||0)*Math.PI/180;return[cfg.D*Math.sin(a),HP.y0,cfg.D*Math.cos(a)]};
 function hpHoop(cfg,t){const w=cfg.mT?2*Math.PI*t/cfg.mT:0;return{x:cfg.mx?cfg.mx*Math.sin(w):0,y:cfg.my?cfg.my*Math.sin(w):0}}
 /* the "ideal" throw from the ball to just behind the middle of the rim, at the round's launch angle */
-function hpIdeal(cfg,ph){const P0=[0,HP.y0,cfg.D];let tA=1.1,v=null;
+function hpIdeal(cfg,ph){const P0=hpP0(cfg);let tA=1.1,v=null;
   for(let it=0;it<8;it++){const h0=hpHoop(cfg,ph),h1=hpHoop(cfg,ph+tA),lead=cfg.lead??1,hx=h0.x+(h1.x-h0.x)*lead,hy=h0.y+(h1.y-h0.y)*lead;
     const T=[hx,HP.rimY+hy+.02,HP.aimZ],dx=T[0]-P0[0],dz=T[2]-P0[2],L=Math.hypot(dx,dz),H=T[1]-P0[1],th=Math.atan(2*H/L+Math.tan((cfg.entry||44)*Math.PI/180));
     const sp=Math.sqrt(HP.g*L*L/(2*Math.cos(th)**2*(L*Math.tan(th)-H)));v=[dx/L*sp*Math.cos(th),sp*Math.sin(th),dz/L*sp*Math.cos(th)];tA=L/(sp*Math.cos(th))}
@@ -3101,7 +3107,7 @@ function hpBounce(S,n,e,mu){const r=HV.mul(n,-HP.br),vc=HV.add(S.v,HV.cross(S.w,
     S.v=HV.add(S.v,HV.mul(J,1/HP.mass));S.w=HV.add(S.w,HV.mul(HV.cross(r,J),1/HP.I))}
   return -vn}
 /* run a whole shot. Returns whether it scored, every contact, and (if rec) the ball's path at 60 frames a second */
-function hpSim(cfg,ph,launch,rec){const S={p:launch.p?launch.p.slice():[0,HP.y0,cfg.D],v:launch.v.slice(),w:launch.w.slice()},ev=[],fr=[];let t=0,inside=false,scored=false,scoreT=-1,rest=0,last=null,grounds=0,roll=0,lastA=null,pcy=null;
+function hpSim(cfg,ph,launch,rec){const S={p:launch.p?launch.p.slice():hpP0(cfg),v:launch.v.slice(),w:launch.w.slice()},ev=[],fr=[];let t=0,inside=false,scored=false,scoreT=-1,rest=0,last=null,grounds=0,roll=0,lastA=null,pcy=null;
   const add=(k,a,sp)=>{const ex=ev[ev.length-1];if(ex&&ex.k===k&&t-ex.t2<.06){ex.t2=t;if(k==="rim"&&lastA!==null){let d=a-lastA;d=(d+540)%360-180;ex.arc+=Math.abs(d)}lastA=a;return}
     ev.push({k,t,t2:t,a,pos:k==="rim"?(Math.abs(a)<45?"front":Math.abs(a)>135?"back":a>0?"right":"left"):"",sp:+sp.toFixed(2),arc:0});lastA=a};
   for(let i=0;i<240*8;i++){t=i*HP.dt;const h=hpHoop(cfg,ph+t),cx=h.x,cy=HP.rimY+h.y,py=S.p[1];
@@ -3140,7 +3146,7 @@ function hpKind(r){const W=e=>e.k==="rim"||e.k==="board",c=r.ev.filter(e=>W(e)&&
   if(r.ok)k=!c.length?"swish":f.k==="board"?"bank":roll>100?"roll-in":"rim-in";
   else if(!hoopHits.length)k="airball";else if(roll>100)k="roll-out";else if(hoopHits.length>=3)k="multi";else if(hoopHits[0].k==="board")k="board";else k="rim-"+hoopHits[0].pos;
   return{k,contacts:hoopHits.length,roll:Math.round(roll),grounds:g}}
-if(typeof module!=="undefined")module.exports={HP,HP_ROUNDS,HP_SUDDEN,hpRound,hpHoop,hpIdeal,hpAssist,hpLaunch,hpSim,hpKind};
+if(typeof module!=="undefined")module.exports={HP,HP_ROUNDS,HP_SUDDEN,hpRound,hpP0,hpHoop,hpIdeal,hpAssist,hpLaunch,hpSim,hpKind};
 
 /* ---------------- HOOP SHOT 3D: a sunny street court. Swipe up to shoot. 5 rounds each, take turns, then sudden death. ----------------
    The ball's flight comes from hpSim (real physics above). This part only draws it, so every camera shows the same shot. */
@@ -3195,7 +3201,7 @@ function hpUpd(){const d=HPD;if(!d||!$("#hpc"))return;const mine=me(),them=mine=
   if((d.sh||[]).length<HPL&&!HPA){HPL=(d.sh||[]).length;HPT0=performance.now()}
   const s=hpScore(d,HPA&&!HPA.said?HPA.i:null),t=$("#g2t");if(t)t.innerHTML=`<b>YOU ${s[mine]}</b><span>${d.n>=10?"SUDDEN DEATH!":"ROUND "+Math.min(5,Math.floor(d.n/2)+1)+" OF 5"}</span><b>${(SOLO?SOLO_NM:ON0()).toUpperCase()} ${s[them]}</b>`;
   if(HPR)hpBoards(s[mine],s[them]);
-  const cfg=hpRound(HPA?HPA.n:d.n),lv=$("#hplv");if(lv)lv.innerHTML=w?"":`<b>${cfg.n}</b> ${cfg.mx?"it moves side to side":cfg.my?"it moves up and down":cfg.D<3?"close":cfg.D<4.5?"middle":"far away"}`;
+  const cfg=hpRound(HPA?HPA.n:d.n),lv=$("#hplv");if(lv)lv.innerHTML=w?"":`<b>${cfg.n}</b> ${cfg.s||""}`;
   const tip=$("#hptip");if(tip){const my=hpTurn(d)===mine;tip.textContent=w||HPA?"":my?"YOUR SHOT! Swipe up ↑":(SOLO?SOLO_NM:ON0())+" is shooting…";tip.classList.toggle("my",!!(my&&!w&&!HPA))}
   if(w&&!HPA){if(!document.querySelector(".g2ov")){const win=w===mine;if(win&&scored["hp"+d.id]!==1){scored["hp"+d.id]=1;gamePts(2)}sfx(win?"b_win":"b_lose");
     $("#hpc").insertAdjacentHTML("beforeend",g2Over(win,win?"YOU WIN!"+gpTxt():(SOLO?SOLO_NM:ON0()).toUpperCase()+" WINS!"));
@@ -3214,7 +3220,7 @@ function hpBot(){const d=HPD;if(!SOLO||!d||Date.now()<hpBotT)return;hpBotT=Date.
 function hpTex(w,h,f){const c=document.createElement("canvas");c.width=w;c.height=h;f(c.getContext("2d"),w,h);const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;t._c=c;return t}
 function hp3Init(){const T=THREE;
   if(!HPR){const r=new T.WebGLRenderer({antialias:true,powerPreference:"high-performance"});r.setPixelRatio(Math.min(2,window.devicePixelRatio||1));r.outputEncoding=T.sRGBEncoding;
-    r.shadowMap.enabled=true;r.shadowMap.type=T.PCFSoftShadowMap;HPR={r,scene:hp3Scene(r),cam:new T.PerspectiveCamera(48,1,.05,600),camP:null,camL:null,reset:0,ballQ:null,sb:""};
+    r.shadowMap.enabled=true;r.shadowMap.type=T.PCFSoftShadowMap;HPR={r,scene:hp3Scene(r),cam:new T.PerspectiveCamera(48,1,.1,600),camP:null,camL:null,reset:0,ballQ:null,sb:""};
     HPR.cam.position.set(0,1.8,6)}
   const old=$("#g2c"),cv=HPR.r.domElement;cv.id="g2c";old.replaceWith(cv);hpInput(cv);hp3Size();window.onresize=()=>{if($("#g2c"))hp3Size()};HPR.camP=null;HPR.sb="";HPR.reset=0;HPR.lastBall=null}
 function hp3Size(){const c=HPR.r.domElement,w=c.parentNode?c.parentNode.clientWidth:innerWidth,h=c.parentNode?c.parentNode.clientHeight:innerHeight;HPR.r.setSize(w,h,false);HPR.cam.aspect=w/h;HPR.cam.updateProjectionMatrix()}
@@ -3231,7 +3237,7 @@ function hp3Scene(r){const T=THREE,S=new T.Scene(),M=(c,o)=>new T.MeshLambertMat
   S.add(new T.HemisphereLight(0xe3f2ff,0x7d8a6a,.72));const sun=new T.DirectionalLight(0xfff6e5,.95);sun.position.set(-7,16,9);sun.target.position.set(0,0,2);sun.castShadow=true;
   Object.assign(sun.shadow.camera,{left:-10,right:10,top:10,bottom:-10,near:1,far:50});sun.shadow.mapSize.set(1024,1024);sun.shadow.bias=-.0008;S.add(sun,sun.target);
   /* ground: grass outside, concrete court with white lines and a red key */
-  const grass=add(new T.PlaneGeometry(900,900),M(0x5f9a45),0,-.01,0);grass.rotation.x=-Math.PI/2;grass.receiveShadow=true;
+  const grass=add(new T.PlaneGeometry(900,900),M(0x5f9a45,{polygonOffset:true,polygonOffsetFactor:2,polygonOffsetUnits:8}),0,-.12,0);grass.rotation.x=-Math.PI/2;grass.receiveShadow=true;
   const CW=17,CL=19,cz0=-5.3,ppm=60;
   const court=hpTex(CW*ppm,CL*ppm,(x,w,h)=>{const X=m=>(m+CW/2)*ppm,Z=m=>(m-cz0)*ppm;x.fillStyle="#a7acb3";x.fillRect(0,0,w,h);
     for(let i=0;i<9000;i++){x.fillStyle=`rgba(${Math.random()<.5?"255,255,255":"40,45,55"},${Math.random()*.08})`;x.fillRect(Math.random()*w,Math.random()*h,2+Math.random()*3,2+Math.random()*3)}
@@ -3298,14 +3304,17 @@ let HPR_spot=null;
 function hpBoards(a,b){const key=a+"|"+b+"|"+(SOLO?SOLO_NM:ON0());if(!HPR||HPR.sb===key)return;HPR.sb=key;const U=HPR.scene.userData;
   [[a,"YOU"],[b,(SOLO?"SHADOW":ON0()).toUpperCase()]].forEach(([v,lab],i)=>{const t=U.boards[i],x=t._c.getContext("2d"),w=256,h=160;x.fillStyle="#0c0d10";x.fillRect(0,0,w,h);x.fillStyle="#ffd23f";x.font="900 26px Outfit,Arial,sans-serif";x.textAlign="center";x.fillText(lab.slice(0,9),w/2,32);
     x.font="900 104px 'Courier New',monospace";x.fillStyle="#3a0b08";x.fillText("88",w/2,140);x.shadowColor="#ff2010";x.shadowBlur=18;x.fillStyle="#ff2a1a";x.fillText(String(v).padStart(2,"0"),w/2,140);x.shadowBlur=0;t.needsUpdate=true})}
-function hpCamFor(i,D,hx,hy,bp){const z=D,m=z*.5;switch(i){
-  case 1:return{p:[hx+.75,3.45+hy,1.35],l:[hx,3.0+hy,0],fov:.75};case 2:return{p:[0,4.45,-.15],l:[0,1.3,z*.75]};case 3:return{p:[0,9+z*.9,m+.02],l:[0,0,m],top:1};
+/* camera views are set up as if you stand straight in front, then turned round the hoop to wherever you are standing */
+function hpCamFor(i,cfg,hx,hy){const L=hpCamLocal(i,cfg.D,hy),a=(cfg.a||0)*Math.PI/180,c=Math.cos(a),s=Math.sin(a),R=q=>[q[0]*c+q[2]*s,q[1],-q[0]*s+q[2]*c],p=R(L.p),l=R(L.l),cl=(v,a,b)=>Math.max(a,Math.min(b,v));
+  if(i===1){p[0]+=hx;l[0]+=hx}if(!L.top&&i!==2){p[0]=cl(p[0],-7.5,7.5);p[2]=cl(p[2],-4.4,12.7)}return{...L,p,l,up:L.top?[-s,0,-c]:[0,1,0]}}
+function hpCamLocal(i,D,hy){const z=D,m=z*.5;switch(i){
+  case 1:return{p:[.75,3.45+hy,1.35],l:[0,3.0+hy,0],fov:.75};case 2:return{p:[0,4.45,-.15],l:[0,1.3,z*.75]};case 3:return{p:[0,9+z*.9,m+.02],l:[0,0,m],top:1};
   case 4:return{p:[-7.4,2.4,m],l:[0,2.15,m-.2],fov:1.15};case 5:return{p:[7.4,2.4,m],l:[0,2.15,m-.2],fov:1.15};case 6:return{p:[0,6,Math.min(12.6,z+8.2)],l:[0,1.6,.6]};
   case 7:return{p:[4.4,3.3,z+3.4],l:[0,2.2,.9]};case 8:return{p:[.35,.32,z+1.2],l:[0,2.6,0]};case 9:return{p:[0,8.5,z+4.2],l:[0,1.6,.6]};
   default:return{p:[0,1.75,z+1.5],l:[0,1.75-.035*(z+1.5),0],fov:.85}}}
 /* every frame: move the hoop, the ball, the net and the camera, then draw */
 function hp3Frame(dt){if(!HPR||!HPD)return;const T=THREE,U=HPR.scene.userData,d=HPD,A=HPA,n=A?A.n:d.n,cfg=hpRound(n),tt=A?A.sh.ph+A.t:(performance.now()-HPT0)/1000,h=hpHoop(cfg,tt);
-  U.hoop.position.set(h.x,h.y,0);U.slide.position.set(0,h.y,0);U.spot.position.z=cfg.D;
+  U.hoop.position.set(h.x,h.y,0);U.slide.position.set(0,h.y,0);const P0=hpP0(cfg),ca=Math.cos((cfg.a||0)*Math.PI/180),sa=Math.sin((cfg.a||0)*Math.PI/180);U.spot.position.set(P0[0],.006,P0[2]);
   const B=U.ball;let bp,bv=[0,0,0];
   if(A){if(!window.HP_FREEZE)A.t+=dt;const F=A.r.frames;let j=A.fi||0;while(j<F.length-2&&F[j+1].t<A.t)j++;A.fi=j;const f0=F[j],f1=F[Math.min(F.length-1,j+1)],u=f1.t>f0.t?Math.max(0,Math.min(1,(A.t-f0.t)/(f1.t-f0.t))):0;
     bp=[0,1,2].map(k=>f0.p[k]+(f1.p[k]-f0.p[k])*u);bv=f1.t>f0.t?[0,1,2].map(k=>(f1.p[k]-f0.p[k])/(f1.t-f0.t)):[0,0,0];
@@ -3313,9 +3322,9 @@ function hp3Frame(dt){if(!HPR||!HPD)return;const T=THREE,U=HPR.scene.userData,d=
     /* sounds as the ball hits things */while(A.evi<A.r.ev.length&&A.r.ev[A.evi].t<=A.t){const e=A.r.ev[A.evi++];if(e.k==="rim")sfx(e.sp>2?"b_clang":"b_pclang");else if(e.k==="board")sfx("b_punch");else if(e.k==="pole")sfx("b_pclang");else if(e.sp>1.2)sfx("tap")}
     if(!A.said&&A.t>=A.tSay){A.said=1;const mine=A.sh.p===me(),say=HP_SAY[A.k]||"";if(A.sh.ok){sfx("b_swish");setTimeout(()=>sfx("win"),180);hpMsg(mine?say:hpWho(A.sh.p)+" SCORES!",mine?"":say)}else{sfx("lose");hpMsg(mine?say:hpWho(A.sh.p)+" MISSED!",mine?"":say)}hpUpd()}
     if(A.t>=A.end){HPA=null;HPT0=performance.now()-tt*1000;HPR.reset=.5;HPR.lastBall=bp;hpUpd()}}
-  else if(HPR.reset>0){HPR.reset-=dt;const k=HPR.reset;if(k>.25&&HPR.lastBall){bp=HPR.lastBall;B.scale.setScalar(Math.max(.01,(k-.25)/.25))}else{bp=[0,HP.y0,cfg.D];B.scale.setScalar(Math.max(.01,1-k/.25))}if(HPR.reset<=0)B.scale.setScalar(1)}
-  else{const tm=performance.now()/1000,my=hpTurn(d)===me()&&!hpDone(d);bp=[0,HP.y0+(my?Math.sin(tm*2.4)*.025:0),cfg.D];
-    if(HPDRAG){const c=HPR.r.domElement.getBoundingClientRect(),k=Math.min(1,Math.max(0,HPDRAG.cy-HPDRAG.y)/c.height);bp=[(HPDRAG.cx-HPDRAG.x)/c.width*.12,HP.y0-k*.25+.03,cfg.D+Math.max(0,-(HPDRAG.cy-HPDRAG.y))/c.height*.1]}
+  else if(HPR.reset>0){HPR.reset-=dt;const k=HPR.reset;if(k>.25&&HPR.lastBall){bp=HPR.lastBall;B.scale.setScalar(Math.max(.01,(k-.25)/.25))}else{bp=P0.slice();B.scale.setScalar(Math.max(.01,1-k/.25))}if(HPR.reset<=0)B.scale.setScalar(1)}
+  else{const tm=performance.now()/1000,my=hpTurn(d)===me()&&!hpDone(d);bp=[P0[0],HP.y0+(my?Math.sin(tm*2.4)*.025:0),P0[2]];
+    if(HPDRAG){const c=HPR.r.domElement.getBoundingClientRect(),k=Math.min(1,Math.max(0,HPDRAG.cy-HPDRAG.y)/c.height);const lx=(HPDRAG.cx-HPDRAG.x)/c.width*.12,lz=Math.max(0,-(HPDRAG.cy-HPDRAG.y))/c.height*.1;bp=[P0[0]+lx*ca+lz*sa,HP.y0-k*.25+.03,P0[2]-lx*sa+lz*ca]}
     B.rotation.y+=dt*.4}
   B.position.set(bp[0],bp[1],bp[2]);U.blob.position.set(bp[0],.008,bp[2]);const hh=Math.max(0,bp[1]-HP.br);U.blob.scale.setScalar(1+hh*.35);U.blob.material.opacity=.3/(1+hh*.9);
   /* net: springs back to its shape, pushed by the ball */
@@ -3324,9 +3333,9 @@ function hp3Frame(dt){if(!HPR||!HPD)return;const T=THREE,U=HPR.scene.userData,d=
       const dx=p[0]-rb[0],dy=p[1]-rb[1],dz=p[2]-rb[2],dd=Math.hypot(dx,dy,dz),rr=HP.br+.012;if(dd<rr&&dd>1e-5){p[0]=rb[0]+dx/dd*rr;p[1]=rb[1]+dy/dd*rr;p[2]=rb[2]+dz/dd*rr;for(let k=0;k<3;k++)v[k]+=(bv[k]*.6-v[k])*.25}}
     const a=U.ng.attributes.position.array;U.segs.forEach((ix,j)=>{const p=P[ix];a[j*3]=p[0]+cx;a[j*3+1]=p[1]+cy;a[j*3+2]=p[2]});U.ng.attributes.position.needsUpdate=true}
   /* camera: glide to the chosen view */
-  const C=hpCamFor(hpCamI,cfg.D,h.x,h.y,bp),cam=HPR.cam,asp=cam.aspect,fv=Math.min(100,Math.max(45,Math.min(75,2*Math.atan(Math.tan(26*Math.PI/180)/asp)*180/Math.PI))*(C.fov||1));if(Math.abs(cam.fov-fv)>.1){cam.fov=fv;cam.updateProjectionMatrix()}if(!HPR.camP){HPR.camP=new T.Vector3(...C.p);HPR.camL=new T.Vector3(...C.l)}
-  const e=1-Math.exp(-dt*5);HPR.camP.lerp(new T.Vector3(...C.p),e);HPR.camL.lerp(new T.Vector3(...C.l),e);cam.position.copy(HPR.camP);cam.up.set(0,C.top?0:1,C.top?-1:0);cam.lookAt(HPR.camL);
-  if(hpCamI===0&&A){/* behind view: lean a little towards the ball */cam.lookAt(HPR.camL.clone().lerp(new T.Vector3(bp[0],Math.max(1.6,bp[1]),bp[2]),.18))}
+  const C=hpCamFor(hpCamI,cfg,h.x,h.y),cam=HPR.cam,asp=cam.aspect,fv=Math.min(100,Math.max(45,Math.min(75,2*Math.atan(Math.tan(26*Math.PI/180)/asp)*180/Math.PI))*(C.fov||1));if(Math.abs(cam.fov-fv)>.1){cam.fov=fv;cam.updateProjectionMatrix()}if(!HPR.camP){HPR.camP=new T.Vector3(...C.p);HPR.camL=new T.Vector3(...C.l)}
+  const e=1-Math.exp(-dt*5);HPR.camP.lerp(new T.Vector3(...C.p),e);HPR.camL.lerp(new T.Vector3(...C.l),e);cam.position.copy(HPR.camP);cam.up.set(...C.up);cam.lookAt(HPR.camL);
+  if(hpCamI===0&&A){/* behind view: lean a little towards the ball */cam.lookAt(HPR.camL.clone().add(new T.Vector3(0,Math.max(0,bp[1]-2.4)*.3,0)))}
   HPR.r.render(HPR.scene,cam)}
 
 /* ---------------- SMACKERBALL: smack the ball into their goal. Your hand stays in your half. 2 touches max or it's a penalty. First to 5. ---------------- */
