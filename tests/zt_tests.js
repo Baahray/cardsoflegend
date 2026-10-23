@@ -27,8 +27,10 @@ const pair=()=>{const G=mk({z:"O"});G.t=0;const H=G.ents[0],Zm=G.ents[1];for(con
 {const {G,H,Zm}=pair();const ev=run(G,(G,i)=>({O:{mx:1,mz:0,sprint:true}}),1);const tg=ev.find(e=>e.k==="tag");
  t("15 Zombie touches human: they SWAP (human turns zombie, zombie turns human)",tg&&H.role==="z"&&Zm.role==="h",JSON.stringify(tg));
  t("16 Only ever one zombie",G.ents.filter(e=>e.role==="z").length===1);
- t("17 The new human gets a head start: 1.5 s safe after changing back",Zm.fx.immune>1.3&&Zm.fx.immune<=ZT.tagT+ZT.morphT+ZT.immune,Zm.fx.immune.toFixed(2));
- /* new zombie tries to bite straight back */const before=G.nTag;H.x=Zm.x+.5;H.z=Zm.z;run(G,{X:{mx:-1,mz:0}},1.2);t("18 ...so no instant tag-backs",G.nTag===before,G.nTag+" tags")}
+ t("17 HEAD START: the new zombie has to wait 3 s before it can move; the one who got away can run straight away",H.fx.frozen>2.8&&Zm.fx.frozen<.7&&Zm.fx.immune>H.fx.frozen,H.fx.frozen.toFixed(2)+" / "+Zm.fx.frozen.toFixed(2));
+ {const G2=mk({z:"O"});G2.t=0;const a=G2.ents[0],b=G2.ents[1];for(const e of G2.ents){e.fx.frozen=0;e.fx.immune=0}a.x=69;a.z=101;b.x=68.5;b.z=101;Z.ztStep(G2,{},1/60);const x0=b.x;run(G2,{X:{mx:-1,mz:0},O:{mx:1,mz:0,sprint:true}},3.6);
+  t("17b ...so after 3.6 s the runner is well away (about 10 steps)",Math.abs(b.x-a.x)>8,(b.x-a.x).toFixed(1)+" apart")}
+ /* new zombie tries to bite straight back */const before=G.nTag;H.x=Zm.x+.5;H.z=Zm.z;run(G,{X:{mx:-1,mz:0}},4);t("18 ...and no instant tag-backs, even standing right next to them",G.nTag===before,G.nTag+" tags")}
 {const {G,H,Zm}=pair();H.fx.shield=1;const ev=run(G,{O:{mx:1,mz:0,sprint:true}},1);t("19 A SHIELD blocks one bite (and knocks the zombie dizzy)",ev.some(e=>e.k==="block")&&H.role==="h"&&Zm.role==="z"&&H.fx.shield===0&&ev.find(e=>e.k==="block"),"")
  t("20 ...the zombie is pushed back and stunned",Zm.fx.stun>0||Math.hypot(Zm.x-H.x,Zm.z-H.z)>1.5,Zm.fx.stun.toFixed(2));G.cool=0;Zm.fx.stun=0;H.fx.immune=0;Zm.x=H.x-.4;Zm.z=H.z;const ev2=Z.ztStep(G,{},1/60);t("21 ...but only once",ev2.some(e=>e.k==="tag"),JSON.stringify(ev2))}
 {const {G,H,Zm}=pair();H.x=Zm.x+1.25;H.z=Zm.z;const Hk=Z.ztPerson({id:"C",kid:1});const a=Z.ztTagR(Zm,H),b=Z.ztTagR({...Zm,kid:1,sc:.88},{...H,sc:1}),c=Z.ztTagR(Zm,{...H,kid:1,sc:.88});

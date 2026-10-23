@@ -2,7 +2,7 @@
    Shared by the game, the bots and the tests.  World: x to the right (east), z down the screen (south), y up.
    Characters are about 2 units tall.  Walking 2 units/s, running 4, sprinting 6. */
 const ZT={S:202,P:32,RD:10,dt:1/60,r:.45,walk:2,run:4,sprint:6,acc:12,dec:9,turn:14,drain:3.6,refill:5,
-  tagR:1.15,zfast:1.08,tagCool:.8,tagT:.25,morphT:.4,immune:1.5,stunShield:1.2,stunBanana:1.4,pickR:1.25,nPick:22,respawn:10,wake:2};
+  tagR:1.15,zfast:1.08,tagCool:.8,tagT:.25,morphT:.4,immune:1.5,lead:3,stunShield:1.2,stunBanana:1.4,pickR:1.25,nPick:22,respawn:10,wake:2};
 function ztRng(seed){let a=(seed>>>0)||1;return()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 const ztHash=(...n)=>{let h=2166136261;for(const v of n){h^=v|0;h=Math.imul(h,16777619);h^=h>>>13}return h>>>0};
 const ztCl=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -93,7 +93,7 @@ const ZT_LOOKS={you:{shirt:0x2f6fe0,pants:0x2b2f3a,shoes:0xf4f4f4,stripe:0x2f6fe
   gus:{shirt:0xe5533d,pants:0x30343f,shoes:0xf0f0f0,stripe:0xe5533d,hair:0xd9a441,skin:0xf0c49c},
   pip:{shirt:0xf2b705,pants:0x3a3346,shoes:0xff6fae,stripe:0xff6fae,hair:0x8c4a2f,skin:0xc98b62}};
 function ztPerson(o){return{id:o.id,name:o.name,look:o.look||"you",kid:!!o.kid,bot:o.bot||0,mul:o.mul||1,stK:o.stK||1,sc:o.kid?.88:1,role:"h",x:o.x||0,z:o.z||0,vx:0,vz:0,yaw:o.yaw||Math.PI,ta:o.yaw||Math.PI,sp:0,
-  st:1,tired:0,spr:false,item:null,fx:{shield:0,energy:0,shoes:0,brain:0,cloak:0,stun:0,immune:0,frozen:0},ztime:0,tags:0}}
+  st:1,tired:0,spr:false,item:null,fx:{shield:0,energy:0,shoes:0,brain:0,cloak:0,stun:0,immune:0,frozen:0,lead:0},ztime:0,tags:0}}
 const ZT_STARTS=[[2,2],[4,4],[4,2],[2,4]];
 /* a new game. players: [{id,name,look,kid,bot,mul,stK}], z = id of the first zombie */
 function ztGame(o){const W=o.W||ztWorld(o.seed),G={seed:o.seed,W,t:-3,dur:o.dur||120,cool:0,nTag:0,over:0,ents:[],picks:[],bananas:[],bn:0,ev:[]};
@@ -123,7 +123,7 @@ function ztSlips(G,e,ev){for(const b of G.bananas){if(b.by===e.id||G.t<b.arm||e.
 
 /* ---------------- moving: 8 directions, same speed on the diagonals, a sprint bar that runs out ---------------- */
 function ztSnap(mx,mz){const m=Math.hypot(mx,mz);if(m<.18)return null;const a=Math.round(Math.atan2(mx,mz)/(Math.PI/4))*(Math.PI/4);return{x:Math.sin(a),z:Math.cos(a),m:Math.min(1,m),a}}
-function ztMove(G,e,inp,dt){const f=e.fx;for(const k of ["energy","shoes","brain","cloak","stun","immune","frozen"])if(f[k]>0)f[k]=Math.max(0,f[k]-dt);
+function ztMove(G,e,inp,dt){const f=e.fx;for(const k of ["energy","shoes","brain","cloak","stun","immune","frozen","lead"])if(f[k]>0)f[k]=Math.max(0,f[k]-dt);
   const busy=f.frozen>0||f.stun>0,d=busy?null:ztSnap(inp.mx||0,inp.mz||0);let want=d?(d.m<.62?ZT.walk:ZT.run):0;e.spr=false;
   if(d&&inp.sprint&&!e.tired&&e.st>0&&d.m>=.62){want=ZT.sprint;e.spr=true}
   /* zombies are a little quicker on their feet (they're hungry) */want*=(e.mul||1)*(f.shoes>0?1.35:1)*(e.role==="z"?ZT.zfast*(f.brain>0?1.25:1):1);
@@ -142,7 +142,7 @@ function ztTagCheck(G,ev){if(G.cool>0||G.t<0)return null;const Z=ztZombie(G);if(
 /* Z bites H. A shield stops it once (and knocks the zombie dizzy); otherwise they swap: H turns into the zombie, Z turns back into a human with 1.5 s to get away */
 function ztBite(G,Z,H,ev){G.cool=ZT.tagCool;const dx=Z.x-H.x,dz=Z.z-H.z,d=Math.hypot(dx,dz)||1;
   if(H.fx.shield>0){H.fx.shield=0;H.fx.immune=1;Z.fx.stun=ZT.stunShield;Z.vx=dx/d*7;Z.vz=dz/d*7;const e={k:"block",z:Z.id,h:H.id};ev.push(e);return e}
-  const fr=ZT.tagT+ZT.morphT;Z.role="h";H.role="z";Z.fx.frozen=fr;H.fx.frozen=fr;Z.fx.immune=fr+ZT.immune;Z.fx.brain=0;H.fx.cloak=0;H.fx.shield=0;Z.tags++;G.nTag++;
+  /* the new zombie has to wait (count to 3) while the one who got away runs off; they can't be bitten back until well clear */const fr=ZT.tagT+ZT.morphT;Z.role="h";H.role="z";Z.fx.frozen=fr;H.fx.frozen=fr+ZT.lead;H.fx.lead=fr+ZT.lead;Z.fx.immune=fr+ZT.lead+ZT.immune;Z.fx.brain=0;H.fx.cloak=0;H.fx.shield=0;Z.tags++;G.nTag++;
   Z.vx=Z.vz=H.vx=H.vz=0;Z.ta=Math.atan2(-dx,-dz);H.ta=Math.atan2(dx,dz);const e={k:"tag",by:Z.id,on:H.id,x:+((Z.x+H.x)/2).toFixed(2),z:+((Z.z+H.z)/2).toFixed(2)};ev.push(e);return e}
 /* one step of the whole game (solo: everyone is simulated here). inputs: {id:{mx,mz,sprint,item}} */
 function ztStep(G,inputs,dt){const ev=[];if(G.over)return ev;G.t+=dt;G.cool=Math.max(0,G.cool-dt);
