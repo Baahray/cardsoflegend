@@ -41,4 +41,17 @@ console.log("\nRules");
  t("A perfect swipe scores from every spot (front, sides, corners, far) and when the hoop moves",ok===n,ok+"/"+n)}
 {const c=H.HP_ROUNDS.find(r=>r.a>60),p=H.hpP0(c),r=shot(1,0,c);t("Corner shots really start from the corner",p[0]>3.5&&p[2]<1.5&&r.frames[0].p[0]>3.5,JSON.stringify(p.map(v=>+v.toFixed(2))))}
 {const a=H.hpAssist(1.2,6,true,N),b=H.hpAssist(1.2,6,false,N);t("Flick help: Cass's small mistakes are forgiven",a.pw===1&&a.an===0,JSON.stringify(a));t("Flick help: Dad gets a little less",b.pw>1&&b.an>0,JSON.stringify(b))}
+console.log("\nHoop Alone (streak gets harder) and match length");
+{const L=[];for(let k=0;k<=18;k++)L.push(H.hpStreak(k,4242,false));
+ t("Every basket moves you further out: 8 ft at the start, half court (10 m+) by 15 in a row",L.every((c,i)=>!i||c.D>=L[i-1].D)&&L[0].D<3&&L[15].D>=10,L.map(c=>c.D).join(","));
+ t("...and gives you less help each time",L.every((c,i)=>!i||c.tol<=L[i-1].tol)&&L[0].tol>2*L[16].tol,L[0].tol+" -> "+L[16].tol);
+ t("The hoop keeps still for the first 6, then slides, bobs, then both",L.slice(0,6).every(c=>!c.mx&&!c.my)&&L[6].mx>0&&L.slice(9,14).some(c=>c.my)&&L[14].mx&&L[14].my,"");
+ let inside=true;for(let s=1;s<60;s++)for(let k=0;k<20;k++){const p=H.hpP0(H.hpStreak(k,s*31,false));if(Math.abs(p[0])>7||p[2]>11||p[2]<.4)inside=false}t("Every streak spot is on the court, in front of the board",inside);
+ let ok=0,n=0;for(let s=1;s<=10;s++)for(let k=0;k<=13;k++){const c=H.hpStreak(k,s*977,false),ph=(s*k%7)*.6;n++;if(H.hpSim(c,ph,H.hpLaunch(c,ph,1,0)).ok)ok++}
+ t("A perfect throw still goes in at every level (it is fair, just harder; a fast sliding hoop can very rarely roll one out)",ok>=n-2,ok+"/"+n);
+ const kid=H.hpStreak(12,4242,true),dad=H.hpStreak(12,4242,false);t("Cass gets a little more help at the same streak",kid.tol>dad.tol&&kid.D<=dad.D,kid.tol+" v "+dad.tol);
+ t("Longer shots need a longer swipe",H.hpPowK(L[0])<1&&H.hpPowK(L[15])>1.4,H.hpPowK(L[0]).toFixed(2)+" -> "+H.hpPowK(L[15]).toFixed(2))}
+t("Play up to 3: three spots each, then sudden death",H.hpRound(4,3).n==="FAR AWAY"&&H.hpRound(6,3)===H.HP_SUDDEN[0]);
+t("Play up to 10: ten different spots each",new Set([...Array(9)].map((_,i)=>H.hpRound(i*2,10).n)).size===9&&H.hpRound(20,10)===H.HP_SUDDEN[0]);
+t("Play up to 5 is the same as before",[0,2,4,6,8].every(n=>H.hpRound(n)===H.HP_ROUNDS[n/2]));
 console.log(`\n${pass} passed, ${fail} failed`);if(fail)process.exit(1);

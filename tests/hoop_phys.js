@@ -11,7 +11,23 @@ const HP_ROUNDS=[{n:"CLOSE UP",s:"right in front",D:2.6,a:0,tol:1.3},{n:"LEFT SI
 /* sudden death: a new spot every pair of shots */
 const HP_SUDDEN=[{n:"UP & DOWN",s:"the hoop bobs up and down",D:4.4,a:30,tol:.85,my:.32,mT:3.6},{n:"LEFT CORNER",s:"from the corner",D:4.2,a:-72,tol:.85},
   {n:"DEEP RIGHT",s:"far, from the right",D:5.4,a:38,tol:.8},{n:"MIDDLE",s:"straight in front",D:5,a:0,tol:.85}];
-const hpRound=n=>n>=10?HP_SUDDEN[Math.floor((n-10)/2)%HP_SUDDEN.length]:HP_ROUNDS[Math.floor(n/2)];
+/* a match of "to" shots each (3, 5, 7 or 10): the spots in order, then sudden death */
+const HP_ALL=[...HP_ROUNDS,...HP_SUDDEN];
+const hpRound=(n,to=5)=>n>=2*to?HP_SUDDEN[Math.floor((n-2*to)/2)%HP_SUDDEN.length]:HP_ALL[Math.floor(n/2)%HP_ALL.length];
+/* HOOP ALONE: k = baskets made in a row so far. Every basket moves you further out and round the side, gives you less help,
+   and later the hoop starts sliding, then bobbing, then both. Same seed = same spots (so a replay matches). */
+const HP_FT=3.28084;
+function hpStreak(k,seed,kid){let x=(Math.imul((seed|0)^0x9e3779b9,2654435761)+Math.imul(k+1,40503))>>>0;const rnd=()=>{x=Math.imul(x^(x>>>15),2246822519)>>>0;x=Math.imul(x^(x>>>13),3266489917)>>>0;x^=x>>>16;return (x>>>0)/4294967296};rnd();
+  const D=+Math.min(10.4,2.5+(kid?.5:.55)*k).toFixed(2),wide=Math.min(76,8+k*7),side=Math.asin(Math.min(1,6.6/D))*180/Math.PI;
+  const a=+Math.max(-side,Math.min(side,(rnd()*2-1)*wide)).toFixed(1),tol=+Math.max(kid?.55:.5,1.3-k*(kid?.05:.055)).toFixed(3),c={D,a,tol,k};
+  if(k>=6){const m=k-6,kind=k>=14?3:k>=9?(k%3===0?2:1):1;
+    if(kind&1){c.mx=+Math.min(.85,.3+m*.06).toFixed(2);c.mT=+Math.max(2.6,4.6-m*.15).toFixed(2)}
+    if(kind&2){c.my=+Math.min(.4,.2+m*.02).toFixed(2);c.mT=c.mT||+Math.max(2.8,4-m*.1).toFixed(2)}}
+  c.n=D<4.2?"CLOSE RANGE":D<5.2?"FREE THROW LINE":D<6.7?"MID RANGE":D<8?"THREE POINTER":D<9.6?"DEEP THREE":"HALF COURT!";
+  const ft=Math.round(D*HP_FT),mv=c.mx&&c.my?" · hoop moving all over!":c.my?" · hoop bobbing":c.mx?" · hoop sliding":"",sd=Math.abs(a)>50?" · from the side":"";
+  c.s=ft+" ft"+sd+mv;return c}
+/* longer shots need a harder throw: how much longer the perfect swipe is than at a normal spot */
+const hpPowK=cfg=>{const s=Math.hypot(...hpIdeal({D:cfg.D,a:0},0)),s0=Math.hypot(...hpIdeal({D:4.2,a:0},0));return Math.max(.8,Math.min(1.65,Math.pow(s/s0,1.5)))};
 /* where the ball starts for this round */
 const hpP0=cfg=>{const a=(cfg.a||0)*Math.PI/180;return[cfg.D*Math.sin(a),HP.y0,cfg.D*Math.cos(a)]};
 function hpHoop(cfg,t){const w=cfg.mT?2*Math.PI*t/cfg.mT:0;return{x:cfg.mx?cfg.mx*Math.sin(w):0,y:cfg.my?cfg.my*Math.sin(w):0}}
@@ -74,4 +90,4 @@ function hpKind(r){const W=e=>e.k==="rim"||e.k==="board",c=r.ev.filter(e=>W(e)&&
   if(r.ok)k=!c.length?"swish":f.k==="board"?"bank":roll>100?"roll-in":"rim-in";
   else if(!hoopHits.length)k="airball";else if(roll>100)k="roll-out";else if(hoopHits.length>=3)k="multi";else if(hoopHits[0].k==="board")k="board";else k="rim-"+hoopHits[0].pos;
   return{k,contacts:hoopHits.length,roll:Math.round(roll),grounds:g}}
-if(typeof module!=="undefined")module.exports={HP,HP_ROUNDS,HP_SUDDEN,hpRound,hpP0,hpHoop,hpIdeal,hpAssist,hpLaunch,hpSim,hpKind};
+if(typeof module!=="undefined")module.exports={HP,HP_ROUNDS,HP_SUDDEN,HP_ALL,hpStreak,hpPowK,hpRound,hpP0,hpHoop,hpIdeal,hpAssist,hpLaunch,hpSim,hpKind};
