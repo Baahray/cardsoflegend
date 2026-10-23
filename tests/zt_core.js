@@ -1,7 +1,7 @@
 /* ===================== ZOMBIE TAG: the rules, the city, moving about and the computer players (no drawing) =====================
    Shared by the game, the bots and the tests.  World: x to the right (east), z down the screen (south), y up.
    Characters are about 2 units tall.  Walking 2 units/s, running 4, sprinting 6. */
-const ZT={S:202,P:32,RD:10,dt:1/60,r:.45,walk:2,run:4,sprint:6,acc:12,dec:9,turn:14,drain:3.6,refill:5,
+const ZT={S:202,P:32,RD:10,dt:1/60,r:.45,walk:2,run:4,sprint:6,acc:18,dec:14,turn:20,drain:3.6,refill:5,
   tagR:1.15,zfast:1.08,tagCool:.8,tagT:.25,morphT:.4,immune:1.5,lead:3,stunShield:1.2,stunBanana:1.4,pickR:1.25,nPick:22,respawn:10,wake:2};
 function ztRng(seed){let a=(seed>>>0)||1;return()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 const ztHash=(...n)=>{let h=2166136261;for(const v of n){h^=v|0;h=Math.imul(h,16777619);h^=h>>>13}return h>>>0};
@@ -122,10 +122,11 @@ function ztSlips(G,e,ev){for(const b of G.bananas){if(b.by===e.id||G.t<b.arm||e.
   G.bananas=G.bananas.filter(b=>!b.gone)}
 
 /* ---------------- moving: 8 directions, same speed on the diagonals, a sprint bar that runs out ---------------- */
-function ztSnap(mx,mz){const m=Math.hypot(mx,mz);if(m<.18)return null;const a=Math.round(Math.atan2(mx,mz)/(Math.PI/4))*(Math.PI/4);return{x:Math.sin(a),z:Math.cos(a),m:Math.min(1,m),a}}
+/* steering goes exactly where your thumb points (any direction); same speed whichever way */
+function ztSnap(mx,mz){const m=Math.hypot(mx,mz);if(m<.15)return null;const a=Math.atan2(mx,mz);return{x:Math.sin(a),z:Math.cos(a),m:Math.min(1,m),a}}
 function ztMove(G,e,inp,dt){const f=e.fx;for(const k of ["energy","shoes","brain","cloak","stun","immune","frozen","lead"])if(f[k]>0)f[k]=Math.max(0,f[k]-dt);
-  const busy=f.frozen>0||f.stun>0,d=busy?null:ztSnap(inp.mx||0,inp.mz||0);let want=d?(d.m<.62?ZT.walk:ZT.run):0;e.spr=false;
-  if(d&&inp.sprint&&!e.tired&&e.st>0&&d.m>=.62){want=ZT.sprint;e.spr=true}
+  const busy=f.frozen>0||f.stun>0,d=busy?null:ztSnap(inp.mx||0,inp.mz||0);let want=d?(d.m<.45?ZT.walk:ZT.run):0;e.spr=false;
+  if(d&&inp.sprint&&!e.tired&&e.st>0&&d.m>=.45){want=ZT.sprint;e.spr=true}
   /* zombies are a little quicker on their feet (they're hungry) */want*=(e.mul||1)*(f.shoes>0?1.35:1)*(e.role==="z"?ZT.zfast*(f.brain>0?1.25:1):1);
   /* sprint bar: empties while sprinting, fills again while not. Run it flat and you're tired until it's a third full */
   if(e.spr&&f.energy<=0){e.st-=dt/(ZT.drain*(e.stK||1));if(e.st<=0){e.st=0;e.tired=1}}

@@ -12,8 +12,8 @@ const run=(G,inp,secs)=>{const ev=[];for(let i=0;i<secs*60;i++)ev.push(...Z.ztSt
 console.log("Moving");
 {const G=mk({});G.t=0;const e=G.ents[0];e.fx.frozen=0;const sp=(mx,mz,spr)=>{e.x=37;e.z=101;e.vx=e.vz=0;e.st=1;e.tired=0;for(let i=0;i<60;i++)Z.ztMove(G,e,{mx,mz,sprint:spr},1/60);return e.sp};
  const a=sp(1,0),b=sp(.7071,.7071),c=sp(0,-1);t("5  Same speed straight or diagonal (8 directions)",Math.abs(a-b)<.05&&Math.abs(a-c)<.05,[a,b,c].map(v=>v.toFixed(2)).join(" "));
- const w=sp(.4,0),r=sp(1,0),s=sp(1,0,true);t("6  Small push walks, full push runs, SPRINT is fastest",w<2.2&&r>3.8&&r<4.2&&s>5.6,[w,r,s].map(v=>v.toFixed(2)).join(" / "));
- const d=Z.ztSnap(.9,.3);t("7  Moves in 8 directions only",Math.abs(d.a/(Math.PI/4)-Math.round(d.a/(Math.PI/4)))<1e-9);
+ const w=sp(.3,0),r=sp(1,0),s=sp(1,0,true);t("6  Small push walks, full push runs, SPRINT is fastest",w<2.2&&r>3.8&&r<4.2&&s>5.6,[w,r,s].map(v=>v.toFixed(2)).join(" / "));
+ const d=Z.ztSnap(.9,.3);t("7  Goes exactly the way the thumb points (not snapped)",Math.abs(d.x-.9/Math.hypot(.9,.3))<1e-9);
  e.yaw=0;e.ta=0;Z.ztMove(G,e,{mx:-1,mz:0},1/60);t("8  Turns smoothly to face the way it's going (no snapping)",Math.abs(e.yaw)>0&&Math.abs(e.yaw)<.4,e.yaw.toFixed(3))}
 {const G=mk({});G.t=0;const e=G.ents[0];e.fx.frozen=0;e.x=37;e.z=101;e.st=1;let n=0;while(!e.tired&&n<1000){Z.ztMove(G,e,{mx:1,mz:0,sprint:true},1/60);n++}
  t("9  Sprint bar runs out after about 3.5 s of sprinting",Math.abs(n/60-ZT.drain)<.3,(n/60).toFixed(2)+" s");const before=e.sp;for(let i=0;i<30;i++)Z.ztMove(G,e,{mx:1,mz:0,sprint:true},1/60);t("10 ...then you can only run until it fills a bit",e.sp<4.3,e.sp.toFixed(2));
