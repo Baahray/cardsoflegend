@@ -47,7 +47,7 @@ function ztWorld(seed){const R=ztRng(seed),S=ZT.S,P=ZT.P,RD=ZT.RD,N=6;
       const split=(L)=>{const u=R();if(u<.25)return[[0,L]];if(u<.7){const a=8+R()*(L-19);return[[0,a],[a+3,L]]}const w=(L-5.5)/3;return[[0,w],[w+2.75,2*w+2.75],[2*w+5.5,L]]};
       const cols=split(B),rows=split(B),far=Math.hypot(cx-S/2,cz-S/2)/(S*.7);
       for(const [a0,a1] of cols)for(const [b0,b1] of rows){if(R()<.08){circ(bx+(a0+a1)/2,bz+(b0+b1)/2,.5,{k:"tree"});continue}const ins=R()<.4?R()*.7:0;
-        const h=+(7+R()*14+(1-far)*16*R()).toFixed(1),b=rect(bx+a0+ins,bz+b0+ins,bx+a1-ins,bz+b1-ins,{k:"bld",h,col:ZT_COLS[Math.floor(R()*ZT_COLS.length)],roof:ZT_ROOFS[Math.floor(R()*ZT_ROOFS.length)],id:W.blds.length});W.blds.push(b)}
+        const h=+(5+R()*7+(1-far)*7*R()).toFixed(1),b=rect(bx+a0+ins,bz+b0+ins,bx+a1-ins,bz+b1-ins,{k:"bld",h,col:ZT_COLS[Math.floor(R()*ZT_COLS.length)],roof:ZT_ROOFS[Math.floor(R()*ZT_ROOFS.length)],id:W.blds.length});W.blds.push(b)}
       /* bins and dumpsters in the alleys */for(let n=0;n<2;n++){const x=bx+R()*B,z=bz+R()*B;if(!ztHit(W,x,z,1.6))rect(x-.9,z-.5,x+.9,z+.5,{k:"bin",h:1.1})}}}
   ztIndex(W);ztNav(W);return W}
 
