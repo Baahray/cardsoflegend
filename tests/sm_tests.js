@@ -32,6 +32,12 @@ console.log("\nHands");
  for(let r=0;r<5;r++){G.ball={p:[(r-2)*.5,.12,-1],v:[0,0,7]};G.touch={X:0,O:0};G.hands.X.p=[(r-2)*.5,SR.hy,2.6];G.hands.X.pp=G.hands.X.p.slice();let ok=false;
   for(let i=0;i<60&&!ok;i++){R.srTick(G,1/60,null);if(G.ball.v[2]<-1)ok=true}if(ok)back++}
  t("10r RALLY: a still glove keeps hitting it back shot after shot (glove never stays see-through)",back===5,back+"/5")}
+{const go=(pk,inc)=>{const G={ball:{p:[0,.12,1.8],v:[0,0,inc]},hands:{X:{...hand("X",[0,SR.hy,3]),pk},O:hand("O",[0,SR.hy,-3.8])},touch:{X:0,O:0},t:0};let sp=0,crossed=false;
+   for(let i=0;i<360;i++){const ev=R.srTick(G,1/60,null);if(!sp&&ev.some(e=>e.k==="touch"))sp=Math.hypot(G.ball.v[0],G.ball.v[2]);if(G.ball.p[2]<0)crossed=true}return{sp,crossed}};
+ const n=go(1,6),dad=go(.5,6),cass=go(1.2,6),weak=go(.5,2);
+ t("10k Dad's hits against Cass go half speed",Math.abs(dad.sp/n.sp-.5)<.03,dad.sp.toFixed(2)+" v "+n.sp.toFixed(2));
+ t("10l Cass's hits go 20% faster",Math.abs(cass.sp/n.sp-1.2)<.03,cass.sp.toFixed(2)+" v "+n.sp.toFixed(2));
+ t("10m Even Dad's weakest half-speed return still reaches Cass's half",weak.crossed,weak.sp.toFixed(2))}
 {const mk=kid=>({ball:{p:[0,.1,1.2],v:[0,0,0]},hands:{X:{...hand("X",[0,SR.hy,1.6],[0,0,0],kid),reach:(kid?R.SR_HAND.kid:R.SR_HAND.adult).reach},O:hand("O",[0,SR.hy,-2.4])},touch:{X:0,O:0},t:0}),A=mk(true),B=mk(false),kid=A.hands.X,dad=B.hands.X;
  R.srSwipeHit(A,"X",[0,0,1.7],[0,0,.5],15);R.srSwipeHit(B,"X",[0,0,1.7],[0,0,.5],15);const a=A.ball,b=B.ball;
  t("11 Cass's hand is bigger and smacks a bit harder (his hidden advantage)",kid.r>dad.r&&Math.hypot(...a.v)>Math.hypot(...b.v),Math.hypot(...a.v).toFixed(1)+" vs "+Math.hypot(...b.v).toFixed(1))}

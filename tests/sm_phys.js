@@ -35,7 +35,7 @@ function srStep(S,hands,rnd){const R=SR,dt=R.dt,ev=[],pp=S.p.slice();
   for(const H of hands||[]){if(H.ghost>0){H.ghost-=dt;continue}const ex=H.ex||[H.r,H.r,H.r],c=[H.p[0],H.p[1]-SR.hy+ex[1],H.p[2]],d=SV.sub(S.p,c),A=[ex[0]+R.br,ex[1]+R.br,ex[2]+R.br],q=Math.hypot(d[0]/A[0],d[1]/A[1],d[2]/A[2]);
     if(q<1){const fw=H.who==="X"?-1:1,hv=H.v||[0,0,0],swing=Math.max(0,hv[2]*fw),inc=Math.hypot(S.v[0],S.v[2]);
       let side=hv[0]*.3+Math.max(-1,Math.min(1,d[0]/A[0]))*.9,mx=Math.tan(55*Math.PI/180);side=Math.max(-mx,Math.min(mx,side));
-      const P=Math.min(H.max,3.6+swing*1.0+inc*.25),l=Math.hypot(side,1);S.v=[side/l*P,srLift(P)*.85,fw/l*P];
+      /* H.pk: Cass's hits go faster, Dad's (against Cass) slower */const P=Math.min(H.max,3.6+swing*1.0+inc*.25)*(H.pk||1),l=Math.hypot(side,1);S.v=[side/l*P,srLift(P)*.85,fw/l*P];
       /* put it just in front of the glove, so it can't get stuck inside */S.p=[S.p[0],Math.max(S.p[1],R.br),c[2]+fw*(A[2]+.01)];H.ghost=.25;
       ev.push({k:"touch",who:H.who,sp:+P.toFixed(2),smack:swing>1.5,slap:1,dir:[side/l,fw/l]})}}
   /* stuck behind or on a box: dead ball after a moment */
@@ -49,11 +49,11 @@ function srSlap(G,who,dir,power){const l=Math.hypot(dir[0],dir[1])||1;G.slaps=G.
 function srSlapHit(G,s){const H=G.hands[s.who],B=G.ball,dx=B.p[0]-H.p[0],dz=B.p[2]-H.p[2],reach=H.reach||.5;
   if(Math.hypot(dx,dz)>reach||B.p[1]>Math.max(.75,H.p[1]+.45)||B.dead)return null;
   if(srOwner(B.p)!==s.who&&srOwner(H.p)!==s.who)return null;
-  const P=Math.min(H.max,s.power);B.v=[s.dir[0]*P,srLift(P),s.dir[1]*P];B.dead=0;B.st=0;H.lastT=G.t;H.ghost=.35;return{k:"touch",who:s.who,sp:+P.toFixed(2),smack:true,slap:1,res:srTouch(G,s.who)}}
+  const P=Math.min(H.max,s.power)*(H.pk||1);B.v=[s.dir[0]*P,srLift(P),s.dir[1]*P];B.dead=0;B.st=0;H.lastT=G.t;H.ghost=.35;return{k:"touch",who:s.who,sp:+P.toFixed(2),smack:true,slap:1,res:srTouch(G,s.who)}}
 /* every slap lifts the ball into a low arc: it flies and bounces, but mostly stays under head height */
 const srLift=P=>1.0+P*.22;
 /* hit the ball on purpose: off it goes that way at speed P, with a little air. Counts as a touch. */
-function srHitBall(G,who,dir,P){const B=G.ball,H=G.hands[who],l=Math.hypot(dir[0],dir[1])||1,d=[dir[0]/l,dir[1]/l];P=Math.min(H.max,Math.max(3.5,P));B.v=[d[0]*P,srLift(P),d[1]*P];B.dead=0;B.st=0;H.lastT=G.t;H.ghost=.35;
+function srHitBall(G,who,dir,P){const B=G.ball,H=G.hands[who],l=Math.hypot(dir[0],dir[1])||1,d=[dir[0]/l,dir[1]/l];P=Math.min(H.max,Math.max(3.5,P))*(H.pk||1);B.v=[d[0]*P,srLift(P),d[1]*P];B.dead=0;B.st=0;H.lastT=G.t;H.ghost=.35;
   return{k:"touch",who,sp:+P.toFixed(2),smack:true,slap:1,dir:d,res:srTouch(G,who)}}
 /* a SWIPE through the ball: your finger's path on the floor (a -> b). If it passes near the ball (in your half), the ball goes
    along that line at a speed set by how fast you swiped. This is the flick. */
