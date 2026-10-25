@@ -107,4 +107,5 @@ console.log("CARS");
  c.left=.01;Z.ztMove(G,H,{},1/30);const e5=Z.ztStep(G,{},1/60);t("79 After a minute it kicks you out (and that car is done)",H.car==null&&c.used===1&&!Z.ztCarNear(G,H),"")}
 {const G=team();const X=G.ents[0];const c=G.cars[1];X.x=c.x+1.5;X.z=c.z;X.fx.frozen=0;Z.ztCarToggle(G,X,[]);for(let i=0;i<90*30;i++)Z.ztMove(G,X,{mx:0,mz:0},1/30);
  t("80 Team Up: drive as long as you like (still in after 90 s)",X.car===1);Z.ztCarExit(G,X,[]);X.fx.frozen=0;X.fx.stun=0;t("81 ...and hop back in whenever you want",!!Z.ztCarNear(G,X)&&c.used===0)}
+{const G=mk({});const e=G.ents[0];e.fx.frozen=0;const x=e.x;Z.ztMove(G,e,{mx:1,mz:0},0);Z.ztNpcStep(G,0,[],{});t("82 A frame with no time in it can't break anyone's position",isFinite(e.x)&&isFinite(e.vx)&&e.x===x&&G.npcs.every(n=>isFinite(n.x)))}
 console.log(`\n${pass} passed, ${fail} failed`);if(fail)process.exit(1);
