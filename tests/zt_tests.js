@@ -37,7 +37,7 @@ const pair=()=>{const G=mk({z:"O"});G.t=0;const H=G.ents[0],Zm=G.ents[1];for(con
  t("22 Cass is a bit harder to catch and a bit better at catching (hidden)",c<a&&b>a,[a,b,c].map(v=>v.toFixed(2)).join(" "))}
 console.log("Pickups");
 {const G=mk({});t("23 Lots of pickups round the city, all where you can reach",G.picks.length>=20&&G.picks.every(p=>!Z.ztHit(W,p.x,p.z,1)&&W.reach[Z.ztNi(W,p.x,p.z)]<65535));
- const types=new Set();for(let s=0;s<30;s++)for(let i=0;i<22;i++)types.add(Z.ztPickAt(G,i,s).type);t("24 Eight kinds: shield, energy, rocket shoes, banana, gum, brains, ghost, mystery box",types.size===8,[...types].join(","));
+ const types=new Set();for(let s=0;s<30;s++)for(let i=0;i<22;i++)types.add(Z.ztPickAt(G,i,s).type);t("24 Nine kinds: shield, energy, rocket shoes, banana, gum, brains, ghost, zombie call, mystery box",types.size===9,[...types].join(","));
  const e=G.ents[0];G.t=0;e.fx.frozen=0;const p=G.picks[0];p.type="shield";e.x=p.x;e.z=p.z;const ev=[];Z.ztPickups(G,e,ev);t("25 Walk over a shield: you've got it (one use)",e.fx.shield===1&&!p.on&&ev[0].type==="shield");
  G.t+=ZT.respawn+.1;Z.ztRespawn(G);t("26 A new pickup appears somewhere else 10 s later",G.picks[0].on&&G.picks[0].s===1&&(G.picks[0].x!==p.x||G.picks[0].z!==p.z));
  const zz=G.ents[1];zz.role="z";const q={...G.picks[1],type:"shield",on:1};G.picks[1]=q;zz.x=q.x;zz.z=q.z;Z.ztPickups(G,zz,[]);t("27 Zombies can't pick up shields (brains are for zombies)",q.on===1&&!zz.fx.shield);
@@ -73,4 +73,36 @@ console.log("Z-O-M-B-I-E letters, prize boxes, gum, people in the street");
  H.x=n.x+2;H.z=n.z;H.fx.slow=0;let grab=null;for(let i=0;i<120&&!grab;i++){const e=[];Z.ztNpcStep(G,1/60,e,{convert:false,grab:G.ents});grab=e.find(q=>q.k==="grab")}
  t("51 ...it shuffles after humans and grabs them (slows them, can't bite)",grab&&H.fx.slow>1&&H.role==="h",grab&&JSON.stringify(grab));
  G.t+=31;const e2=[];Z.ztNpcStep(G,1/60,e2,{});t("52 ...and turns back into a person after 30 s",n.role==="h"&&e2.some(q=>q.k==="npcfree"))}
+console.log("TEAM UP");
+const team=(o={})=>{const G=Z.ztGame({W:Z.ztWorld(4321),seed:4321,mode:"team",dur:o.dur??120,players:[{id:"X",name:"DAD"},{id:"O",name:"CASS",kid:1,mul:1.07,stK:1.3}]});G.t=5;G.ents.forEach(e=>e.fx.frozen=0);return G};
+{const G=team();t("53 Team: Dad and Cass are both human, against 2 computer zombies, 5 hearts",G.ents.filter(e=>e.role==="h").map(e=>e.id).join()==="X,O"&&Z.ztZombies(G).length===2&&Z.ztHearts(G)===5);
+ const [X,O,Z1]=G.ents;X.fx.immune=0;Z1.x=X.x+.5;Z1.z=X.z;const ev=[];Z.ztTagCheck(G,ev);t("54 A zombie bite costs a heart, no swapping",ev[0]&&ev[0].k==="hit"&&Z.ztHearts(G)===4&&X.role==="h"&&Z1.role==="z");
+ const ev2=[];Z.ztTagCheck(G,ev2);t("55 ...then a few seconds safe",!ev2.length&&X.fx.immune>2)}
+{const G=team();const n=G.npcs[0];Z.ztNpcLoopAt(n,G.t);const Z1=G.ents[2];Z1.x=n.x+.4;Z1.z=n.z;const X=G.ents[0];X.x=n.x+2.5;X.z=n.z;X.fx.immune=0;const ev=[];Z.ztNpcStep(G,1/60,ev,{convert:true,grab:G.ents});
+ t("56 Team: zombies turn the people in the street",n.role==="z");G.t+=40;const e2=[];Z.ztNpcStep(G,1/60,e2,{convert:false,grab:G.ents});t("57 ...and they STAY zombies",n.role==="z");
+ Z1.x=5;Z1.z=5;G.ents[3].x=5;G.ents[3].z=8;let hit=null;for(let i=0;i<180&&!hit;i++){const e=[];Z.ztNpcStep(G,1/60,e,{convert:false,grab:G.ents});hit=e.find(q=>q.k==="hit")}t("58 ...and they chase and bite (a heart each)",hit&&Z.ztHearts(G)===4,JSON.stringify(hit))}
+{const G=team();const [X,O]=G.ents;let ev=[];G.letters.forEach((L,i)=>{const p=i%2?O:X;p.x=L.x;p.z=L.z;ev=ev.concat(Z.ztStep(G,{},1/60))});const end=ev.find(e=>e.k==="end");
+ t("59 Team: you share the letters; spell ZOMBIE together and the team wins",end&&end.team&&end.why==="letters"&&Z.ztLetterCount(G,"X")===3&&Z.ztLetterCount(G,"O")===3,JSON.stringify(end))}
+{const G=team();G.hits.X=5;const ev=Z.ztStep(G,{},1/60);t("60 Team: lose all 5 hearts = game over",ev.some(e=>e.k==="end"&&e.lost))}
+{const G=team({dur:10});const ev=[];for(let i=0;i<6*60;i++)ev.push(...Z.ztStep(G,{X:{},O:{}},1/60));t("61 Team: still going when the time runs out = you survived (win)",ev.some(e=>e.k==="end"&&e.survived))}
+{const G=Z.ztGame({W,seed:12345,dur:0,players:[{id:"X"},{id:"O"}],z:"O"});t("62 Unlimited time: no clock",G.dur===Infinity);G.t=5000;const ev=Z.ztStep(G,{},1/60);t("63 ...it only ends with letters (or hearts in team)",!ev.some(e=>e.k==="end"))}
+console.log("ZOMBIE CALL (the horde)");
+{const G=mk({z:"O"});G.t=5;const [H,Zm]=G.ents;H.fx.frozen=Zm.fx.frozen=0;H.fx.immune=0;t("64 Only the zombie can pick up the Zombie Call",!Z.ztCanGet(H,"horn")&&Z.ztCanGet(Zm,"horn"));
+ Zm.item="horn";Zm.x=H.x+40;Zm.z=H.z;const ev=[];Z.ztUseItem(G,Zm,ev);const Hd=G.horde;t("65 Tap it: a horde of well over 100 zombies",Hd&&Hd.list.length>=120,Hd&&Hd.list.length);
+ const ang=new Set(Hd.list.map(m=>Math.floor((Math.atan2(m.x-H.x,m.z-H.z)+Math.PI)/(Math.PI/4))));t("66 ...coming in from all sides, starting well away",ang.size===8&&Hd.list.every(m=>Math.hypot(m.x-H.x,m.z-H.z)>25),ang.size);
+ t("67 ...about 10% slower than the zombie",Math.abs(Z.ZT_HORDE.spd/(Z.ZT.run*Z.ZT.zfast)-.9)<.01);
+ const before=Hd.list.reduce((a,m)=>a+Math.hypot(m.x-H.x,m.z-H.z),0)/Hd.list.length;for(let i=0;i<300;i++){H.fx.immune=99;Z.ztHordeStep(G,1/60,[],{bite:[]});G.t+=1/60}const after=Hd.list.reduce((a,m)=>a+Math.hypot(m.x-H.x,m.z-H.z),0)/Hd.list.length;
+ t("68 ...and they close in on the human",after<before-8,before.toFixed(0)+" -> "+after.toFixed(0));
+ H.fx.immune=0;const m=Hd.list.find(q=>!q.down);m.x=H.x+.5;m.z=H.z;const zx=Zm.x;const e2=[];G.cool=0;Z.ztHordeStep(G,1/60,e2,{bite:[H]});t("69 A horde zombie catching the human counts as the zombie's bite (they swap)",e2.some(q=>q.k==="tag")&&H.role==="z"&&Zm.role==="h"&&Zm.x===zx);
+ G.t=Hd.until+2;Z.ztHordeStep(G,1/60,[],{});t("70 ...after a minute the horde is gone",!G.horde)}
+{const G=team();G.ents[2].x=G.ents[0].x+40;const Zm=G.ents[2];Z.ztHordeCall(G,Zm);const X=G.ents[0];X.fx.immune=0;const m=G.horde.list[0];m.x=X.x+.4;m.z=X.z;const ev=[];Z.ztHordeStep(G,1/60,ev,{bite:G.ents});t("71 Team: the horde's bites cost hearts",ev.some(q=>q.k==="hit")&&Z.ztHearts(G)===4)}
+console.log("CARS");
+{const G=mk({z:"O"});G.t=5;const [H,Zm]=G.ents;H.fx.frozen=Zm.fx.frozen=0;H.fx.immune=0;
+ t("72 Six special cars round town",G.cars.length===6&&new Set(G.cars.map(c=>Math.floor(c.x/68)+","+Math.floor(c.z/101))).size>=5);
+ const c=G.cars[0];Zm.x=c.x+1.5;Zm.z=c.z;t("73 Zombies can't drive",!Z.ztCarNear(G,Zm));H.x=c.x+1.6;H.z=c.z;const ev=[];Z.ztCarToggle(G,H,ev);t("74 A human walks up and gets in",H.car===0&&ev[0].k==="carin");
+ const x0=c.x,z0=c.z;let mx=0;for(let i=0;i<120;i++){Z.ztMove(G,H,{mx:Math.sin(c.yaw),mz:Math.cos(c.yaw)},1/60);mx=Math.max(mx,c.sp)}t("75 It drives (fast!)",Math.hypot(c.x-x0,c.z-z0)>6&&mx>7,mx.toFixed(1));
+ Zm.x=H.x+.5;Zm.z=H.z;G.cool=0;const e2=[];Z.ztTagCheck(G,e2);t("76 Nobody can bite you in a car",!e2.length&&H.role==="h");
+ Zm.x=c.x+Math.sin(c.yaw)*1.2;Zm.z=c.z+Math.cos(c.yaw)*1.2;c.sp=8;const e3=[];Z.ztRam(G,H,e3);t("77 Ram the zombie: it's knocked dizzy",e3.some(q=>q.k==="ram")&&Zm.fx.stun>1.5);
+ Z.ztHordeCall(G,Zm);const m=G.horde.list[0];m.x=c.x+.5;m.z=c.z;c.sp=8;const e4=[];Z.ztRam(G,H,e4);t("78 Ram the horde: bowled over",m.down>0);
+ c.left=.01;Z.ztMove(G,H,{},1/30);const e5=Z.ztStep(G,{},1/60);t("79 After a minute it kicks you out (and that car is done)",H.car==null&&c.used===1&&!Z.ztCarNear(G,H),"")}
 console.log(`\n${pass} passed, ${fail} failed`);if(fail)process.exit(1);
