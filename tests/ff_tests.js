@@ -30,7 +30,7 @@ for(let s=0;s<30;s++){const F=fly(.5+s/60,300+s);ok(isFinite(F.s)&&isFinite(F.x)
 // flies and coins get collected
 {const F=C.ffNew(1,0);F.mode="fly";F.chunks[1]=[{t:"coin",x:0,s:50,y:3,id:1},{t:"fly",x:1,s:55,y:3,id:2}];F.s=48;F.x=0;F.y=3.7;F.vy=0;F.vs=15;for(let i=0;i<40;i++){C.ffStep(F,1/60,0)}ok(F.coins===1&&F.flies===1,"collect")}
 // medals
-ok(C.ffMedal(10)===null&&C.ffMedal(250)==="bronze"&&C.ffMedal(700)==="silver"&&C.ffMedal(1300)==="gold","medals");
+ok(C.ffMedal(10)===null&&C.ffMedal(300)==="bronze"&&C.ffMedal(900)==="silver"&&C.ffMedal(1700)==="gold","medals");
 // tongue: grab a fly ahead, zip to it, get whipped forward; uses a shot
 {const F=C.ffNew(1,0);F.mode="fly";const o={t:"fly",x:2,s:58,y:6,hov:1,ph:0,id:5};F.chunks[1]=[o];F.s=50;F.x=0;F.y=5;F.vy=-2;F.vs=10;const sh=F.shots;
   ok(C.ffCanTongue(F,o),"fly in reach");ok(C.ffTongue(F,o),"tongue fires");let wh=0;for(let i=0;i<60;i++){C.ffStep(F,1/60,0);if(F.ev.some(e=>e.e==="whip"))wh=1;F.ev.length=0}

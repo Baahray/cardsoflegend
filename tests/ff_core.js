@@ -2,7 +2,7 @@
    s = metres forward from the launch trees, x = metres to the right, y = metres up. The frog is a ball of radius FF.R. */
 const FF={g:7,drag:.0009,R:.5,vMin:13,vMax:40,elev:.45,yaw:.3,steer:11,steerA:5,lane:12.5,y0:3.7,chunk:40};
 const FF_Z=[{k:"forest",n:"THE FOREST",s:0},{k:"road",n:"THE BUSY ROAD",s:172},{k:"village",n:"THE VILLAGE",s:214},{k:"town",n:"THE TOWN",s:440},{k:"city",n:"THE BIG CITY",s:700}];
-const FF_MEDAL=[["bronze",250],["silver",600],["gold",1200]];
+const FF_MEDAL=[["bronze",300],["silver",800],["gold",1600]];
 const ffZone=s=>{let i=0;for(let j=0;j<FF_Z.length;j++)if(s>=FF_Z[j].s)i=j;return i};
 /* every kind of thing in the world: picture size (w,h), the solid parts (c: half-width r across, half-depth d along, from y0 to y1),
    k: obst (bump), bnc (bounce pad: always bounces), top (bounces if you land on top, bumps from the side), pick (collect), water/mud (on the ground) */
@@ -75,7 +75,7 @@ const FF_COST=[20,45,90,150,240];
 const ffU=(F,k)=>(F.up&&F.up[k])||0;
 /* tongue shots come back as you go: one for every FF_RECH metres flown, and each coin fills a fifth of one */
 const FF_RECH=110,FF_COINCH=.07,ffRech=F=>FF_RECH+.22*F.s;
-const ffTongueR=F=>12+2*ffU(F,"tng")+(F.kid?2:0),ffShots=F=>3+Math.ceil(ffU(F,"tng")/2);
+const ffTongueR=F=>15+2*ffU(F,"tng")+(F.kid?2:0),ffShots=F=>3+Math.ceil(ffU(F,"tng")/2);
 /* flies (and power-ups) hover about in the air */
 function ffPos(o,T){const x=o.mv?ffMx(o,T):o.x;if(!o.hov)return{x,y:o.y,s:o.s};const ph=o.ph||0;
   return{x:x+Math.sin(T*1.3+ph)*1.3,y:o.y+Math.sin(T*2.3+ph*1.7)*.7,s:o.s+Math.cos(T*1.1+ph)*.9}}
