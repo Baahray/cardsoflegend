@@ -1,6 +1,6 @@
 /* ===================== FROG FLING (side-on): the rules, no drawing, so they can be tested =====================
-   x = metres forward, y = metres up, ground at y=0. The frog is a ball of radius FS.R. */
-const FS={g:9.5,drag:.0006,R:.7,V:1.55,vMin:11,vMax:36,maxPull:5,chunk:50,reach:9.5,gripX:0,gripY:5.1,y0:3.9};
+   x = metres forward, y = metres up, ground at y=0. The frog is a ball of radius FSP.R. */
+const FSP={g:9.5,drag:.0006,R:.7,V:1.55,vMin:11,vMax:36,maxPull:5,chunk:50,reach:9.5,gripX:0,gripY:5.1,y0:3.9};
 const FS_Z=[{k:"forest",n:"THE FOREST",x:0},{k:"road",n:"THE BUSY ROAD",x:230},{k:"village",n:"THE VILLAGE",x:340},{k:"town",n:"THE TOWN",x:700},{k:"city",n:"THE BIG CITY",x:1150}];
 const FS_ROAD=[240,330];
 const FS_MEDAL=[["bronze",200],["silver",500],["gold",1000]];
@@ -24,27 +24,27 @@ const FS_T={
   fly:{h:1.1,k:"pick",R:.8,cy:.55},gfly:{h:1.4,k:"pick",R:.9,cy:.7},coin:{h:.95,k:"pick",R:.75,cy:.48},hoop:{h:3,k:"pick",R:1.5,cy:1.5},wind:{h:2.4,k:"pick",R:1.3,cy:1.2}};
 function fsRng(seed){let a=seed>>>0||1;return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 /* make one 50m stretch of the journey */
-function fsGen(seed,k,kid){const R=fsRng(seed*7919+k*104729+7),o=[],x0=k*FS.chunk,x1=x0+FS.chunk,pick=a=>a[Math.floor(R()*a.length)];
+function fsGen(seed,k,kid){const R=fsRng(seed*7919+k*104729+7),o=[],x0=k*FSP.chunk,x1=x0+FSP.chunk,pick=a=>a[Math.floor(R()*a.length)];
   const add=(t,x,e)=>{const T=FS_T[t];o.push(Object.assign({t,x,y:(T&&T.base)||0},e||{}))};
   const busy=[];const free=(x,w)=>busy.every(b=>Math.abs(b[0]-x)>w+b[1]+3);
-  const place=(t,n)=>{for(let i=0;i<n;i++)for(let a=0;a<14;a++){const x=x0+R()*FS.chunk;if(x<14||x>=x1)continue;if(x>FS_ROAD[0]-3&&x<FS_ROAD[1]+3)continue;
+  const place=(t,n)=>{for(let i=0;i<n;i++)for(let a=0;a<14;a++){const x=x0+R()*FSP.chunk;if(x<14||x>=x1)continue;if(x>FS_ROAD[0]-3&&x<FS_ROAD[1]+3)continue;
     const w=FS_T[t].c?Math.max(...FS_T[t].c.map(c=>c[0])):1;if(free(x,w)){busy.push([x,w]);add(t,x);break}}};
   const z=FS_Z[fsZone(x0+25)].k,few=kid?.8:1,far=Math.max(0,x0-150);
   /* water and mud on the ground */
   if(x0>=60&&z!=="road"&&z!=="city"&&R()<.28){const wx=x0+5+R()*30,ww=4+R()*5;if(wx+ww<x1&&free(wx+ww/2,ww/2)){busy.push([wx+ww/2,ww/2]);o.push({t:R()<.75?"water":"mud",x:wx,x2:wx+ww,y:0,ground:1})}}
   if(z==="forest"){place(pick(["oak","pine","oak"]),Math.round(1.2*few));place(pick(["bush","berry","mossrock","boulder","log"]),Math.round(1.5*few));place("mushroom",1+(R()<(kid?.45:.3)?1:0));if(R()<.4)place("shrooms",1)}
   else if(z==="road"){if(x0<FS_ROAD[0])for(const t of ["sign","lights"])add(t,FS_ROAD[0]-3-R()*4);if(x1>FS_ROAD[1])add(pick(["sign","barrier"]),FS_ROAD[1]+3+R()*3);
-    if(x0<FS_ROAD[0]&&x0>=FS_ROAD[0]-FS.chunk)add("mushroom",FS_ROAD[0]-12)}
+    if(x0<FS_ROAD[0]&&x0>=FS_ROAD[0]-FSP.chunk)add("mushroom",FS_ROAD[0]-12)}
   else if(z==="village"){place(pick(["fence","cow","gate","flowers","washing","well","phonebox","fence"]),Math.round(1.5*few));if(R()<.5)place("cottage",1);
     place(pick(["tramp","hay","tramp"]),1+(R()<(kid?.45:.3)?1:0))}
   else if(z==="town"){place(pick(["bench","fountain","lamp","postbox","busstop","stall","lamp"]),Math.round(1.6*few));place(pick(["awning","stall","awning"]),1+(R()<(kid?.45:.3)?1:0))}
   else{place(pick(["tlight","lamp","billboard","busstop","tlight","postbox"]),Math.round(1.4*few));place(pick(["foodtruck","awning"]),1);
-    if(R()<.4)add("pigeons",x0+R()*FS.chunk,{y:4+R()*5,mv:1,v:(R()<.5?-1:1)*(3+R()*2)})}
+    if(R()<.4)add("pigeons",x0+R()*FSP.chunk,{y:4+R()*5,mv:1,v:(R()<.5?-1:1)*(3+R()*2)})}
   /* flies to grab: little trails across the sky, fewer as the journey goes on */
   const pf=Math.max(.3,1-far/1800);
   if(x0>=10&&R()<pf){const n=2+Math.floor(R()*3),y=3+R()*9;let x=x0+5+R()*15;for(let i=0;i<n&&x<x1+10;i++){add(i===n-1&&R()<.18?"gfly":"fly",x,{y:Math.max(2,y+(R()-.5)*4),hov:1,ph:R()*6.3});x+=9+R()*7}}
   if(x0>=10&&R()<.6){const n=5,y=1.5+R()*6,x=x0+R()*35;for(let i=0;i<n;i++)add("coin",x+i*1.8,{y:y+Math.sin(i/(n-1)*Math.PI)*1.6})}
-  if(x0>=80&&R()<.13)add(pick(["hoop","wind"]),x0+R()*FS.chunk,{y:3+R()*6});
+  if(x0>=80&&R()<.13)add(pick(["hoop","wind"]),x0+R()*FSP.chunk,{y:3+R()*6});
   o.forEach((t,i)=>{t.id=k*1000+i});return o}
 /* traffic: drives along the busy road and the city streets; starts when the frog gets near */
 function fsTraffic(F){const R=fsRng(F.seed+99),list=[];const mk=(x,v,t)=>list.push({t,x0:x,v,id:900000+list.length,veh:1});
@@ -54,29 +54,29 @@ function fsTraffic(F){const R=fsRng(F.seed+99),list=[];const mk=(x,v,t)=>list.pu
 function fsVehX(F,o){if(F.trafT==null)return o.x0;let x=o.x0+o.v*(F.t-F.trafT);if(o.x0<FS_Z[4].x)x=Math.max(FS_ROAD[0]+3,Math.min(FS_ROAD[1]-3,x));return x}
 /* where a hovering fly is right now */
 function fsPos(o,T){if(o.veh)return{x:0,y:0};let x=o.x;if(o.mv)x+=o.v*T;if(!o.hov)return{x,y:o.y};const ph=o.ph||0;return{x:x+Math.sin(T*1.2+ph)*.8,y:o.y+Math.sin(T*2.1+ph*1.7)*.6}}
-function fsNew(seed,kid){return{seed,kid:!!kid,t:0,x:FS.gripX,y:FS.y0,vx:0,vy:0,mode:"hang",dive:0,grab:null,combo:0,bestCombo:0,coins:0,flies:0,bumps:0,boings:0,whips:0,ev:[],chunks:{},hit:{},end:null,trafT:null,traffic:null,spin:0,maxY:0,d:0}}
-function fsObjs(F,x){const k=Math.floor(x/FS.chunk);if(k<0)return[];if(!F.chunks[k])F.chunks[k]=fsGen(F.seed,k,F.kid);return F.chunks[k]}
+function fsNew(seed,kid){return{seed,kid:!!kid,t:0,x:FSP.gripX,y:FSP.y0,vx:0,vy:0,mode:"hang",dive:0,grab:null,combo:0,bestCombo:0,coins:0,flies:0,bumps:0,boings:0,whips:0,ev:[],chunks:{},hit:{},end:null,trafT:null,traffic:null,spin:0,maxY:0,d:0}}
+function fsObjs(F,x){const k=Math.floor(x/FSP.chunk);if(k<0)return[];if(!F.chunks[k])F.chunks[k]=fsGen(F.seed,k,F.kid);return F.chunks[k]}
 /* launch from the pull: P = pull vector (metres, back and down from the frog), power 0..1 */
-function fsLaunchVel(F,px,py){const L=Math.min(FS.maxPull,Math.hypot(px,py));const p=L/FS.maxPull;let a=Math.atan2(-py,-px);a=Math.max(-.15,Math.min(1.35,a));
-  const v=(FS.vMin+(FS.vMax-FS.vMin)*p)*(F.kid?1.06:1);return{vx:v*Math.cos(a),vy:v*Math.sin(a),p,a}}
-function fsLaunch(F,px,py){const L=fsLaunchVel(F,px,py);F.vx=L.vx;F.vy=L.vy;F.x=FS.gripX+.3;F.y=FS.y0;F.mode="fly";F.power=L.p;F.ev.push({e:"launch",p:L.p})}
+function fsLaunchVel(F,px,py){const L=Math.min(FSP.maxPull,Math.hypot(px,py));const p=L/FSP.maxPull;let a=Math.atan2(-py,-px);a=Math.max(-.15,Math.min(1.35,a));
+  const v=(FSP.vMin+(FSP.vMax-FSP.vMin)*p)*(F.kid?1.06:1);return{vx:v*Math.cos(a),vy:v*Math.sin(a),p,a}}
+function fsLaunch(F,px,py){const L=fsLaunchVel(F,px,py);F.vx=L.vx;F.vy=L.vy;F.x=FSP.gripX+.3;F.y=FSP.y0;F.mode="fly";F.power=L.p;F.ev.push({e:"launch",p:L.p})}
 function fsCombo(F){F.combo++;F.bestCombo=Math.max(F.bestCombo,F.combo);if(F.combo>=2)F.vx+=.25*Math.min(F.combo,8);F.ev.push({e:"combo",n:F.combo})}
 function fsComboEnd(F){if(F.combo>=2)F.ev.push({e:"comboEnd",n:F.combo});F.combo=0}
-const fsReach=F=>FS.reach+(F.kid?2:0);
+const fsReach=F=>FSP.reach+(F.kid?2:0);
 function fsCanGrab(F,o){if(!o||o.got||!o.hov||F.grab||(F.mode!=="fly"&&F.mode!=="slide"))return false;const p=fsPos(o,F.t),T=FS_T[o.t];return Math.hypot(p.x-F.x,p.y+T.cy-F.y)<=fsReach(F)&&p.x>F.x-1}
 function fsGrab(F,o){if(!fsCanGrab(F,o))return false;F.grab={o,t:0};F.dive=0;F.ev.push({e:"tongue",o});return true}
 /* everything near the frog (including traffic) */
-function fsNear(F){const k=Math.floor(F.x/FS.chunk),a=[];for(let i=k-1;i<=k+1;i++)a.push(...fsObjs(F,i*FS.chunk));if(F.traffic)for(const v of F.traffic){const x=fsVehX(F,v);if(Math.abs(x-F.x)<25)a.push(Object.assign(v,{x}))}return a}
+function fsNear(F){const k=Math.floor(F.x/FSP.chunk),a=[];for(let i=k-1;i<=k+1;i++)a.push(...fsObjs(F,i*FSP.chunk));if(F.traffic)for(const v of F.traffic){const x=fsVehX(F,v);if(Math.abs(x-F.x)<25)a.push(Object.assign(v,{x}))}return a}
 function fsGet(F,o,via){const T=FS_T[o.t],p=fsPos(o,F.t);o.got=1;
   if(o.t==="fly"||o.t==="gfly"){F.flies++;const g=o.t==="gfly";if(via==="tongue"){F.whips++;const sp=Math.max(Math.hypot(F.vx,F.vy)*.97,14)+(g?8:1.8),a=g?.75:.6;F.vx=sp*Math.cos(a);F.vy=sp*Math.sin(a)}else{F.vx+=g?6:2.5;F.vy=Math.max(F.vy,g?8:F.vy+2)}}
   else if(o.t==="coin")F.coins+=Math.min(5,1+Math.floor(F.combo/3));
   else if(o.t==="hoop"){F.vx+=6;F.vy=Math.max(F.vy,7);F.coins+=3}else if(o.t==="wind"){F.wind=1.6}
   if(o.t!=="coin")fsCombo(F);if(F.mode==="slide"&&o.t!=="coin"){F.mode="fly";F.vy=Math.max(F.vy,6)}
   F.ev.push({e:"pick",t:o.t,o,x:p.x,y:p.y+T.cy,via})}
-function fsGroundAt(F,x){for(const k of [Math.floor(x/FS.chunk)-1,Math.floor(x/FS.chunk)])for(const o of fsObjs(F,k*FS.chunk))if(o.ground&&x>=o.x&&x<=o.x2)return o.t;
+function fsGroundAt(F,x){for(const k of [Math.floor(x/FSP.chunk)-1,Math.floor(x/FSP.chunk)])for(const o of fsObjs(F,k*FSP.chunk))if(o.ground&&x>=o.x&&x<=o.x2)return o.t;
   if(x>FS_ROAD[0]&&x<FS_ROAD[1])return "road";return "ground"}
 /* one step. dive: finger held down (falls faster, bigger bounces) */
-function fsStep(F,dt,dive){if(F.mode==="hang"||F.mode==="done")return;F.t+=dt;const R=FS.R,kid=F.kid;F.dive=dive&&!F.grab?1:0;
+function fsStep(F,dt,dive){if(F.mode==="hang"||F.mode==="done")return;F.t+=dt;const R=FSP.R,kid=F.kid;F.dive=dive&&!F.grab?1:0;
   if(F.trafT==null&&F.x>FS_ROAD[0]-90){F.trafT=F.t;F.traffic=fsTraffic(F)}
   const sp=Math.hypot(F.vx,F.vy);F.spin=Math.max(0,F.spin-dt);
   if(F.grab){const G=F.grab,o=G.o,T=FS_T[o.t],p=fsPos(o,F.t),tx=p.x,ty=p.y+T.cy,dx=tx-F.x,dy=ty-F.y,d=Math.hypot(dx,dy),z=Math.max(26,sp*1.15);G.t+=dt;
@@ -84,8 +84,8 @@ function fsStep(F,dt,dive){if(F.mode==="hang"||F.mode==="done")return;F.t+=dt;co
     else if(d<=z*dt+.6){F.x=tx;F.y=Math.max(R,ty);F.grab=null;F.mode="fly";fsGet(F,o,"tongue");F.ev.push({e:"whip",gold:o.t==="gfly"})}
     else{F.x+=dx/d*z*dt;F.y+=dy/d*z*dt;F.vx=dx/d*z;F.vy=dy/d*z*.5;F.mode="fly"}}
   if(!F.grab){
-    if(F.mode==="fly"){F.vy-=FS.g*(F.dive?2.6:1)*dt;if(F.dive&&F.vy>-30)F.vx+=1.2*dt}
-    F.vx-=FS.drag*F.vx*sp*dt;if(F.wind>0){F.wind-=dt;F.vx+=9*dt}
+    if(F.mode==="fly"){F.vy-=FSP.g*(F.dive?2.6:1)*dt;if(F.dive&&F.vy>-30)F.vx+=1.2*dt}
+    F.vx-=FSP.drag*F.vx*sp*dt;if(F.wind>0){F.wind-=dt;F.vx+=9*dt}
     var py=F.y;F.x+=F.vx*dt;F.y+=F.vy*dt}else var py=F.y;
   F.maxY=Math.max(F.maxY,F.y);
   for(const o of fsNear(F)){if(o.got||o.ground)continue;const T=FS_T[o.t];if(!T)continue;
@@ -108,4 +108,4 @@ function fsStep(F,dt,dive){if(F.mode==="hang"||F.mode==="done")return;F.t+=dt;co
     else if(F.mode==="slide"){F.vy=0;if(g==="water"&&F.vx<8){F.vx=0;F.mode="done";F.end="splash";F.ev.push({e:"splash",end:1})}if(g==="mud")F.mud=1}}
   if(F.mode==="slide"){F.vx-=(F.mud?28:11)*dt;if(F.vx<=.25){F.vx=0;F.mode="done";F.end=F.end||(F.mud?"mud":"stop");F.ev.push({e:"stop"})}}
   F.d=Math.max(0,Math.round(F.x))}
-if(typeof module!=="undefined")module.exports={FS,FS_Z,FS_T,FS_ROAD,FS_MEDAL,fsZone,fsMedal,fsRng,fsGen,fsTraffic,fsVehX,fsPos,fsNew,fsObjs,fsLaunchVel,fsLaunch,fsCanGrab,fsGrab,fsNear,fsGet,fsGroundAt,fsStep,fsReach};
+if(typeof module!=="undefined")module.exports={FSP,FS_Z,FS_T,FS_ROAD,FS_MEDAL,fsZone,fsMedal,fsRng,fsGen,fsTraffic,fsVehX,fsPos,fsNew,fsObjs,fsLaunchVel,fsLaunch,fsCanGrab,fsGrab,fsNear,fsGet,fsGroundAt,fsStep,fsReach};
