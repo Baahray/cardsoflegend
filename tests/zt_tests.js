@@ -108,4 +108,75 @@ console.log("CARS");
 {const G=team();const X=G.ents[0];const c=G.cars[1];X.x=c.x+1.5;X.z=c.z;X.fx.frozen=0;Z.ztCarToggle(G,X,[]);for(let i=0;i<90*30;i++)Z.ztMove(G,X,{mx:0,mz:0},1/30);
  t("80 Team Up: drive as long as you like (still in after 90 s)",X.car===1);Z.ztCarExit(G,X,[]);X.fx.frozen=0;X.fx.stun=0;t("81 ...and hop back in whenever you want",!!Z.ztCarNear(G,X)&&c.used===0)}
 {const G=mk({});const e=G.ents[0];e.fx.frozen=0;const x=e.x;Z.ztMove(G,e,{mx:1,mz:0},0);Z.ztNpcStep(G,0,[],{});t("82 A frame with no time in it can't break anyone's position",isFinite(e.x)&&isFinite(e.vx)&&e.x===x&&G.npcs.every(n=>isFinite(n.x)))}
+
+console.log("TEAM UP 2: the big city, two seats, the crossbow, the boss");
+const BW=Z.ztWorld(777,true);
+const big=(o={})=>{const G=Z.ztGame({W:BW,seed:777,mode:"team",dur:o.dur??300,players:o.players||[{id:"X",name:"DAD"},{id:"O",name:"CASS",kid:1,mul:1.07,stK:1.3}]});G.t=5;G.ents.forEach(e=>e.fx.frozen=0);return G};
+{let free=0,reach=0;for(let i=0;i<BW.nav.b.length;i++)if(!BW.nav.b[i]){free++;if(BW.reach[i]<65535)reach++}
+ t("85 Team Up city is much bigger, with a river and bridges",BW.S>=260&&BW.bridges.length>=3&&BW.blds.length>100&&reach/free>.97,`${BW.S} wide, ${BW.bridges.length} bridges, ${(reach/free*100).toFixed(1)}% reachable`)}
+{const r=BW.river,nb=[...Array(9).keys()].find(k=>!Z.ZT_RIVER.bridges.includes(k)),x=nb*Z.ZT.P+5,br=Z.ZT_RIVER.bridges[1]*Z.ZT.P+5,mz=(r[1]+r[3])/2;
+ t("86 The river can only be crossed on a bridge",Z.ztHit(BW,x,mz,.4)&&!Z.ztHit(BW,br,mz,.4)&&BW.reach[Z.ztNi(BW,x,r[1]-3)]<65535&&BW.reach[Z.ztNi(BW,x,r[3]+3)]<65535)}
+{const sh=BW.shelters,ok=sh.filter(s=>{let any=false;for(let x=Math.ceil(s.x0);x<s.x1-1;x++)for(let z=Math.ceil(s.z0);z<s.z1-1;z++)if(BW.reach[Z.ztNi(BW,x+.5,z+.5)]<65535)any=true;return any});
+ t("87 Buildings you can go inside, spread round town (all reachable through a door)",sh.length>=6&&ok.length===sh.length&&sh.every(s=>s.door),sh.length+" shelters")}
+{const G=big(),[X]=G.ents,Zb=G.ents.find(e=>e.bot),s=BW.shelters.find(q=>!q.garage),cx=(s.x0+s.x1)/2,cz=(s.z0+s.z1)/2;
+ let spot=null;for(let i=0;i<200&&!spot;i++){const x=s.x0+1+((i*7)%10)/10*(s.x1-s.x0-2),z=s.z0+1+((i*3)%10)/10*(s.z1-s.z0-2);if(!Z.ztHit(BW,x,z,.5))spot=[x,z]}
+ X.x=spot[0];X.z=spot[1];G.ents[1].x=10;G.ents[1].z=10;G.ents[1].fx.immune=99;Z.ztMove(G,X,{},1/60);Zb.x=X.x+(s.out[0]||.3)*12;Zb.z=X.z+(s.out[1]||.3)*12;Z.ztCollide(BW,Zb,.5);
+ const inp=Z.ztBotInput(G,Zb,1/60),dx=X.x-Zb.x,dz=X.z-Zb.z,toward=(inp.mx||0)*dx+(inp.mz||0)*dz;
+ t("88 Hide inside: the zombies lose track of you",X.hid&&!(Zb.B&&Zb.B.tgt==="X"),JSON.stringify(inp));
+ for(let i=0;i<16*60;i++)Z.ztMove(G,X,{},1/60);t("89 ...but after 15 seconds they smell you",!X.hid)}
+{const G=big(),J=G.cars.find(c=>c.jeep),g=BW.shelters.find(q=>q.garage);
+ t("90 A tough jeep is hidden in a garage",J&&g&&J.x>g.x0&&J.x<g.x1&&J.z>g.z0&&J.z<g.z1&&J.max>=2*G.cars[0].max&&BW.reach[Z.ztNi(BW,J.x+g.out[0]*6,J.z+g.out[1]*6)]<65535)
+ /* drive it out of the garage */const X=G.ents[0];X.x=J.x+1;X.z=J.z;Z.ztCarToggle(G,X,[]);for(let i=0;i<120;i++)Z.ztMove(G,X,{mx:g.out[0],mz:g.out[1]},1/60);
+ t("91 ...and it drives out of the garage",X.car===J.i&&(J.x<g.x0||J.x>g.x1||J.z<g.z0||J.z>g.z1),J.x.toFixed(1)+","+J.z.toFixed(1))}
+{const G=big(),[X,O]=G.ents;const c=G.cars[0];X.x=c.x+1.5;X.z=c.z;Z.ztCarToggle(G,X,[]);c.yaw=0;for(let i=0;i<120;i++)Z.ztMove(G,X,{mx:0,mz:1},1/60);
+ const sp0=c.sp;let n=0;while(Math.abs(Z.ztWrap(c.yaw-Math.PI/2))>.1&&n<120){Z.ztMove(G,X,{mx:1,mz:0},1/60);n++}
+ const vy=Math.atan2(c.vx,c.vz);t("92 Steering: snappy (a right-angle turn in about half a second) and no sliding",n/60<.6&&Math.abs(Z.ztWrap(vy-c.yaw))<.05&&sp0>7,(n/60).toFixed(2)+" s")}
+{const G=big(),[X,O]=G.ents,c=G.cars[1];c.x=BW.mid;c.z=BW.mid;c.yaw=Math.PI/2;X.x=c.x+1.5;X.z=c.z;O.x=c.x-1.5;O.z=c.z;const ev=[];Z.ztCarToggle(G,X,ev);Z.ztCarToggle(G,O,ev);
+ t("93 Two seats: first in drives, the next one rides with the crossbow",c.by==="X"&&c.pas==="O"&&X.seat===0&&O.seat===1);
+ for(let i=0;i<60;i++){Z.ztMove(G,X,{mx:1,mz:0},1/60);Z.ztMove(G,O,{mx:-1,mz:0},1/60)}t("94 ...the passenger can't steer, just rides along",O.x===c.x&&O.z===c.z&&c.sp>3);
+ Z.ztCarExit(G,X,[]);t("95 Driver gets out: the passenger slides over to drive",c.by==="O"&&!c.pas&&O.seat===0&&X.car==null)}
+{const G=big(),X=G.ents[0],Zb=G.ents.find(e=>e.bot),c=G.cars[2];X.x=c.x+1.5;X.z=c.z;Z.ztCarToggle(G,X,[]);c.sp=8;Zb.x=c.x+Math.sin(c.yaw)*2;Zb.z=c.z+Math.cos(c.yaw)*2;Zb.fx.stun=0;const ev=[];Z.ztRam(G,X,ev);
+ t("96 Run a zombie over: SPLAT (it's dead) and the car gets a dent",Zb.dead>0&&ev.some(q=>q.k==="kill"&&q.on===Zb.id)&&c.hp===c.max-1&&X.kills===1);
+ const t0=G.t;for(let i=0;i<10.5*60;i++)Z.ztStep(G,{},1/60);t("97 ...it comes back later, somewhere far away",!Zb.dead&&Math.hypot(Zb.x-X.x,Zb.z-X.z)>30,Math.hypot(Zb.x-X.x,Zb.z-X.z).toFixed(0)+" away")}
+{const G=big(),X=G.ents[0],c=G.cars[3];X.x=c.x+1.5;X.z=c.z;Z.ztCarToggle(G,X,[]);const top=()=>{c.sp=0;c.x=10;c.z=BW.mid;c.yaw=Math.PI/2;for(let i=0;i<150;i++)Z.ztMove(G,X,{mx:1,mz:0},1/60);return c.sp};
+ const s1=top();for(let i=0;i<7;i++)Z.ztCarHurt(G,c,1,[]);const s2=top();t("98 About 7 hits: it smokes and slows right down",s2<s1*.7&&!c.dead,s1.toFixed(1)+" -> "+s2.toFixed(1));
+ const ev=[];for(let i=0;i<3;i++)Z.ztCarHurt(G,c,1,ev);c.sp=0;const x0=c.x;for(let i=0;i<60;i++)Z.ztMove(G,X,{mx:1,mz:0},1/60);G.ents[1].x=c.x+1.6;G.ents[1].z=c.z;t("99 10 hits: wrecked, it won't drive",c.dead&&ev.some(q=>q.k==="wreck")&&Math.abs(c.x-x0)<.01&&!Z.ztCarNear(G,G.ents[1]))}
+{const G=big(),[X,O]=G.ents,Zb=G.ents.find(e=>e.bot),c=G.cars[4];X.x=c.x+1.5;X.z=c.z;O.x=c.x-1.5;O.z=c.z;Z.ztCarToggle(G,X,[]);Z.ztCarToggle(G,O,[]);c.sp=0;
+ G.ents.filter(e=>e.bot&&e!==Zb).forEach(e=>{e.x=5;e.z=5});Zb.x=c.x+Math.cos(c.yaw)*1.6;Zb.z=c.z-Math.sin(c.yaw)*1.6;Zb.fx.stun=0;Zb.fx.frozen=0;const ev=[];for(let i=0;i<90;i++)Z.ztCarDanger(G,1/60,ev,{});
+ const h0=Z.ztHearts(G);t("100 Zombies at the door of a stopped car claw it (damage)",c.hp<c.max&&ev.some(q=>q.k==="claw"));
+ t("101 ...and drag you out (costs a heart)",ev.filter(q=>q.k==="drag").length>=1&&(X.car==null||O.car==null)&&h0===4,Z.ztHearts(G)+" hearts");
+ const G2=big(),X2=G2.ents[0],Z2=G2.ents.find(e=>e.bot),c2=G2.cars[4];X2.x=c2.x+1.5;X2.z=c2.z;Z.ztCarToggle(G2,X2,[]);c2.sp=6;Z2.x=c2.x+Math.cos(c2.yaw)*1.6;Z2.z=c2.z-Math.sin(c2.yaw)*1.6;Z2.fx.stun=Z2.fx.frozen=0;const e2=[];for(let i=0;i<120;i++){c2.sp=6;Z.ztCarDanger(G2,1/60,e2,{})}
+ t("102 ...but not while you keep moving",X2.car!=null&&!e2.some(q=>q.k==="drag"))}
+{const G=big(),[X,O]=G.ents,Zb=G.ents.find(e=>e.bot),c=G.cars[0];X.x=c.x+1.5;X.z=c.z;O.x=c.x-1.5;O.z=c.z;Z.ztCarToggle(G,X,[]);Z.ztCarToggle(G,O,[]);
+ Zb.x=c.x+8;Zb.z=c.z;const ev=[];const b0=O.bolts;Z.ztShoot(G,X,Zb.x,Zb.z,null,ev);t("103 The driver can't shoot (eyes on the road)",!ev.length&&X.bolts===b0);
+ Z.ztShoot(G,O,Zb.x,Zb.z,null,ev);for(let i=0;i<30;i++)Z.ztBoltStep(G,1/60,ev,{});t("104 The passenger shoots: a bolt flies, the zombie goes SPLAT, one bolt used",ev.some(q=>q.k==="shoot")&&Zb.dead>0&&O.bolts===b0-1&&O.kills===1);
+ const e2=[];Z.ztShoot(G,O,Zb.x,Zb.z,null,e2);t("105 ...a short reload between shots",!e2.length);G.t+=1;O.bolts=0;Z.ztShoot(G,O,Zb.x,Zb.z,null,e2);t("106 ...and no bolts = no shooting",!e2.length)}
+{const G=big(),X=G.ents[0],Zb=G.ents.find(e=>e.bot);G.ents.filter(e=>e.bot&&e!==Zb).forEach(e=>{e.x=5;e.z=5});X.x=101;X.z=37;Z.ztCollide(BW,X,.5);X.yaw=Math.PI/2;Zb.x=X.x+7;Zb.z=X.z;Z.ztCollide(BW,Zb,.5);
+ const a=Z.ztAutoAim(G,X);const ev=[];if(a)Z.ztShoot(G,X,a.x,a.z,a.zone,ev);for(let i=0;i<30;i++)Z.ztBoltStep(G,1/60,ev,{});t("107 On foot: the 🏹 button aims at the nearest zombie for you",a&&Zb.dead>0)}
+{const G=big(),X=G.ents[0],s=BW.blds.find(b=>b.x1-b.x0>6&&b.z1-b.z0>6);X.x=s.x0-3;X.z=(s.z0+s.z1)/2;Z.ztCollide(BW,X,.5);const ev=[];G.t=10;Z.ztShoot(G,X,s.x1+5,X.z,null,ev);const b=G.bolts[0];for(let i=0;i<60;i++)Z.ztBoltStep(G,1/60,ev,{});
+ t("108 Bolts stop at walls",ev.some(q=>q.k==="thunk")&&!G.bolts.length&&b.x<s.x0+.6)}
+{const G=big();const types=new Set(G.picks.map(p=>p.type));const X=G.ents[0],p=G.picks.find(q=>q.type==="bolts");X.x=p.x;X.z=p.z;const b0=X.bolts,ev=[];Z.ztPickups(G,X,ev);
+ t("109 Bolts to collect round town (+6 each)",types.has("bolts")&&G.picks.filter(q=>q.type==="bolts").length>=4&&X.bolts===b0+6,G.picks.filter(q=>q.type==="bolts").length+" bolt pickups");
+ const G2=big(),[A,B]=G2.ents,c=G2.cars[0],p2=G2.picks.find(q=>q.type==="bolts");A.x=c.x+1.5;A.z=c.z;B.x=c.x-1.5;B.z=c.z;Z.ztCarToggle(G2,A,[]);Z.ztCarToggle(G2,B,[]);c.x=A.x=B.x=p2.x;c.z=A.z=B.z=p2.z;const a0=A.bolts,b1=B.bolts;Z.ztPickups(G2,A,[]);Z.ztPickups(G2,B,[]);
+ t("110 ...drive over them and the passenger grabs them",B.bolts===b1+6&&A.bolts===a0)}
+{const G=big(),[X]=G.ents,Zm=G.ents.find(e=>e.bot);Z.ztHordeCall(G,Zm);const B=G.boss;
+ t("111 When the horde comes, a giant BOSS zombie comes too",!!B&&B.hp===100&&Math.hypot(B.x-X.x,B.z-X.z)>30);
+ const c=G.cars[0];X.x=c.x+1.5;X.z=c.z;Z.ztCarToggle(G,X,[]);c.sp=0;B.x=c.x+Math.cos(c.yaw)*2.6;B.z=c.z-Math.sin(c.yaw)*2.6;G.ents.filter(e=>e.bot).forEach(e=>{e.x=5;e.z=5});G.horde.list.forEach(m=>m.down=1);
+ const ev=[];let n=0;while(!c.dead&&n<12*60){Z.ztBossStep(G,1/60,ev,{});c.sp=0;n++;G.t+=1/60}t("112 ...two slams wreck a car",c.dead&&ev.filter(q=>q.k==="slam").length===2,ev.filter(q=>q.k==="slam").length+" slams");
+ const J=G.cars.find(q=>q.jeep);Z.ztCarExit(G,X,[]);X.x=J.x+1;X.z=J.z;X.fx.immune=0;Z.ztCarToggle(G,X,[]);const e2=[];Z.ztBossSlam(G,J.x,J.z,e2,{});Z.ztBossSlam(G,J.x,J.z,e2,{});t("113 ...the jeep can take more",!J.dead&&J.hp===J.max-10)}
+{const mkB=()=>{const G=big();Z.ztHordeCall(G,G.ents.find(e=>e.bot));return G};
+ let G=mkB(),ev=[];Z.ztBossHurt(G,"head",ev,"X");t("114 Boss: a bolt in the HEAD kills it",G.boss.dead>0&&ev.some(q=>q.k==="bossdie"));
+ G=mkB();Z.ztBossHurt(G,"middle",[],"X");const mid=100-G.boss.hp;G=mkB();Z.ztBossHurt(G,"sides",[],"X");const side=100-G.boss.hp;t("115 ...the MIDDLE does big damage, the SIDES half that",mid===20&&side===10,mid+" / "+side);
+ G=mkB();const B=G.boss,X=G.ents[0];X.x=B.x+20;X.z=B.z;X.fx.immune=99;G.ents.filter(e=>e.bot).forEach(e=>{e.x=5;e.z=5});const run=()=>{X.x=B.x+22;X.z=B.z;Z.ztCollide(BW,X,.5);B.st=0;const x0=B.x,z0=B.z;for(let i=0;i<60;i++)Z.ztBossStep(G,1/60,[],{});return Math.hypot(B.x-x0,B.z-z0)};
+ run();const v1=run();Z.ztBossHurt(G,"legs",[],"X");const v2=run();t("116 ...the LEGS slow it down for a few seconds",v2<v1*.6&&B.slow>0,v1.toFixed(1)+" -> "+v2.toFixed(1));for(let i=0;i<4*60;i++)Z.ztBossStep(G,1/60,[],{});t("117 ...then it speeds up again",B.slow===0&&run()>v1*.8)}
+{t("118 Where the bolt lands on the boss: head / middle / sides / legs",Z.ztBossZone(0,1.9)==="head"&&Z.ztBossZone(.1,1.3)==="middle"&&Z.ztBossZone(.45,1.4)==="sides"&&Z.ztBossZone(.1,.5)==="legs"&&Z.ztBossZone(1.2,1)===null)}
+{const G=big();Z.ztHordeCall(G,G.ents.find(e=>e.bot));const h0=Z.ztHearts(G);Z.ztBossHurt(G,"head",[],"X");t("119 Beat the boss: you get a heart back",Z.ztHearts(G)===h0+1);
+ const G2=big();Z.ztHordeCall(G2,G2.ents.find(e=>e.bot));G2.t=G2.horde.until+2;const ev=[];Z.ztHordeStep(G2,1/60,ev,{});t("120 ...if you don't, it leaves with the horde",!G2.boss&&ev.some(q=>q.k==="bossgone"))}
+{const G=big(),X=G.ents[0],Zb=G.ents.find(e=>e.bot);X.x=101;X.z=37;Z.ztCollide(BW,X,.5);Zb.x=X.x+5;Zb.z=X.z;Z.ztCollide(BW,Zb,.5);Zb.fx.frozen=1;Zb.fx.stun=0;const ev=[];Z.ztKill(G,Zb,ev,X);
+ const e2=[];for(let i=0;i<60;i++)Z.ztTagCheck(G,e2);t("121 Dead zombies don't bite",!e2.length)}
+{const G=Z.ztGame({seed:4242,mode:"team",dur:150,players:[{id:"me",name:"YOU"}]});const t0=Date.now();let ev=[],bad=0;G.ents.forEach(e=>{if(e.bot)e.react=.3});
+ for(let i=0;i<150*60&&!G.over;i++){const inp={};for(const e of G.ents)if(e.bot)inp[e.id]=Z.ztBotInput(G,e,1/60);const me=G.ents[0];me.fx.immune=99;
+   if(i===300){Z.ztHordeCall(G,G.ents.find(e=>e.bot))}if(i%40===0){const a=Z.ztAutoAim(G,me);if(a)inp.me={shoot:a}}
+   const e=Z.ztStep(G,inp,1/60);ev=ev.concat(e.filter(q=>q.k!=="bowl"));if(G.ents.some(q=>!isFinite(q.x)||!isFinite(q.z))||(G.boss&&!isFinite(G.boss.x)))bad++}
+ const ms=Date.now()-t0;t("122 A whole 2½ minute solo Team Up game with the horde and the boss runs smoothly",!bad&&ms<20000&&ev.some(q=>q.k==="slam"||q.k==="bosswind"||q.k==="kill"),ms+" ms, "+ev.filter(q=>q.k==="kill").length+" kills, boss "+(G.boss?G.boss.hp:"gone"))}
 console.log(`\n${pass} passed, ${fail} failed`);if(fail)process.exit(1);
