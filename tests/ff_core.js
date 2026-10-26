@@ -2,7 +2,7 @@
    s = metres forward from the launch trees, x = metres to the right, y = metres up. The frog is a ball of radius FF.R. */
 const FF={g:7,drag:.0009,R:.5,vMin:13,vMax:40,elev:.45,yaw:.3,steer:11,steerA:5,lane:12.5,y0:3.7,chunk:40};
 const FF_Z=[{k:"forest",n:"THE FOREST",s:0},{k:"road",n:"THE BUSY ROAD",s:172},{k:"village",n:"THE VILLAGE",s:214},{k:"town",n:"THE TOWN",s:440},{k:"city",n:"THE BIG CITY",s:700}];
-const FF_MEDAL=[["bronze",200],["silver",450],["gold",800]];
+const FF_MEDAL=[["bronze",250],["silver",600],["gold",1200]];
 const ffZone=s=>{let i=0;for(let j=0;j<FF_Z.length;j++)if(s>=FF_Z[j].s)i=j;return i};
 /* every kind of thing in the world: picture size (w,h), the solid parts (c: half-width r across, half-depth d along, from y0 to y1),
    k: obst (bump), bnc (bounce pad: always bounces), top (bounces if you land on top, bumps from the side), pick (collect), water/mud (on the ground) */
@@ -73,6 +73,8 @@ const FF_UP=[{k:"pow",n:"STRETCH",i:"💪",d:"Stretchier legs: flings go further
   {k:"bnc",n:"BOUNCE",i:"🍄",d:"Bouncier belly: higher bounces, better skips"},{k:"gld",n:"GLIDE CAPE",i:"🦸",d:"A cape: falls slower"},{k:"mag",n:"MAGNET",i:"🧲",d:"Pulls coins in, more power-ups"}];
 const FF_COST=[20,45,90,150,240];
 const ffU=(F,k)=>(F.up&&F.up[k])||0;
+/* tongue shots come back as you go: one for every FF_RECH metres flown, and each coin fills a fifth of one */
+const FF_RECH=110,FF_COINCH=.07,ffRech=F=>FF_RECH+.22*F.s;
 const ffTongueR=F=>12+2.5*ffU(F,"tng")+(F.kid?2:0),ffShots=F=>3+ffU(F,"tng");
 /* flies (and power-ups) hover about in the air */
 function ffPos(o,T){const x=o.mv?ffMx(o,T):o.x;if(!o.hov)return{x,y:o.y,s:o.s};const ph=o.ph||0;
@@ -126,7 +128,7 @@ function ffGen(seed,k,kid,mag){mag=mag||0;const R=ffRng(seed*7919+k*104729+13),o
 const FF_LOOP=140;
 const ffMx=(t,T)=>{let x=t.x0+t.dir*t.v*T;x=((x+FF_LOOP/2)%FF_LOOP+FF_LOOP)%FF_LOOP-FF_LOOP/2;return x};
 /* a new fling */
-function ffNew(seed,kid,up){return{seed,kid:!!kid,up:up||{},shots:3+((up&&up.tng)||0),combo:0,bestCombo:0,grab:null,rocket:0,bubble:0,bird:0,path:[],pathT:0,whips:0,perfect:0,t:0,s:0,x:0,y:FF.y0,vs:0,vx:0,vy:0,mode:"hang",steer:0,float:0,wind:0,spin:0,coins:0,flies:0,bumps:0,boings:0,ev:[],chunks:{},hit:{},end:null,maxY:0,air:0}}
+function ffNew(seed,kid,up){return{seed,kid:!!kid,up:up||{},shots:3+((up&&up.tng)||0),charge:0,combo:0,bestCombo:0,grab:null,rocket:0,bubble:0,bird:0,path:[],pathT:0,whips:0,perfect:0,t:0,s:0,x:0,y:FF.y0,vs:0,vx:0,vy:0,mode:"hang",steer:0,float:0,wind:0,spin:0,coins:0,flies:0,bumps:0,boings:0,ev:[],chunks:{},hit:{},end:null,maxY:0,air:0}}
 function ffObjs(F,s){const k=Math.floor(s/FF.chunk);if(k<0)return [];if(!F.chunks[k])F.chunks[k]=ffGen(F.seed,k,F.kid,ffU(F,"mag"));return F.chunks[k]}
 function ffLaunch(F,p,aim,perfect){const v=(FF.vMin+(FF.vMax*(1+.07*ffU(F,"pow"))-FF.vMin)*p)*(F.kid?1.05:1)*(perfect?1.15:1),h=v*Math.cos(FF.elev),yw=aim*FF.yaw;
   F.vs=h*Math.cos(yw);F.vx=h*Math.sin(yw);F.vy=v*Math.sin(FF.elev);F.mode="fly";F.power=p;F.perfect=perfect?1:0;F.ev.push({e:"launch",p,perfect})}
@@ -134,6 +136,7 @@ function ffLaunch(F,p,aim,perfect){const v=(FF.vMin+(FF.vMax*(1+.07*ffU(F,"pow")
 function ffCombo(F){F.combo++;F.bestCombo=Math.max(F.bestCombo,F.combo);if(F.combo>=2)F.vs+=.3*Math.min(F.combo,8);F.ev.push({e:"combo",n:F.combo})}
 function ffComboEnd(F){if(F.combo>=2)F.ev.push({e:"comboEnd",n:F.combo});F.combo=0}
 const ffCoinX=F=>Math.min(5,1+Math.floor(F.combo/3));
+function ffCharge(F,a){if(F.shots>=ffShots(F)){F.charge=0;return}F.charge+=a;while(F.charge>=1&&F.shots<ffShots(F)){F.charge-=1;F.shots++;F.ev.push({e:"recharge"})}if(F.shots>=ffShots(F))F.charge=0}
 /* tap a fly (or a power-up): the tongue grabs it and whips the frog towards it */
 function ffCanTongue(F,o){if(!o||o.got||F.grab||F.bird>0||F.shots<=0||(F.mode!=="fly"&&F.mode!=="slide"))return false;const T=FF_T[o.t];if(T.k!=="pick")return false;
   const p=ffPos(o,F.t),d=Math.hypot(p.x-F.x,p.s-F.s,p.y+T.cy-F.y);return d<=ffTongueR(F)&&p.s>F.s-2}
@@ -141,7 +144,7 @@ function ffTongue(F,o){if(!ffCanTongue(F,o))return false;F.shots--;F.grab={o,t:0
 function ffGet(F,o,via){const T=FF_T[o.t],f=T.fx,p=ffPos(o,F.t);o.got=1;const kid=F.kid;
   if(f==="fly"||f==="gfly"){F.flies++;if(via==="tongue"){const g=f==="gfly";F.vs=Math.max(F.vs,16)+(g?10:3.5)+.6*ffU(F,"tng");F.vy=Math.max(F.vy,0)*.2+(g?11:7);F.whips++}
     else{F.vs+=f==="gfly"?11:4;F.vy=Math.max(F.vy,f==="gfly"?8:F.vy+1.5)}if(f==="gfly")F.shots=Math.min(ffShots(F),F.shots+1)}
-  else if(f==="coin")F.coins+=ffCoinX(F);
+  else if(f==="coin"){F.coins+=ffCoinX(F);ffCharge(F,FF_COINCH)}
   else if(f==="hoop"){F.vs+=7;F.vy=Math.max(F.vy,6);F.coins+=3*ffCoinX(F)}else if(f==="wind")F.wind=1.8;else if(f==="float"){F.float=2.4;F.vy=Math.max(F.vy,7)}
   else if(f==="bees"){F.vs+=9;F.vy=Math.max(F.vy,4)}
   else if(f==="rocket"){F.rocket=2.6;F.bubble=0}else if(f==="bubble"){F.bubble=4.5;F.vy=Math.max(F.vy,4)}else if(f==="bird"){F.bird=3.2;F.rocket=0}
@@ -171,14 +174,14 @@ function ffStep(F,dt,steer){if(F.mode==="hang"||F.mode==="done")return;F.t+=dt;c
   else if(F.mode==="fly"){const gl=F.vy<0?1-.08*ffU(F,"gld"):1;F.vy-=FF.g*(F.float>0?.3:F.bubble>0?.15:gl)*dt;if(F.float>0)F.float-=dt}
   if(F.bubble>0){F.bubble-=dt;if(F.bubble<=0)F.ev.push({e:"pop"})}
   py=F.y;F.s+=F.vs*dt;F.x+=F.vx*dt;F.y+=F.vy*dt}
-  F.spin=Math.max(0,F.spin-dt);
+  F.spin=Math.max(0,F.spin-dt);if(F.mode==="fly"||F.mode==="slide")ffCharge(F,Math.max(0,F.vs)*dt/ffRech(F));
   F.pathT+=dt;if(F.pathT>=.1){F.pathT-=.1;if(F.path.length<3600)F.path.push(Math.round(F.s*10),Math.round(F.x*10),Math.round(F.y*10))}
   if(Math.abs(F.x)>FF.lane){F.x=Math.sign(F.x)*FF.lane;F.vx=0}
   F.maxY=Math.max(F.maxY,F.y);
   /* bump into, bounce off and collect things */
   for(const k of [Math.floor(F.s/FF.chunk)-1,Math.floor(F.s/FF.chunk),Math.floor(F.s/FF.chunk)+1])for(const o of ffObjs(F,k*FF.chunk)){
     if(Math.abs(o.s-F.s)>11||o.got||o.side)continue;const T=FF_T[o.t],P=ffPos(o,F.t),ox=P.x;if(Math.abs(ox-F.x)>11)continue;
-    if(T.k==="pick"){if(F.grab&&F.grab.o===o)continue;const dx=ox-F.x,ds=P.s-F.s,dy=(P.y+T.cy)-F.y,rr=(T.R+R)*(kid?1.25:1)+(T.fx==="coin"?.6*ffU(F,"mag"):0);
+    if(T.k==="pick"){if(F.grab&&F.grab.o===o)continue;const dx=ox-F.x,ds=P.s-F.s,dy=(P.y+T.cy)-F.y,rr=(T.R+R)*(kid?1.25:1)+(T.fx==="coin"?.4*ffU(F,"mag"):0);
       if(dx*dx+ds*ds+dy*dy<rr*rr)ffGet(F,o,"touch");continue}
     if(F.bird>0)continue;
     if(!T.c||T.k==="water"||T.k==="mud"||T.k==="deco")continue;
@@ -206,4 +209,4 @@ function ffStep(F,dt,steer){if(F.mode==="hang"||F.mode==="done")return;F.t+=dt;c
   if(F.mode==="fly"&&F.y>R+.01)F.air+=dt;
   F.d=Math.max(0,Math.round(F.s))}
 const ffMedal=d=>{let m=null;for(const [n,v] of FF_MEDAL)if(d>=v)m=n;return m};
-if(typeof module!=="undefined")module.exports={FF_UP,FF_COST,ffU,ffTongueR,ffShots,ffPos,ffCombo,ffCanTongue,ffTongue,ffGet,FF,FF_Z,FF_T,FF_MEDAL,FF_LANES,FF_ROAD,ffZone,ffRng,ffGen,ffMx,ffNew,ffObjs,ffLaunch,ffGround,ffStep,ffMedal,ffCityCross};
+if(typeof module!=="undefined")module.exports={FF_RECH,ffCharge,FF_UP,FF_COST,ffU,ffTongueR,ffShots,ffPos,ffCombo,ffCanTongue,ffTongue,ffGet,FF,FF_Z,FF_T,FF_MEDAL,FF_LANES,FF_ROAD,ffZone,ffRng,ffGen,ffMx,ffNew,ffObjs,ffLaunch,ffGround,ffStep,ffMedal,ffCityCross};

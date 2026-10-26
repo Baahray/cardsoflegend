@@ -30,7 +30,7 @@ for(let s=0;s<30;s++){const F=fly(.5+s/60,300+s);ok(isFinite(F.s)&&isFinite(F.x)
 // flies and coins get collected
 {const F=C.ffNew(1,0);F.mode="fly";F.chunks[1]=[{t:"coin",x:0,s:50,y:3,id:1},{t:"fly",x:1,s:55,y:3,id:2}];F.s=48;F.x=0;F.y=3.7;F.vy=0;F.vs=15;for(let i=0;i<40;i++){C.ffStep(F,1/60,0)}ok(F.coins===1&&F.flies===1,"collect")}
 // medals
-ok(C.ffMedal(10)===null&&C.ffMedal(200)==="bronze"&&C.ffMedal(500)==="silver"&&C.ffMedal(900)==="gold","medals");
+ok(C.ffMedal(10)===null&&C.ffMedal(250)==="bronze"&&C.ffMedal(700)==="silver"&&C.ffMedal(1300)==="gold","medals");
 // tongue: grab a fly ahead, zip to it, get whipped forward; uses a shot
 {const F=C.ffNew(1,0);F.mode="fly";const o={t:"fly",x:2,s:58,y:6,hov:1,ph:0,id:5};F.chunks[1]=[o];F.s=50;F.x=0;F.y=5;F.vy=-2;F.vs=10;const sh=F.shots;
   ok(C.ffCanTongue(F,o),"fly in reach");ok(C.ffTongue(F,o),"tongue fires");let wh=0;for(let i=0;i<60;i++){C.ffStep(F,1/60,0);if(F.ev.some(e=>e.e==="whip"))wh=1;F.ev.length=0}
@@ -55,4 +55,11 @@ ok(C.ffMedal(10)===null&&C.ffMedal(200)==="bronze"&&C.ffMedal(500)==="silver"&&C
 {const F=C.ffNew(1,0);F.mode="slide";F.s=50;F.y=FF.R;F.vs=3;const o={t:"fly",x:0,s:57,y:4,hov:1,ph:0,id:7};F.chunks[1]=[o];ok(C.ffTongue(F,o),"tongue from the ground");for(let i=0;i<40;i++){C.ffStep(F,1/60,0)}ok(F.mode==="fly"&&F.whips===1,"back in the air")}
 // the path is recorded for the ghost
 {const F=C.ffNew(2,0);C.ffLaunch(F,.8,0);for(let i=0;i<120;i++)C.ffStep(F,1/60,0);ok(F.path.length>=57&&F.path.length%3===0&&F.path.every(Number.isInteger),"ghost path")}
+// tongue shots come back as you fly, faster with coins, never above the maximum
+{const F=C.ffNew(1,0);F.mode="fly";F.shots=0;F.s=50;F.y=30;F.vy=0;F.vs=40;let got=0;for(let i=0;i<60*6;i++){C.ffStep(F,1/60,0);if(F.ev.some(e=>e.e==="recharge"))got++;F.ev.length=0;F.y=30;F.vy=0}
+  ok(got>=1&&F.shots>=1&&F.shots<=C.ffShots(F),"recharge by distance "+F.shots)}
+{const F=C.ffNew(1,0);F.shots=0;for(let i=0;i<20;i++)C.ffGet(F,{t:"coin",x:0,s:0,y:0},"touch");ok(F.shots===1,"coins recharge "+F.shots)}
+{const F=C.ffNew(1,0);C.ffCharge(F,50);ok(F.shots===C.ffShots(F)&&F.charge===0,"never over the max")}
+// later in the journey recharging takes longer, so flings still end
+{let tot=0;for(let s=0;s<20;s++){const F=C.ffNew(500+s,0);C.ffLaunch(F,1,0);let i=0;while(F.mode!=="done"&&i<60*400){if(F.vy<0&&!F.grab)for(let k=-1;k<2;k++)for(const o of C.ffObjs(F,F.s+k*40))if(o.hov&&C.ffCanTongue(F,o)){C.ffTongue(F,o);break}C.ffStep(F,1/60,0);F.ev.length=0;i++}ok(F.mode==="done","tongue flings still end");tot+=F.s}}
 console.log(n-bad,"/",n,"passed");process.exit(bad?1:0);
