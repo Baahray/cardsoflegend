@@ -112,17 +112,17 @@ function ztNav(W){const n=Math.ceil(W.S),b=new Uint8Array(n*n);for(let z=0;z<n;z
   /* everything reachable from the middle crossroads (so pickups never land somewhere you can't get to) */const c0=ztNi(W,W.mid||3*ZT.P+5,W.mid||3*ZT.P+5);W.reach=ztBfs(W,c0,1e9)}
 const ztNi=(W,x,z)=>{const n=W.nav.n;return ztCl(Math.floor(z),0,n-1)*n+ztCl(Math.floor(x),0,n-1)};
 /* distances (in squares) from one square to every square within maxD. 65535 = can't get there */
-function ztBfs(W,start,maxD){const{n,b}=W.nav,D=new Uint16Array(n*n).fill(65535),Q=new Int32Array(n*n);let h=0,t=0;if(b[start]){/* start in a wall: use the nearest free square */
+function ztBfs(W,start,maxD,nav){const{n,b}=nav||W.nav,D=new Uint16Array(n*n).fill(65535),Q=new Int32Array(n*n);let h=0,t=0;if(b[start]){/* start in a wall: use the nearest free square */
     let best=-1,bd=1e9;const sx=start%n,sz=(start/n)|0;for(let dz=-3;dz<=3;dz++)for(let dx=-3;dx<=3;dx++){const x=sx+dx,z=sz+dz;if(x<0||z<0||x>=n||z>=n||b[z*n+x])continue;const d=dx*dx+dz*dz;if(d<bd){bd=d;best=z*n+x}}if(best<0)return D;start=best}
   D[start]=0;Q[t++]=start;while(h<t){const c=Q[h++],d=D[c];if(d>=maxD)continue;const x=c%n,z=(c/n)|0;
     for(let dz=-1;dz<=1;dz++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dz)continue;const X=x+dx,Z=z+dz;if(X<0||Z<0||X>=n||Z>=n)continue;const k=Z*n+X;if(b[k]||D[k]!==65535)continue;
       if(dx&&dz&&(b[z*n+X]||b[Z*n+x]))continue;D[k]=d+1;Q[t++]=k}}return D}
 /* can you walk in a straight line from a to b? */
-function ztLos(W,ax,az,bx,bz){const L=Math.hypot(bx-ax,bz-az),s=Math.ceil(L/.4);for(let i=1;i<=s;i++){const x=ax+(bx-ax)*i/s,z=az+(bz-az)*i/s;if(W.nav.b[ztNi(W,x,z)])return false}return true}
+function ztLos(W,ax,az,bx,bz,nav){const nb=(nav||W.nav).b,L=Math.hypot(bx-ax,bz-az),s=Math.ceil(L/.4);for(let i=1;i<=s;i++){const x=ax+(bx-ax)*i/s,z=az+(bz-az)*i/s;if(nb[ztNi(W,x,z)])return false}return true}
 /* follow a distance map downhill from (x,z); returns the furthest point you can run to in a straight line */
-function ztDescend(W,D,x,z,look=10){const n=W.nav.n;let c=ztNi(W,x,z),best=null;
+function ztDescend(W,D,x,z,look=10,nav){const n=W.nav.n;let c=ztNi(W,x,z),best=null;
   for(let s=0;s<look;s++){const cx=c%n,cz=(c/n)|0;let nb=-1,nd=D[c];for(let dz=-1;dz<=1;dz++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dz)continue;const X=cx+dx,Z=cz+dz;if(X<0||Z<0||X>=n||Z>=n)continue;const k=Z*n+X;if(D[k]<nd){nd=D[k];nb=k}}
-    if(nb<0)break;c=nb;const px=c%n+.5,pz=((c/n)|0)+.5;if(ztLos(W,x,z,px,pz))best=[px,pz];else if(best)break;else{best=[px,pz];break}}return best}
+    if(nb<0)break;c=nb;const px=c%n+.5,pz=((c/n)|0)+.5;if(ztLos(W,x,z,px,pz,nav))best=[px,pz];else if(best)break;else{best=[px,pz];break}}return best}
 
 /* ---------------- people ---------------- */
 /* look: colours, so more humans and zombies can be added later. kid: Cass (a little smaller and quicker) */
@@ -132,7 +132,7 @@ const ZT_LOOKS={you:{shirt:0x2f6fe0,pants:0x2b2f3a,shoes:0xf4f4f4,stripe:0x2f6fe
   knight:{shirt:0x7b4bd6,pants:0x24212e,shoes:0x1d1d1d,stripe:0xb48cff,hair:0x111111,skin:0xd9a67e},
   gus:{shirt:0xe5533d,pants:0x30343f,shoes:0xf0f0f0,stripe:0xe5533d,hair:0xd9a441,skin:0xf0c49c},
   pip:{shirt:0xf2b705,pants:0x3a3346,shoes:0xff6fae,stripe:0xff6fae,hair:0x8c4a2f,skin:0xc98b62}};
-function ztPerson(o){return{id:o.id,name:o.name,look:o.look||"you",kid:!!o.kid,bot:o.bot||0,mul:o.mul||1,stK:o.stK||1,sc:o.kid?.88:1,role:"h",x:o.x||0,z:o.z||0,vx:0,vz:0,yaw:o.yaw||Math.PI,ta:o.yaw||Math.PI,sp:0,
+function ztPerson(o){return{id:o.id,name:o.name,look:o.look||"you",kid:!!o.kid,bot:o.bot||0,buddy:o.buddy||0,mul:o.mul||1,stK:o.stK||1,sc:o.kid?.88:1,role:"h",x:o.x||0,z:o.z||0,vx:0,vz:0,yaw:o.yaw||Math.PI,ta:o.yaw||Math.PI,sp:0,
   st:1,tired:0,spr:false,item:null,bolts:0,kills:0,seat:null,dead:0,hideT:0,hid:false,dragT:0,fx:{shield:0,energy:0,shoes:0,brain:0,cloak:0,stun:0,immune:0,frozen:0,lead:0,stuck:0,slow:0},ztime:0,tags:0,letters:0}}
 const ZT_STARTS=[[2,2],[4,4],[4,2],[2,4]];
 /* a new game. players: [{id,name,look,kid,bot,mul,stK}], z = id of the first zombie */
@@ -175,11 +175,11 @@ function ztFreeSpot(G,R,x0,z0,x1,z1,clear){const W=G.W;for(let n=0;n<300;n++){co
 function ztLetterSpots(G){const R=ztRng(ztHash(G.seed,606)),S=G.W.S,cells=[[0,0],[1,0],[2,0],[0,1],[1,1],[2,1]].sort(()=>R()-.5);
   /* one letter in each sixth of the city, so they're spread right out */G.letters=[...ZT_WORD].map((ch,i)=>{const [cx,cz]=cells[i],p=ztFreeSpot(G,R,4+cx*S/3,4+cz*S/2,(cx+1)*S/3-4,(cz+1)*S/2-4,1.2);return{i,ch,x:p[0],z:p[1],by:null}})}
 function ztLetterCount(G,id){return G.letters.filter(L=>L.by===id).length}
-function ztLetters(G,e,ev){/* letters are for real players: computer players leave them alone */if(e.role!=="h"||e.npc||e.bot||G.t<0)return false;for(const L of G.letters){if(L.by||Math.hypot(e.x-L.x,e.z-L.z)>1.35)continue;L.by=e.id;e.letters=ztLetterCount(G,e.id);ev.push({k:"letter",e:e.id,i:L.i,ch:L.ch,n:e.letters});
+function ztLetters(G,e,ev){/* letters are for real players: computer players leave them alone */if(e.role!=="h"||e.npc||e.bot||e.buddy||G.t<0)return false;for(const L of G.letters){if(L.by||Math.hypot(e.x-L.x,e.z-L.z)>(e.car!=null?2.6:1.35))continue;L.by=e.id;e.letters=ztLetterCount(G,e.id);ev.push({k:"letter",e:e.id,i:L.i,ch:L.ch,n:e.letters});
     if(G.mode==="team"?G.letters.every(q=>q.by):e.letters>=ZT_WORD.length){G.over=1;ev.push(G.mode==="team"?{k:"end",team:1,why:"letters",winner:"team"}:{k:"end",winner:e.id,why:"letters"});return true}}return false}
 /* ---------------- prize boxes: a few per game, real prizes (a coin, a card, a spin of the coin wheel) ---------------- */
 function ztBoxSpots(G,n){const R=ztRng(ztHash(G.seed,707));G.boxes=[];for(let i=0;i<n;i++){const p=ztFreeSpot(G,R,8,8,G.W.S-8,G.W.S-8,1.2),u=R();G.boxes.push({i,x:p[0],z:p[1],prize:u<.45?"coin":u<.75?"card":"wheel",by:null})}}
-function ztBoxes(G,e,ev){if(e.npc||G.t<0)return;for(const b of G.boxes){if(b.by||Math.hypot(e.x-b.x,e.z-b.z)>1.35)continue;b.by=e.id;ev.push({k:"box",e:e.id,i:b.i,prize:b.prize})}}
+function ztBoxes(G,e,ev){if(e.npc||e.buddy||G.t<0)return;for(const b of G.boxes){if(b.by||Math.hypot(e.x-b.x,e.z-b.z)>1.35)continue;b.by=e.id;ev.push({k:"box",e:e.id,i:b.i,prize:b.prize})}}
 /* ---------------- people walking round the block. If the zombie bites one it becomes a little zombie for 30 s:
    it shuffles after humans and grabs them (slows them down) but can't bite or win. Their walk is worked out from the clock, so both phones agree ---------------- */
 const ZT_NPCLOOK=[[0xe57373,0x3e4a5c,0x5b3a1f,0xf1c39b],[0x81c784,0x2e3440,0x1d1d1d,0xd9a67e],[0xffb74d,0x424242,0x8c4a2f,0xf6cfac],[0x9575cd,0x37474f,0x3a2414,0xc98b62],[0x4dd0e1,0x263238,0xd9a441,0xf0c49c],[0xf06292,0x3e2723,0x111111,0xe8b48e],[0xaed581,0x1a237e,0x6b3e1e,0xf1c39b],[0xffd54f,0x4e342e,0x2b1b10,0xa8714a]];
@@ -260,7 +260,7 @@ function ztCarSetup(G){const W=G.W,R=ztRng(ztHash(W.seed,909)),cars=W.rects.filt
   /* the jeep: tougher, hidden in a garage, no key over it */if(W.jeep)G.cars.push({i:G.cars.length,jeep:1,x:W.jeep.x,z:W.jeep.z,yaw:W.jeep.yaw,col:9,sp:0,vx:0,vz:0,by:null,pas:null,left:ZT_CAR.time,used:0,hp:ZT_CAR.jeepHp,max:ZT_CAR.jeepHp,dead:0,clawT:0})}
 /* Team Up: a car has two seats. First in drives, the next one in rides alongside with the crossbow */
 const ztCarNear=(G,e)=>e.role!=="h"||e.npc||e.car!=null||e.dead?null:G.cars.find(c=>!c.used&&!c.dead&&(!c.by||(G.mode==="team"&&!c.pas&&c.by!==e.id))&&Math.hypot(c.x-e.x,c.z-e.z)<ZT_CAR.useR+(c.jeep?.9:0))||null;
-function ztCarToggle(G,e,ev){if(e.car!=null)return ztCarExit(G,e,ev);const c=ztCarNear(G,e);if(!c||e.fx.frozen>0||e.fx.stun>0)return;
+function ztCarToggle(G,e,ev,want){if(e.car!=null)return ztCarExit(G,e,ev);let c=ztCarNear(G,e);if(want!=null){const w=G.cars[want];c=w&&!w.dead&&(!w.by||(!w.pas&&w.by!==e.id))&&Math.hypot(w.x-e.x,w.z-e.z)<ZT_CAR.useR+.9?w:null}if(!c||e.fx.frozen>0||e.fx.stun>0)return;
   if(!c.by){c.by=e.id;e.seat=0}else{c.pas=e.id;e.seat=1}e.car=c.i;e.x=c.x;e.z=c.z;e.yaw=c.yaw;e.vx=e.vz=0;e.dragT=0;e.hid=false;ev.push({k:"carin",e:e.id,c:c.i,seat:e.seat})}
 function ztCarExit(G,e,ev){const c=G.cars[e.car];if(!c){e.car=null;e.seat=null;return}const pas=e.seat===1&&c.by!==e.id;
   if(pas){if(c.pas===e.id)c.pas=null}else{if(c.by===e.id)c.by=null;c.used=G.mode==="team"?0:1;/* team up: hop back in whenever you like */
@@ -326,8 +326,9 @@ function ztBoltStep(G,dt,ev,o={}){if(!(dt>1e-6))return;const W=G.W;for(const b o
       const T=ztBoltTarget(G,b);if(T){b.gone=1;const by=G.ents.find(q=>q.id===b.by);if(T.boss)ztBossHurt(G,b.zone||"middle",ev,b.by,b.id);else if(T.m)ztKillHorde(G,T.m,T.j,ev,by);else ztKill(G,T.e,ev,by);ev.push({k:"bolthit",b:b.id,x:b.x,z:b.z})}}}
   G.bolts=G.bolts.filter(q=>!q.gone)}
 /* on foot: aim at the nearest zombie you're facing */
+function ztShotClear(W,ax,az,bx,bz){const L=Math.hypot(bx-ax,bz-az),s=Math.ceil(L/.4);for(let i=1;i<s;i++)if(ztBoltWall(W,ax+(bx-ax)*i/s,az+(bz-az)*i/s))return false;return true}
 function ztAutoAim(G,e,range=17){let best=null,bs=1e9;const fx=Math.sin(e.yaw),fz=Math.cos(e.yaw),W=G.W;
-  const look=(x,z,zone,big)=>{const dx=x-e.x,dz=z-e.z,d=Math.hypot(dx,dz);if(d>range||d<.2)return;const s=d-(dx*fx+dz*fz)/d*5-(big?4:0);if(s<bs&&ztLos(W,e.x,e.z,x,z)){bs=s;best={x,z,zone}}};
+  const look=(x,z,zone,big)=>{const dx=x-e.x,dz=z-e.z,d=Math.hypot(dx,dz);if(d>range||d<.2)return;const s=d-(dx*fx+dz*fz)/d*5-(big?4:0);if(s<bs&&ztShotClear(W,e.x,e.z,x,z)){bs=s;best={x,z,zone}}};
   const B=G.boss;if(B&&!B.dead)look(B.x,B.z,"middle",1);for(const z of G.ents)if(z.role==="z"&&!z.dead)look(z.x,z.z);for(const n of G.npcs)if(n.zt!=null&&!n.dead)look(n.x,n.z);
   if(G.horde)for(const m of G.horde.list)if(!m.down&&Math.abs(m.x-e.x)<range&&Math.abs(m.z-e.z)<range)look(m.x,m.z);return best}
 
@@ -358,6 +359,36 @@ function ztBossStep(G,dt,ev,o={}){const B=G.boss;if(!B||!(dt>1e-6))return;if(B.d
   let gx=tx,gz=tz;if(td>5||!ztLos(W,B.x,B.z,tx,tz)){const wp=ztDescend(W,B.D,B.x,B.z,10);if(wp){gx=wp[0];gz=wp[1]}}
   const dx=gx-B.x,dz=gz-B.z,l=Math.hypot(dx,dz)||1,v=ZT_BOSS.spd*(B.slow>0?.4:1),k=1-Math.exp(-dt*5);B.vx+=(dx/l*v-B.vx)*k;B.vz+=(dz/l*v-B.vz)*k;
   const ox=B.x,oz=B.z;B.x+=B.vx*dt;B.z+=B.vz*dt;ztCollide(W,B,.9);B.vx=(B.x-ox)/dt;B.vz=(B.z-oz)/dt;B.sp=Math.hypot(B.vx,B.vz);if(B.sp>.3)turn(Math.atan2(B.vx,B.vz),dt*4)}
+
+/* ================= THE BUDDY (solo Team Up): a computer teammate so you can try everything on your own =================
+   On foot it follows you and shoots zombies near you. You drive: it jumps in beside you and shoots.
+   You get out: it slides over to the wheel and waits — hop back in (🏹 RIDE) and it drives you round town while you shoot. */
+function ztCarNav(W){if(W.cnav)return W.cnav;const n=W.nav.n,b=new Uint8Array(n*n);for(let z=0;z<n;z++)for(let x=0;x<n;x++)b[z*n+x]=W.nav.b[z*n+x]||ztHit(W,x+.5,z+.5,1.5)?1:0;return W.cnav={n,b}}
+function ztBuddyInput(G,b,dt){const P=G.ents.find(e=>!e.bot&&!e.buddy&&!e.npc),B=b.Bd||(b.Bd={t:0,D:null,stuck:0,lx:b.x,lz:b.z,turn:0,wait:0,goal:null,gD:null});if(!P||b.dead||G.t<0)return{};const W=G.W,out={};B.t-=dt;
+  /* shoot the nearest zombie (from the passenger seat or on foot) */if((b.bolts||0)>0&&(b.car==null||b.seat===1)&&(b.bowT??-9)<=G.t&&b.fx.stun<=0){const r=b.car!=null?16:10,a=ztAutoAim(G,b,r);
+    if(a){if(G.boss&&!G.boss.dead&&a.x===G.boss.x&&a.z===G.boss.z){const u=(G.t*7)%1;a.zone=u<.2?"head":u<.55?"middle":u<.8?"sides":"legs"}out.shoot=a}}
+  if(b.car!=null){const c=G.cars[b.car];if(!c)return out;
+    if(b.seat===1){if(P.car!==b.car)out.drive=true;return out}
+    /* driving */if(c.dead){out.drive=true;return out}
+    if(P.car!==b.car){/* you got out: wait a little in case you hop back in, then get out and follow */B.wait+=dt;if(Math.hypot(P.x-c.x,P.z-c.z)>12||B.wait>8){if(Math.abs(c.sp)<1.5)out.drive=true}return{...out,mx:0,mz:0}}
+    B.wait=0;return{...out,...ztBuddyDrive(G,b,c,dt)}}
+  B.wait=0;
+  /* on foot: you're driving with a free seat: run over and jump in */
+  if(P.car!=null){const c=G.cars[P.car];if(c&&c.by===P.id&&!c.pas&&!c.dead&&Math.abs(c.sp)<4){const d=Math.hypot(c.x-b.x,c.z-b.z);if(d<ZT_CAR.useR+.5){out.drive=true;out.car=c.i;return out}return{...out,...ztBuddyWalk(G,b,B,c.x,c.z,dt,d>6)}}}
+  const tx=P.car!=null?G.cars[P.car].x:P.x,tz=P.car!=null?G.cars[P.car].z:P.z,d=Math.hypot(tx-b.x,tz-b.z);if(d<2.6)return{...out,mx:0,mz:0};return{...out,...ztBuddyWalk(G,b,B,tx,tz,dt,d>8)}}
+function ztBuddyWalk(G,b,B,tx,tz,dt,spr){const W=G.W;if(B.t<=0||!B.D){B.t=.45;B.D=ztBfs(W,ztNi(W,tx,tz),400)}let gx=tx,gz=tz;if(Math.hypot(tx-b.x,tz-b.z)>4||!ztLos(W,b.x,b.z,tx,tz)){const wp=ztDescend(W,B.D,b.x,b.z,12);if(wp){gx=wp[0];gz=wp[1]}}
+  const dx=gx-b.x,dz=gz-b.z,l=Math.hypot(dx,dz)||1;return{mx:dx/l,mz:dz/l,sprint:spr}}
+/* driving round town: to the letters you still need, otherwise somewhere far away. Keeps to the middle of the roads */
+function ztBuddyDrive(G,b,c,dt){const W=G.W,B=b.Bd,nav=ztCarNav(W);
+  const newGoal=()=>{B.skip=B.skip||{};const L=G.letters.filter(q=>!q.by&&!(B.skip[q.i]>G.t)).sort((p,q)=>Math.hypot(p.x-c.x,p.z-c.z)-Math.hypot(q.x-c.x,q.z-c.z))[0];let g=null;
+    if(L){g=[L.x,L.z];B.gL=L.i}else{B.gL=null;const R=ztRng(ztHash(G.seed,Math.floor(G.t*3),71));for(let n=0;n<40;n++){const k=Math.floor(R()*(W.N+1)),j=Math.floor(R()*(W.N+1)),x=k*ZT.P+5,z=j*ZT.P+5;if(Math.hypot(x-c.x,z-c.z)>50&&!nav.b[ztNi(W,x,z)]){g=[x,z];break}}}
+    B.goal=g;B.gD=g?ztBfs(W,ztNi(W,g[0],g[1]),900,nav):null};
+  B.goalT=(B.goalT||0)+dt;if(B.gL!=null&&(G.letters[B.gL].by||B.goalT>30)){if(B.goalT>30)(B.skip=B.skip||{})[B.gL]=G.t+90;B.goal=null}
+  if(!B.goal||(B.gL==null&&Math.hypot(B.goal[0]-c.x,B.goal[1]-c.z)<7)||B.goalT>40){B.goalT=0;newGoal()}if(!B.gD)return{mx:0,mz:0};
+  /* stuck against something: swing round the other way for a moment */B.stuck=Math.hypot(c.x-B.lx,c.z-B.lz)<dt*1.2?B.stuck+dt:Math.max(0,B.stuck-dt*2);B.lx=c.x;B.lz=c.z;if(B.stuck>.9){B.turn=.8;B.stuck=0}
+  if(B.turn>0){B.turn-=dt;return{mx:-Math.sin(c.yaw),mz:-Math.cos(c.yaw),sprint:false}}
+  const wp=ztDescend(W,B.gD,c.x,c.z,16,nav)||B.goal,dx=wp[0]-c.x,dz=wp[1]-c.z,l=Math.hypot(dx,dz)||1,turn=Math.abs(ztWrap(Math.atan2(dx,dz)-c.yaw));
+  return{mx:dx/l*(turn>1?.6:1),mz:dz/l*(turn>1?.6:1),sprint:false}}
 
 /* ================= zombies at the car door (Team Up): they claw it (damage) and, if it's standing still, drag you out ================= */
 function ztCarThreat(G,c){const B=G.boss;if(B&&!B.dead&&ztSegD(c,B.x,B.z)<2.7)return{id:"boss",x:B.x,z:B.z,fx:null};
@@ -399,7 +430,7 @@ function ztBite(G,Z,H,ev){G.cool=ZT.tagCool;const dx=Z.x-H.x,dz=Z.z-H.z,d=Math.h
   Z.vx=Z.vz=H.vx=H.vz=0;Z.ta=Math.atan2(-dx,-dz);H.ta=Math.atan2(dx,dz);const e={k:"tag",by:Z.id,on:H.id,x:+((Z.x+H.x)/2).toFixed(2),z:+((Z.z+H.z)/2).toFixed(2)};ev.push(e);return e}
 /* one step of the whole game (solo: everyone is simulated here). inputs: {id:{mx,mz,sprint,item}} */
 function ztStep(G,inputs,dt){const ev=G.ev.length?G.ev.splice(0):[];if(G.over)return ev;G.t+=dt;G.cool=Math.max(0,G.cool-dt);const team=G.mode==="team";
-  for(const e of G.ents){if(e.dead){if(team&&G.t>=e.dead)ztZombieRise(G,e,ev);continue}const inp=(inputs&&inputs[e.id])||{};if(inp.item)ztUseItem(G,e,ev);if(inp.drive)ztCarToggle(G,e,ev);if(inp.shoot)ztShoot(G,e,inp.shoot.x,inp.shoot.z,inp.shoot.zone,ev);ztMove(G,e,inp,dt);if(e.car!=null)ztRam(G,e,ev);ztPickups(G,e,ev);if(e.car==null)ztSlips(G,e,ev);if(!e.bot&&e.car==null)ztBoxes(G,e,ev);if(ztLetters(G,e,ev))return ev}
+  for(const e of G.ents){if(e.dead){if(team&&G.t>=e.dead)ztZombieRise(G,e,ev);continue}const inp=(inputs&&inputs[e.id])||{};if(inp.item)ztUseItem(G,e,ev);if(inp.drive)ztCarToggle(G,e,ev,inp.car);if(inp.shoot)ztShoot(G,e,inp.shoot.x,inp.shoot.z,inp.shoot.zone,ev);ztMove(G,e,inp,dt);if(e.car!=null)ztRam(G,e,ev);ztPickups(G,e,ev);if(e.car==null)ztSlips(G,e,ev);if(!e.bot&&e.car==null)ztBoxes(G,e,ev);if(ztLetters(G,e,ev))return ev}
   ztNpcStep(G,dt,ev,{convert:true,grab:G.ents,gum:true});ztHordeStep(G,dt,ev,{bite:G.ents});if(team){ztBossStep(G,dt,ev,{});ztBoltStep(G,dt,ev,{});ztCarDanger(G,dt,ev,{})}ztTagCheck(G,ev);ztRespawn(G);
   if(G.mode==="team"&&ztHearts(G)<=0&&!G.over){G.over=1;ev.push({k:"end",team:1,lost:1});return ev}
   if(G.t>=G.dur){G.over=1;if(G.mode==="team")ev.push({k:"end",team:1,survived:1});else{const Z=ztZombie(G);ev.push({k:"end",loser:Z&&Z.id})}}return ev}
@@ -435,4 +466,4 @@ function ztBotWander(G,e,B,dt,go){if(B.goal&&B.goalL!=null&&G.letters[B.goalL].b
     if(!best){for(let n=0;n<50;n++){const x=e.x+(B.R()-.5)*50,z=e.z+(B.R()-.5)*50;if(x>2&&z>2&&x<G.W.S-2&&z<G.W.S-2&&!ztHit(G.W,x,z,1)&&G.W.reach[ztNi(G.W,x,z)]<65535){best=[x,z];break}}}
     B.goal=best;B.t=0;B.WD=best?ztBfs(G.W,ztNi(G.W,best[0],best[1]),200):null}
   if(!B.goal||!B.WD)return{};const wp=ztDescend(G.W,B.WD,e.x,e.z,12)||B.goal,r=go(wp[0],wp[1],false);if(e.role==="h"){r.mx*=.55;r.mz*=.55}return r}
-if(typeof module!=="undefined")module.exports={ztWrap,ZT_RIVER,ZT_PKT,ztShelterAt,ztHide,ZT_BOW,ztCanShoot,ztShoot,ztBoltStep,ztBoltTarget,ztAutoAim,ztKill,ztKillHorde,ztZombieRise,ZT_BOSS,ztBossNew,ztBossZone,ztBossHurt,ztBossDie,ztBossSlam,ztBossStep,ztCarThreat,ztCarDanger,ztCarHurt,ztCarCollide,ztSegD,ztRide,ztZombies,ztTeamGame,ztHearts,ztTeamHit,ZT_HORDE,ztHordeCall,ztHordeStep,ZT_CAR,ztCarSetup,ztCarNear,ztCarToggle,ztCarExit,ztDrive,ztRam,ZT_WORD,ztLetterSpots,ztLetters,ztLetterCount,ztBoxSpots,ztBoxes,ztNpcSetup,ztNpcLoopAt,ztNpcStep,ZT,ZT_LOOKS,ZT_PK,ZT_PKI,ZT_PKN,ztRng,ztHash,ztWorld,ztHit,ztCollide,ztNav,ztNi,ztBfs,ztLos,ztDescend,ztPerson,ztGame,ztZombie,ztPickAt,ztCanGet,ztGive,ztPickups,ztRespawn,ztUseItem,ztSlips,ztSnap,ztMove,ztTagR,ztTagCheck,ztBite,ztStep,ztBotInput};
+if(typeof module!=="undefined")module.exports={ztBuddyInput,ztBuddyDrive,ztCarNav,ztWrap,ZT_RIVER,ZT_PKT,ztShelterAt,ztHide,ZT_BOW,ztCanShoot,ztShoot,ztBoltStep,ztBoltTarget,ztAutoAim,ztKill,ztKillHorde,ztZombieRise,ZT_BOSS,ztBossNew,ztBossZone,ztBossHurt,ztBossDie,ztBossSlam,ztBossStep,ztCarThreat,ztCarDanger,ztCarHurt,ztCarCollide,ztSegD,ztRide,ztZombies,ztTeamGame,ztHearts,ztTeamHit,ZT_HORDE,ztHordeCall,ztHordeStep,ZT_CAR,ztCarSetup,ztCarNear,ztCarToggle,ztCarExit,ztDrive,ztRam,ZT_WORD,ztLetterSpots,ztLetters,ztLetterCount,ztBoxSpots,ztBoxes,ztNpcSetup,ztNpcLoopAt,ztNpcStep,ZT,ZT_LOOKS,ZT_PK,ZT_PKI,ZT_PKN,ztRng,ztHash,ztWorld,ztHit,ztCollide,ztNav,ztNi,ztBfs,ztLos,ztDescend,ztPerson,ztGame,ztZombie,ztPickAt,ztCanGet,ztGive,ztPickups,ztRespawn,ztUseItem,ztSlips,ztSnap,ztMove,ztTagR,ztTagCheck,ztBite,ztStep,ztBotInput};

@@ -179,4 +179,16 @@ const big=(o={})=>{const G=Z.ztGame({W:BW,seed:777,mode:"team",dur:o.dur??300,pl
    if(i===300){Z.ztHordeCall(G,G.ents.find(e=>e.bot))}if(i%40===0){const a=Z.ztAutoAim(G,me);if(a)inp.me={shoot:a}}
    const e=Z.ztStep(G,inp,1/60);ev=ev.concat(e.filter(q=>q.k!=="bowl"));if(G.ents.some(q=>!isFinite(q.x)||!isFinite(q.z))||(G.boss&&!isFinite(G.boss.x)))bad++}
  const ms=Date.now()-t0;t("122 A whole 2½ minute solo Team Up game with the horde and the boss runs smoothly",!bad&&ms<20000&&ev.some(q=>q.k==="slam"||q.k==="bosswind"||q.k==="kill"),ms+" ms, "+ev.filter(q=>q.k==="kill").length+" kills, boss "+(G.boss?G.boss.hp:"gone"))}
+
+console.log("PLAYING ALONE: the computer buddy");
+{const G=Z.ztGame({W:BW,seed:777,mode:"team",dur:0,players:[{id:"me",name:"YOU"},{id:"bud",name:"CASS",look:"cass",kid:1,buddy:1,stK:3}]});const [me,bud]=G.ents;
+ const step=(f,n)=>{for(let i=0;i<n;i++){const inp={bud:Z.ztBuddyInput(G,bud,1/60),me:typeof f==="function"?f(i):f};me.fx.immune=bud.fx.immune=99;G.ents.filter(e=>e.bot).forEach(e=>{e.x=5;e.z=5;e.fx.frozen=1});Z.ztStep(G,inp,1/60)}};
+ step({},4*60);step({mx:1,mz:0},4*60);t("123 Your buddy follows you round",Math.hypot(me.x-bud.x,me.z-bud.z)<5);
+ const c=G.cars[0];me.x=c.x+1.5;me.z=c.z;step(i=>i?{}:{drive:true},1);step({},14*60);t("124 You drive: your buddy jumps in beside you",me.seat===0&&bud.car===c.i&&bud.seat===1);
+ const zb=G.ents.find(e=>e.bot);step(i=>{zb.x=c.x+8;zb.z=c.z;return{}},1);let shot=false;for(let i=0;i<90&&!shot;i++){const inp={bud:Z.ztBuddyInput(G,bud,1/60)};zb.x=c.x+8;zb.z=c.z;zb.fx.frozen=1;if(inp.bud.shoot)shot=true;Z.ztStep(G,inp,1/60)}
+ t("125 ...and shoots the zombies for you",shot);
+ step(i=>i?{}:{drive:true},1);step({},20);me.x=c.x+1.6;me.z=c.z;Z.ztCollide(BW,me,.4);me.fx.frozen=me.fx.stun=0;step(i=>i?{}:{drive:true},1);
+ t("126 Get out: your buddy takes the wheel; hop back in and YOU ride with the crossbow",me.car===c.i&&me.seat===1&&bud.seat===0);
+ const x0=c.x,z0=c.z;step({},10*60);t("127 ...and your buddy drives you round town",Math.hypot(c.x-x0,c.z-z0)>30,Math.hypot(c.x-x0,c.z-z0).toFixed(0)+" away");
+ step(i=>i?{}:{drive:true},1);step({},10*60);t("128 You get out for good: your buddy gets out too and follows",bud.car==null&&Math.hypot(me.x-bud.x,me.z-bud.z)<6)}
 console.log(`\n${pass} passed, ${fail} failed`);if(fail)process.exit(1);
