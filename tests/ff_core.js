@@ -61,8 +61,8 @@ const FF_T={
   heli:{w:7.6,h:5.8,k:"obst",c:[{r:3.2,d:1.6,y0:.6,y1:4.6}]},
   tlight:{w:1.4,h:4.4,k:"obst",c:[{r:.4,d:.3,y1:4.3}]},
   foodtruck:{w:6.2,h:5.6,k:"top",up:12,c:[{r:2.7,d:1.3,y1:4.2}]},
-  fly:{w:1.4,h:1.4,k:"pick",fx:"fly",R:1.4,cy:.7},
-  gfly:{w:1.7,h:1.85,k:"pick",fx:"gfly",R:1.6,cy:.9},
+  fly:{w:2,h:2,k:"pick",fx:"fly",R:1.5,cy:1},
+  gfly:{w:2.3,h:2.5,k:"pick",fx:"gfly",R:1.7,cy:1.2},
   coin:{w:1.3,h:1.35,k:"pick",fx:"coin",R:1.3,cy:.7},
   hoop:{w:4,h:4.4,k:"pick",fx:"hoop",R:2,cy:2.2},
   wind:{w:3.2,h:3.7,k:"pick",fx:"wind",R:2.2,cy:1.8},
@@ -75,7 +75,7 @@ const FF_COST=[20,45,90,150,240];
 const ffU=(F,k)=>(F.up&&F.up[k])||0;
 /* tongue shots come back as you go: one for every FF_RECH metres flown, and each coin fills a fifth of one */
 const FF_RECH=110,FF_COINCH=.07,ffRech=F=>FF_RECH+.22*F.s;
-const ffTongueR=F=>12+2.5*ffU(F,"tng")+(F.kid?2:0),ffShots=F=>3+ffU(F,"tng");
+const ffTongueR=F=>12+2*ffU(F,"tng")+(F.kid?2:0),ffShots=F=>3+Math.ceil(ffU(F,"tng")/2);
 /* flies (and power-ups) hover about in the air */
 function ffPos(o,T){const x=o.mv?ffMx(o,T):o.x;if(!o.hov)return{x,y:o.y,s:o.s};const ph=o.ph||0;
   return{x:x+Math.sin(T*1.3+ph)*1.3,y:o.y+Math.sin(T*2.3+ph*1.7)*.7,s:o.s+Math.cos(T*1.1+ph)*.9}}
@@ -88,7 +88,7 @@ const ffCityCross=s=>{const k=Math.round((s-FF_Z[4].s-90)/170);return k>=0?FF_Z[
 function ffGen(seed,k,kid,mag){mag=mag||0;const R=ffRng(seed*7919+k*104729+13),o=[],s0=k*FF.chunk,s1=s0+FF.chunk,pick=a=>a[Math.floor(R()*a.length)];
   const add=(t,x,s,e)=>{o.push(Object.assign({t,x,s,y:FF_T[t].base||0},e||{}))};
   const busy=[];const free=(x,s,w)=>busy.every(b=>Math.abs(b[0]-x)>w+b[2]||Math.abs(b[1]-s)>4.5);
-  const place=(t,n,yr)=>{for(let i=0;i<n;i++)for(let a=0;a<12;a++){const x=(R()*2-1)*(FF.lane-1.5),s=s0+R()*FF.chunk;if(s<14||s>=s1)continue;
+  const place=(t,n,yr,xb)=>{for(let i=0;i<n;i++)for(let a=0;a<12;a++){const x=xb?(R()<.5?-1:1)*(xb[0]+R()*(xb[1]-xb[0])):(R()*2-1)*(FF.lane-1.5),s=s0+R()*FF.chunk;if(s<14||s>=s1)continue;
     const z=FF_Z[ffZone(s)].k;if(z==="road"&&s>FF_ROAD[0]-3&&s<FF_ROAD[1]+3)continue;const w=(FF_T[t].c?FF_T[t].c[0].r:1)+1.2;
     if(free(x,s,w)){busy.push([x,s,w]);add(t,x,s,yr?{y:yr[0]+R()*(yr[1]-yr[0])}:null);break}}};
   const sides=(ts,n,x0,x1,gap)=>{for(const side of [-1,1]){let s=s0+R()*gap;for(let i=0;i<n&&s<s1;i++){if(s>=6)add(pick(ts),side*(x0+R()*(x1-x0)),s,{side:1});s+=gap*(.7+R()*.6)}}};
@@ -97,27 +97,29 @@ function ffGen(seed,k,kid,mag){mag=mag||0;const R=ffRng(seed*7919+k*104729+13),o
   const lines=n=>{for(let i=0;i<n;i++){const s=s0+R()*(FF.chunk-8),x=(R()*2-1)*8,y=2+R()*7,m=5;
     for(let j=0;j<m;j++)if(s+j*2.4>=14)add("coin",x+(R()-.5)*.6,s+j*2.4,{y:Math.max(.6,y+Math.sin(j/(m-1)*Math.PI)*1.6)})}
     /* buzzing flies to tap: spread out ahead, low and high */
-    const nf=(z==="forest"?4:3)+(R()<.5?1:0);for(let i=0;i<nf;i++){const s=s0+(i+R())*FF.chunk/nf;if(s<16)continue;add("fly",(R()*2-1)*10,s,{y:2.5+R()*10,hov:1,ph:R()*6.3})}
+    const nf=3+(R()<.35?1:0);for(let i=0;i<nf;i++){const s=s0+(i+R())*FF.chunk/nf;if(s<16)continue;add("fly",(R()*2-1)*10,s,{y:2.5+R()*10,hov:1,ph:R()*6.3})}
     {const gs=s0+R()*FF.chunk;if(R()<.22&&gs>=16)add("gfly",(R()*2-1)*9,gs,{y:5+R()*9,hov:1,ph:R()*6.3})}
     if(s0>=60&&R()<(.13+(kid?.04:0))*(1+.2*mag)){const pu=pick(["rocket","bubble","bird"]);add(pu,(R()*2-1)*8,s0+R()*FF.chunk,{y:3+R()*7,hov:1,ph:R()*6.3})}};
   if(z==="forest"){sides(["oak","pine","pine","oak","bush"],12,13,34,4.2);place("oak",Math.round(1.6*few));place("pine",Math.round(1.2*few));
     place(pick(["bush","berry","mossrock","boulder","log"]),Math.round(2*few));if(R()<.5)place("log",1);if(R()<.35)place("stream",1);if(R()<.35)place("shrooms",1);
-    place("mushroom",1+(R()<(kid?.6:.4)?1:0));if(R()<.25)place("hive",1,[4.5,7]);lines(2)}
+    place("mushroom",1+(R()<(kid?.6:.4)?1:0));if(R()<.25)place("hive",1,[4.5,7]);lines(1)}
   else if(z==="road"){/* verges, then the road (traffic is made separately) */
-    if(s0<FF_ROAD[0]){sides(["oak","pine","bush"],6,13,30,5);for(const x of [-9,-3.5,4,10])if(R()<.6)add(pick(["cones","sign","barrier","lights"]),x+(R()-.5)*2,FF_ROAD[0]-2.5);
+    if(s0<FF_ROAD[0]){sides(["oak","pine","bush"],6,13,30,5);for(const x of [-10,-5,5,10])if(R()<.6)add(pick(["sign","lights","cones"]),x+(R()-.5)*2,FF_ROAD[0]-3.6);
       add("mushroom",(R()-.5)*14,FF_ROAD[0]-9);lines(1)}
-    if(s1>FF_ROAD[1]){for(const x of [-8,-2,5,11])if(R()<.6)add(pick(["cones","sign","lights"]),x+(R()-.5)*2,FF_ROAD[1]+2.5);add("zebra",0,FF_ROAD[0]+13.2,{flat:1,big:1})}}
+    if(s1>FF_ROAD[1]){for(const x of [-10,-5,5,10])if(R()<.6)add(pick(["sign","lights"]),x+(R()-.5)*2,FF_ROAD[1]+3.4);add("zebra",0,FF_ROAD[0]+13.2,{flat:1,big:1})}}
   else if(z==="village"){sides(["cottage","cottage","oak","hay","fence","cow"],4,14,28,9);
-    place(pick(["fence","well","cow","gate","phonebox","flowers","washing"]),Math.round(2.2*few));place(pick(["cow","hay","flowers","fence"]),1);
-    place("tramp",1+(R()<(kid?.7:.5)?1:0));if(R()<.4)place("hay",1);if(R()<.3)place("pond",1);if(R()<.4)place("balloons",1,[3,8]);if(R()<.15)place("mud",1);lines(2)}
+    place(pick(["fence","cow","gate","flowers","washing"]),Math.round(1.6*few));if(R()<.5)place(pick(["well","phonebox"]),1,null,[5.5,11]);place(pick(["cow","hay","flowers","fence"]),1);
+    place("tramp",1+(R()<(kid?.7:.5)?1:0));if(R()<.4)place("hay",1);if(R()<.3)place("pond",1);if(R()<.4)place("balloons",1,[3,8]);if(R()<.15)place("mud",1);lines(1)}
   else if(z==="town"){sides(["bakery","toyshop","cafe"],6,15.5,17,8.5);if(k%3===0)add("church",(R()<.5?-1:1)*21,s0+20,{side:1});
-    place(pick(["stall","bench","fountain","lamp","busstop","postbox","lamp"]),Math.round(2.4*few));place(pick(["bench","postbox","lamp"]),1);
-    place("awning",1+(R()<(kid?.7:.5)?1:0));if(R()<.3)place("stall",1);if(R()<.4)place("balloons",1,[3,8]);lines(2)}
+    place(pick(["stall","fountain"]),Math.round(1.2*few));place(pick(["bench","postbox","lamp","busstop","lamp"]),2,null,[6.5,11.5]);
+    place("awning",1+(R()<(kid?.7:.5)?1:0));if(R()<.3)place("stall",1);if(R()<.4)place("balloons",1,[3,8]);lines(1)}
   else{sides(["office","glass"],4,19,22,13);if(R()<.4)add("crane",(R()<.5?-1:1)*34,s0+R()*40,{side:1});
-    place(pick(["tank","billboard","tlight","tank","tlight"]),Math.round(2*few));place("foodtruck",1);place("awning",R()<.6?1:0);
+    place(pick(["tlight","lamp","postbox","busstop","tlight"]),Math.round(2.4*few),null,[6.2,11.5]);
+    if(R()<.55)place(pick(["foodtruck","car","van","taxi2"]),1,null,[0,2.8]);if(R()<.5)place("foodtruck",1,null,[0,2.8]);place("awning",R()<.6?1:0,null,[6.5,10.5]);
+    if(R()<.5)add("billboard",(R()<.5?-1:1)*15.5,s0+R()*FF.chunk,{side:1});
     if(R()<.5)place("balloons",1,[4,10]);if(R()<.45)add("pigeons",(R()-.5)*30,s0+10+R()*20,{y:4+R()*5,mv:1,dir:R()<.5?-1:1,v:5+R()*3});
-    if(R()<.3)add("heli",(R()-.5)*40,s0+10+R()*20,{y:11+R()*6,mv:1,dir:R()<.5?-1:1,v:3+R()*2});lines(2)}
-  if(R()<.28)place("hoop",1,[2.5,7]);if(R()<.2)place("wind",1,[1.5,6]);
+    if(R()<.3)add("heli",(R()-.5)*40,s0+10+R()*20,{y:11+R()*6,mv:1,dir:R()<.5?-1:1,v:3+R()*2});lines(1)}
+  if(R()<.16)place("hoop",1,[2.5,7]);if(R()<.1)place("wind",1,[1.5,6]);
   /* traffic on the busy road, and on city crossings */
   const traffic=(sl,dir,types,n)=>{let x=R()*25;for(let i=0;i<n;i++){add(pick(types),0,sl,{mv:1,x0:x,dir,v:9+R()*5,road:1});x+=24+R()*14}};
   for(const [sl,dir] of FF_LANES)if(sl>=s0&&sl<s1)traffic(sl,dir,["car","van","lorry","bus","taxi","car","taxi"],4);
@@ -128,7 +130,7 @@ function ffGen(seed,k,kid,mag){mag=mag||0;const R=ffRng(seed*7919+k*104729+13),o
 const FF_LOOP=140;
 const ffMx=(t,T)=>{let x=t.x0+t.dir*t.v*T;x=((x+FF_LOOP/2)%FF_LOOP+FF_LOOP)%FF_LOOP-FF_LOOP/2;return x};
 /* a new fling */
-function ffNew(seed,kid,up){return{seed,kid:!!kid,up:up||{},shots:3+((up&&up.tng)||0),charge:0,combo:0,bestCombo:0,grab:null,rocket:0,bubble:0,bird:0,path:[],pathT:0,whips:0,perfect:0,t:0,s:0,x:0,y:FF.y0,vs:0,vx:0,vy:0,mode:"hang",steer:0,float:0,wind:0,spin:0,coins:0,flies:0,bumps:0,boings:0,ev:[],chunks:{},hit:{},end:null,maxY:0,air:0}}
+function ffNew(seed,kid,up){return{seed,kid:!!kid,up:up||{},shots:3+Math.ceil(((up&&up.tng)||0)/2),charge:0,combo:0,bestCombo:0,grab:null,rocket:0,bubble:0,bird:0,path:[],pathT:0,whips:0,perfect:0,t:0,s:0,x:0,y:FF.y0,vs:0,vx:0,vy:0,mode:"hang",steer:0,float:0,wind:0,spin:0,coins:0,flies:0,bumps:0,boings:0,ev:[],chunks:{},hit:{},end:null,maxY:0,air:0}}
 function ffObjs(F,s){const k=Math.floor(s/FF.chunk);if(k<0)return [];if(!F.chunks[k])F.chunks[k]=ffGen(F.seed,k,F.kid,ffU(F,"mag"));return F.chunks[k]}
 function ffLaunch(F,p,aim,perfect){const v=(FF.vMin+(FF.vMax*(1+.07*ffU(F,"pow"))-FF.vMin)*p)*(F.kid?1.05:1)*(perfect?1.15:1),h=v*Math.cos(FF.elev),yw=aim*FF.yaw;
   F.vs=h*Math.cos(yw);F.vx=h*Math.sin(yw);F.vy=v*Math.sin(FF.elev);F.mode="fly";F.power=p;F.perfect=perfect?1:0;F.ev.push({e:"launch",p,perfect})}
@@ -140,9 +142,13 @@ function ffCharge(F,a){if(F.shots>=ffShots(F)){F.charge=0;return}F.charge+=a;whi
 /* tap a fly (or a power-up): the tongue grabs it and whips the frog towards it */
 function ffCanTongue(F,o){if(!o||o.got||F.grab||F.bird>0||F.shots<=0||(F.mode!=="fly"&&F.mode!=="slide"))return false;const T=FF_T[o.t];if(T.k!=="pick")return false;
   const p=ffPos(o,F.t),d=Math.hypot(p.x-F.x,p.s-F.s,p.y+T.cy-F.y);return d<=ffTongueR(F)&&p.s>F.s-2}
+function ffTarget(F){let best=null,bs=-1e9;const k0=Math.floor(F.s/FF.chunk);
+  for(let k=k0-1;k<=k0+1;k++)for(const o of ffObjs(F,k*FF.chunk)){if(!o.hov||o.got||!ffCanTongue(F,o))continue;const p=ffPos(o,F.t),ds=p.s-F.s;if(ds<1.5)continue;
+    const sc=ds+(o.t==="gfly"?25:FF_T[o.t].model?18:0)-Math.abs(p.x-F.x)*.4+(p.y+FF_T[o.t].cy>F.y?3:0);if(sc>bs){bs=sc;best=o}}
+  return best}
 function ffTongue(F,o){if(!ffCanTongue(F,o))return false;F.shots--;F.grab={o,t:0};F.ev.push({e:"tongue",o});return true}
 function ffGet(F,o,via){const T=FF_T[o.t],f=T.fx,p=ffPos(o,F.t);o.got=1;const kid=F.kid;
-  if(f==="fly"||f==="gfly"){F.flies++;if(via==="tongue"){const g=f==="gfly";F.vs=Math.max(F.vs,16)+(g?10:3.5)+.6*ffU(F,"tng");F.vy=Math.max(F.vy,0)*.2+(g?11:7);F.whips++}
+  if(f==="fly"||f==="gfly"){F.flies++;if(via==="tongue"){const g=f==="gfly";F.vs=Math.max(F.vs,16)+(g?10:3.5)+.4*ffU(F,"tng");F.vy=Math.max(F.vy,0)*.2+(g?11:7);F.whips++}
     else{F.vs+=f==="gfly"?11:4;F.vy=Math.max(F.vy,f==="gfly"?8:F.vy+1.5)}if(f==="gfly")F.shots=Math.min(ffShots(F),F.shots+1)}
   else if(f==="coin"){F.coins+=ffCoinX(F);ffCharge(F,FF_COINCH)}
   else if(f==="hoop"){F.vs+=7;F.vy=Math.max(F.vy,6);F.coins+=3*ffCoinX(F)}else if(f==="wind")F.wind=1.8;else if(f==="float"){F.float=2.4;F.vy=Math.max(F.vy,7)}
@@ -209,4 +215,4 @@ function ffStep(F,dt,steer){if(F.mode==="hang"||F.mode==="done")return;F.t+=dt;c
   if(F.mode==="fly"&&F.y>R+.01)F.air+=dt;
   F.d=Math.max(0,Math.round(F.s))}
 const ffMedal=d=>{let m=null;for(const [n,v] of FF_MEDAL)if(d>=v)m=n;return m};
-if(typeof module!=="undefined")module.exports={FF_RECH,ffCharge,FF_UP,FF_COST,ffU,ffTongueR,ffShots,ffPos,ffCombo,ffCanTongue,ffTongue,ffGet,FF,FF_Z,FF_T,FF_MEDAL,FF_LANES,FF_ROAD,ffZone,ffRng,ffGen,ffMx,ffNew,ffObjs,ffLaunch,ffGround,ffStep,ffMedal,ffCityCross};
+if(typeof module!=="undefined")module.exports={ffTarget,FF_RECH,ffCharge,FF_UP,FF_COST,ffU,ffTongueR,ffShots,ffPos,ffCombo,ffCanTongue,ffTongue,ffGet,FF,FF_Z,FF_T,FF_MEDAL,FF_LANES,FF_ROAD,ffZone,ffRng,ffGen,ffMx,ffNew,ffObjs,ffLaunch,ffGround,ffStep,ffMedal,ffCityCross};

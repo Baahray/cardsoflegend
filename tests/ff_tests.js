@@ -38,7 +38,7 @@ ok(C.ffMedal(10)===null&&C.ffMedal(250)==="bronze"&&C.ffMedal(700)==="silver"&&C
 // out of reach / out of shots
 {const F=C.ffNew(1,0);F.mode="fly";const o={t:"fly",x:0,s:90,y:5,hov:1,id:6};F.chunks[2]=[o];F.s=50;F.y=5;ok(!C.ffCanTongue(F,o),"too far");F.s=82;F.shots=0;ok(!C.ffCanTongue(F,o),"no shots left")}
 // a better tongue reaches further
-{const a=C.ffNew(1,0),b=C.ffNew(1,0,{tng:3});ok(C.ffTongueR(b)>C.ffTongueR(a)&&b.shots===6,"tongue upgrade")}
+{const a=C.ffNew(1,0),b=C.ffNew(1,0,{tng:3});ok(C.ffTongueR(b)>C.ffTongueR(a)&&b.shots===5,"tongue upgrade")}
 // stretch upgrade flings further
 {const a=C.ffNew(1,0),b=C.ffNew(1,0,{pow:5});C.ffLaunch(a,1,0);C.ffLaunch(b,1,0);ok(b.vs>a.vs*1.3,"stretch upgrade")}
 // perfect release is stronger
