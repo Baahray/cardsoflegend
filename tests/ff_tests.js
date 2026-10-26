@@ -30,5 +30,29 @@ for(let s=0;s<30;s++){const F=fly(.5+s/60,300+s);ok(isFinite(F.s)&&isFinite(F.x)
 // flies and coins get collected
 {const F=C.ffNew(1,0);F.mode="fly";F.chunks[1]=[{t:"coin",x:0,s:50,y:3,id:1},{t:"fly",x:1,s:55,y:3,id:2}];F.s=48;F.x=0;F.y=3.7;F.vy=0;F.vs=15;for(let i=0;i<40;i++){C.ffStep(F,1/60,0)}ok(F.coins===1&&F.flies===1,"collect")}
 // medals
-ok(C.ffMedal(10)===null&&C.ffMedal(150)==="bronze"&&C.ffMedal(400)==="silver"&&C.ffMedal(900)==="gold","medals");
+ok(C.ffMedal(10)===null&&C.ffMedal(200)==="bronze"&&C.ffMedal(500)==="silver"&&C.ffMedal(900)==="gold","medals");
+// tongue: grab a fly ahead, zip to it, get whipped forward; uses a shot
+{const F=C.ffNew(1,0);F.mode="fly";const o={t:"fly",x:2,s:58,y:6,hov:1,ph:0,id:5};F.chunks[1]=[o];F.s=50;F.x=0;F.y=5;F.vy=-2;F.vs=10;const sh=F.shots;
+  ok(C.ffCanTongue(F,o),"fly in reach");ok(C.ffTongue(F,o),"tongue fires");let wh=0;for(let i=0;i<60;i++){C.ffStep(F,1/60,0);if(F.ev.some(e=>e.e==="whip"))wh=1;F.ev.length=0}
+  ok(wh&&F.whips===1&&F.shots===sh-1&&F.vs>15,"whip "+F.vs.toFixed(1))}
+// out of reach / out of shots
+{const F=C.ffNew(1,0);F.mode="fly";const o={t:"fly",x:0,s:90,y:5,hov:1,id:6};F.chunks[2]=[o];F.s=50;F.y=5;ok(!C.ffCanTongue(F,o),"too far");F.s=82;F.shots=0;ok(!C.ffCanTongue(F,o),"no shots left")}
+// a better tongue reaches further
+{const a=C.ffNew(1,0),b=C.ffNew(1,0,{tng:3});ok(C.ffTongueR(b)>C.ffTongueR(a)&&b.shots===6,"tongue upgrade")}
+// stretch upgrade flings further
+{const a=C.ffNew(1,0),b=C.ffNew(1,0,{pow:5});C.ffLaunch(a,1,0);C.ffLaunch(b,1,0);ok(b.vs>a.vs*1.3,"stretch upgrade")}
+// perfect release is stronger
+{const a=C.ffNew(1,0),b=C.ffNew(1,0);C.ffLaunch(a,.85,0);C.ffLaunch(b,.85,0,true);ok(b.vs>a.vs*1.1&&b.perfect,"perfect")}
+// combo builds with bounces and ends on the ground
+{const F=C.ffNew(1,0);F.mode="fly";F.chunks[1]=[{t:"mushroom",x:0,s:50,y:0,id:1},{t:"mushroom",x:0,s:75,y:0,id:2}];F.s=49;F.y=5;F.vy=-6;F.vs=8;let mx=0;
+  for(let i=0;i<60*12&&F.mode!=="done";i++){C.ffStep(F,1/60,0);mx=Math.max(mx,F.combo);F.ev.length=0}ok(mx>=1&&F.combo===0&&F.bestCombo>=1,"combo "+F.bestCombo)}
+// bubble: bumping a rock doesn't slow you much
+{const F=C.ffNew(1,0);F.mode="fly";F.bubble=4;F.chunks[1]=[{t:"boulder",x:0,s:50,y:0,id:1}];F.s=47;F.y=2;F.vy=0;F.vs=20;for(let i=0;i<20;i++){C.ffStep(F,1/60,0);F.ev.length=0}ok(F.vs>17&&F.bumps===0,"bubble protects")}
+// rocket speeds you up, bird carries you high
+{const F=C.ffNew(1,0);F.mode="fly";F.s=50;F.y=5;F.vs=20;F.rocket=2.6;for(let i=0;i<60;i++){C.ffStep(F,1/60,0)}ok(F.vs>30,"rocket "+F.vs.toFixed(1))}
+{const F=C.ffNew(1,0);F.mode="fly";F.s=50;F.y=3;F.vs=15;F.bird=3;for(let i=0;i<120;i++){C.ffStep(F,1/60,0)}ok(F.y>8&&F.vs>20,"bird")}
+// grabbing a fly from the ground gets you flying again
+{const F=C.ffNew(1,0);F.mode="slide";F.s=50;F.y=FF.R;F.vs=3;const o={t:"fly",x:0,s:57,y:4,hov:1,ph:0,id:7};F.chunks[1]=[o];ok(C.ffTongue(F,o),"tongue from the ground");for(let i=0;i<40;i++){C.ffStep(F,1/60,0)}ok(F.mode==="fly"&&F.whips===1,"back in the air")}
+// the path is recorded for the ghost
+{const F=C.ffNew(2,0);C.ffLaunch(F,.8,0);for(let i=0;i<120;i++)C.ffStep(F,1/60,0);ok(F.path.length>=57&&F.path.length%3===0&&F.path.every(Number.isInteger),"ghost path")}
 console.log(n-bad,"/",n,"passed");process.exit(bad?1:0);
