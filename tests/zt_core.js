@@ -202,7 +202,7 @@ function ztNpcSetup(G,n){const R=ztRng(ztHash(G.seed,808)),P=ZT.P,RD=ZT.RD;G.npc
       const i=G.npcs.length,c=ZT_NPCLOOK[(i*3)%ZT_NPCLOOK.length];G.npcs.push({id:"n"+i,i,npc:1,role:"h",crowd:{x,z,ph:RC()*6.28,r:.65,w:.5+RC()*.6,v:v.kind},loop:[0,0,1,1],s0:0,dir:1,spd:1,x,z,yaw:0,sp:0,vx:0,vz:0,sc:.82,kid:false,
         look:{shirt:c[0],pants:c[1],hair:c[2],skin:c[3],shoes:0xeeeeee,stripe:c[0]},fx:{shield:0,energy:0,shoes:0,brain:0,cloak:0,stun:0,immune:0,frozen:0,lead:0,stuck:0,slow:0},zt:null,cool:0});ztNpcLoopAt(G.npcs[i],0);made++}}}}
 /* a little zombie with nobody close goes after the nearest person still walking about (within 20) */
-function ztNpcHunt(G,n,dt,T){let w=null,wd=13;for(const q of G.npcs){if(q.zt!=null||q.dead||(q.crowd&&G.vsaved&&G.vsaved[q.crowd.v]))continue;const d=Math.hypot(q.x-n.x,q.z-n.z);if(d<wd){wd=d;w=q}}if(!w)return false;
+function ztNpcHunt(G,n,dt,T){let w=null,wd=13;for(const q of G.npcs){if(q.zt!=null||q.dead||!ztCrowdOpen(G,q))continue;const d=Math.hypot(q.x-n.x,q.z-n.z);if(d<wd){wd=d;w=q}}if(!w)return false;
   let gx=w.x,gz=w.z;if(wd>4&&!ztLos(G.W,n.x,n.z,w.x,w.z)){const D=ztFieldTo(G,"w"+w.i,w.x,w.z);const wp=D&&ztDescend(G.W,D,n.x,n.z,8);if(wp){gx=wp[0];gz=wp[1]}}
   const dx=gx-n.x,dz=gz-n.z,l=Math.hypot(dx,dz)||1,v=2.2*ztNightK(G);n.x+=dx/l*v*dt;n.z+=dz/l*v*dt;n.yaw=Math.atan2(dx,dz);return true}
 /* walking maps towards a player / a person, shared by all the little zombies and refreshed now and then */
@@ -213,6 +213,39 @@ const ZT_DAY={cycle:160,dusk:80,night:90,dawn:150};
 function ztNight(G){if(!G||G.mode!=="team")return 0;const p=((Math.max(0,G.t)%ZT_DAY.cycle)+ZT_DAY.cycle)%ZT_DAY.cycle,r=(a,b,x)=>Math.max(0,Math.min(1,(x-a)/(b-a)));return Math.min(r(ZT_DAY.dusk,ZT_DAY.night,p),1-r(ZT_DAY.dawn,ZT_DAY.cycle,p))}
 const ztNightK=G=>1+.12*ztNight(G);
 const ZT_TURN=10,ZT_BITEREST=28;
+/* ================= THE GAME PLAN (Team Up) ================= */
+const ZT_PLAN={outbreak:[15,200,390],firstHorde:110,hordeEvery:180,rescue:[60,240,420],rescueEvery:180,rescueTime:110,warn:10};
+const ZT_VKINDS=["bar","mall","school"];
+/* a place's people can only be bitten once its outbreak has started (and not once it's been saved) */
+function ztCrowdOpen(G,n){if(!n.crowd||G.mode!=="team")return true;const k=ZT_VKINDS.indexOf(n.crowd.v);return !!(G.dir&&G.dir.o[k])&&!(G.vsaved&&G.vsaved[n.crowd.v])}
+const ztSafe=W=>({x:W.mid,z:W.mid});
+const ztPlanT=(L,every,k)=>k<L.length?L[k]:L[L.length-1]+(k-L.length+1)*every;
+/* where a survivor is hiding: by the door of a building, or a street corner, well away from the safe zone */
+function ztSurvSpot(G,k){const W=G.W,R=ztRng(ztHash(G.seed,k,7171)),S0=ztSafe(W),sh=(W.shelters||[]).filter(s=>!s.garage&&!s.venue);
+  for(let n=0;n<60;n++){let x,z;if(sh.length&&R()<.6){const s=sh[Math.floor(R()*sh.length)];x=(s.door[0]+s.door[2])/2+s.out[0]*2.5;z=(s.door[1]+s.door[3])/2+s.out[1]*2.5}else{x=Math.floor(R()*(W.N+1))*ZT.P+2+R()*6;z=Math.floor(R()*(W.N+1))*ZT.P+2+R()*6}
+    if(x>3&&z>3&&x<W.S-3&&z<W.S-3&&!ztHit(W,x,z,.6)&&W.reach[ztNi(W,x,z)]<65535&&Math.hypot(x-S0.x,z-S0.z)>55)return[+x.toFixed(2),+z.toFixed(2)]}return ztFreeSpot(G,R,8,8,W.S-8,W.S-8,.8)}
+/* every frame (every phone): start outbreaks, warn about and send the horde, put survivors out, move the ones being rescued.
+   mine = the players this phone looks after (it decides when THEY pick up / deliver a survivor) */
+function ztDirector(G,dt,ev,mine){if(G.mode!=="team"||G.t<0||!G.W.big)return;const P=ZT_PLAN,D=G.dir||(G.dir={h:{},w:{},o:{},r:{}});G.surv=G.surv||[];
+  (G.W.venues||[]).forEach((v,i)=>{const t0=P.outbreak[i];if(t0==null||D.o[i]||G.t<t0)return;D.o[i]=1;if(G.vsaved&&G.vsaved[v.kind])return;
+    const pz=G.npcs.find(n=>n.crowd&&n.crowd.v===v.kind&&n.zt==null&&!n.dead);if(pz){pz.zt=t0;pz.role="z";ev.push({k:"npcbite",i:pz.i,by:"?",t:t0,start:1})}});
+  for(let k=0;k<999;k++){const t0=P.firstHorde+k*P.hordeEvery;if(t0>G.t+P.warn)break;if(!D.w[k]){D.w[k]=1;if(G.t<t0)ev.push({k:"hordewarn",t:t0})}
+    if(G.t>=t0&&!D.h[k]){D.h[k]=1;if(!G.horde&&G.t<t0+5){const h=ztHordeCall(G,{id:"night"},ztHash(G.seed,k,4242),t0);if(h)ev.push({k:"horde",by:"night",t:h.t0,seed:h.seed})}}}
+  for(let k=0;k<999;k++){const t0=ztPlanT(P.rescue,P.rescueEvery,k);if(t0>G.t)break;if(D.r[k])continue;D.r[k]=1;if(G.t>t0+P.rescueTime)continue;const p=ztSurvSpot(G,k);G.surv.push({i:k,x:p[0],z:p[1],t0,s:0,by:null,yaw:0,sp:0});ev.push({k:"svnew",i:k})}
+  const safe=ztSafe(G.W);
+  for(const s of G.surv){if(s.s===0){if(G.t>s.t0+P.rescueTime){s.s=3;ev.push({k:"svlost",i:s.i});continue}s.sp=0;
+      for(const h of mine||[]){if(h.role!=="h"||h.dead||h.npc||h.bot||h.buddy)continue;const c=h.car!=null?G.cars[h.car]:null,hx=c?c.x:h.x,hz=c?c.z:h.z;if(Math.hypot(hx-s.x,hz-s.z)<(c?4:2.3)){s.s=1;s.by=h.id;ev.push({k:"svpick",i:s.i,by:h.id});break}}}
+    else if(s.s===1){const h=G.ents.find(e=>e.id===s.by);if(!h){s.s=0;continue}const c=h.car!=null?G.cars[h.car]:null;
+      if(c){s.x=c.x;s.z=c.z;s.ride=1;s.sp=0}else{s.ride=0;const tx=h.x-Math.sin(h.yaw)*1.5,tz=h.z-Math.cos(h.yaw)*1.5,dx=tx-s.x,dz=tz-s.z,d=Math.hypot(dx,dz);if(d>8){s.x=tx;s.z=tz}else if(d>.25&&dt>0){const v=Math.min(d*3,6.5);s.x+=dx/d*v*dt;s.z+=dz/d*v*dt;ztCollide(G.W,s,.35);s.yaw=Math.atan2(dx,dz)}s.sp=d>.25?Math.min(d*3,6.5):0}
+      if((mine||[]).includes(h)&&Math.hypot((c?c.x:h.x)-safe.x,(c?c.z:h.z)-safe.z)<7){s.s=2;G.rescued=(G.rescued||0)+1;G.hearts+=1;h.saved=(h.saved||0)+1;ev.push({k:"svsaved",i:s.i,by:h.id})}}}}
+/* the mission right now, for the banner */
+function ztMission(G,meId){if(G.mode!=="team"||!G.W.big)return null;const P=ZT_PLAN,D=G.dir||{h:{}};
+  for(let k=0;k<999;k++){const t0=P.firstHorde+k*P.hordeEvery;if(t0>G.t+P.warn)break;if(G.t<t0)return{k:"warn",txt:"📯 HORDE IN "+Math.ceil(t0-G.t)+"s — get in a car or a building!"}}
+  if(G.horde)return{k:"horde",txt:G.boss&&!G.boss.dead?"👹 THE HORDE AND THE BOSS — survive! (🏹 the boss's head)":"📯 THE HORDE — survive!"};
+  const sv=G.surv||[],mineS=sv.find(s=>s.s===1&&s.by===meId);if(mineS)return{k:"safe",txt:"🛟 Take the survivor to the SAFE ZONE"};
+  const w=sv.find(s=>s.s===0);if(w)return{k:"surv",txt:"🆘 Rescue the survivor — "+Math.max(0,Math.ceil(w.t0+P.rescueTime-G.t))+"s left!"};
+  const v=(G.W.venues||[]).find(q=>ztVenueState(G,q).active);if(v)return{k:"out",txt:"😱 Stop the outbreak at the "+v.kind.toUpperCase()+"!"};
+  return{k:"letters",txt:G.free?"🧟 FREE RUN — survive!":"🔤 Find the letters Z O M B I E"}}
 /* how a place is doing: has the outbreak started there, how many people are still fine, any zombies about */
 function ztVenueState(G,v){let started=0,ok=0,zs=0;for(const n of G.npcs){if(!n.crowd||n.crowd.v!==v.kind)continue;if(n.zt!=null)started=1;else if(!n.dead)ok++}
   const near=(x,z)=>Math.hypot(x-v.x,z-v.z)<14;for(const e of G.ents)if(e.role==="z"&&!e.dead&&near(e.x,e.z))zs++;for(const n of G.npcs)if(n.zt!=null&&!n.dead&&near(n.x,n.z))zs++;
@@ -228,7 +261,7 @@ function ztNpcLoopAt(n,t){if(n.crowd){/* milling about: a little wander round th
 /* opts.convert: this phone decides when the zombie bites a walker; opts.grab: which humans this phone looks after; opts.gum: walkers can tread in gum */
 function ztNpcStep(G,dt,ev,opts){if(!(dt>1e-6))return;const Z=ztZombie(G),team=G.mode==="team",biters=team?[...ztZombies(G).filter(q=>!q.dead),...G.npcs.filter(q=>q.zt!=null&&!q.dead&&G.t-q.zt>ZT_TURN&&q.i%3===1)]:Z?[Z]:[];
   for(const n of G.npcs){if(n.dead)continue;const f=n.fx;for(const k of ["stun","stuck"])if(f[k]>0)f[k]=Math.max(0,f[k]-dt);n.cool=Math.max(0,n.cool-dt);
-    if(n.zt==null){ztNpcLoopAt(n,G.t);if(n.crowd&&G.vsaved&&G.vsaved[n.crowd.v])continue;
+    if(n.zt==null){ztNpcLoopAt(n,G.t);if(n.crowd&&!ztCrowdOpen(G,n))continue;
       if(opts.convert&&G.t>0)for(const B of biters){if(B===n||B.fx.frozen>0||B.fx.stun>0||B.fx.stuck>0||(team&&(B.biteT||0)>G.t)||Math.hypot(B.x-n.x,B.z-n.z)>=1.15)continue;n.zt=G.t;n.role="z";if(team)B.biteT=G.t+ZT_BITEREST;ev.push({k:"npcbite",i:n.i,by:B.id,t:+G.t.toFixed(2)});break}continue}
     if(team&&G.t-n.zt<ZT_TURN&&!(opts.remote&&opts.remote[n.i])){/* turning: shaking on the spot */n.vx=n.vz=n.sp=0;continue}
     if(!team&&G.t-n.zt>30){/* wears off: back to normal */n.zt=null;n.role="h";ev.push({k:"npcfree",i:n.i});continue}
@@ -468,7 +501,7 @@ function ztBite(G,Z,H,ev){G.cool=ZT.tagCool;const dx=Z.x-H.x,dz=Z.z-H.z,d=Math.h
 /* one step of the whole game (solo: everyone is simulated here). inputs: {id:{mx,mz,sprint,item}} */
 function ztStep(G,inputs,dt){const ev=G.ev.length?G.ev.splice(0):[];if(G.over)return ev;G.t+=dt;G.cool=Math.max(0,G.cool-dt);const team=G.mode==="team";
   for(const e of G.ents){if(e.dead){if(team&&G.t>=e.dead)ztZombieRise(G,e,ev);continue}const inp=(inputs&&inputs[e.id])||{};if(inp.item)ztUseItem(G,e,ev);if(inp.drive)ztCarToggle(G,e,ev,inp.car);if(inp.shoot)ztShoot(G,e,inp.shoot.x,inp.shoot.z,inp.shoot.zone,ev,inp.shoot.seek);ztMove(G,e,inp,dt);if(e.car!=null)ztRam(G,e,ev);ztPickups(G,e,ev);if(e.car==null)ztSlips(G,e,ev);if(!e.bot&&e.car==null)ztBoxes(G,e,ev);if(ztLetters(G,e,ev))return ev}
-  ztNpcStep(G,dt,ev,{convert:true,grab:G.ents,gum:true});ztHordeStep(G,dt,ev,{bite:G.ents});if(team){ztBossStep(G,dt,ev,{});ztBoltStep(G,dt,ev,{});ztCarDanger(G,dt,ev,{});ztVenueStep(G,ev)}ztTagCheck(G,ev);ztRespawn(G);
+  ztNpcStep(G,dt,ev,{convert:true,grab:G.ents,gum:true});ztHordeStep(G,dt,ev,{bite:G.ents});if(team){ztBossStep(G,dt,ev,{});ztBoltStep(G,dt,ev,{});ztCarDanger(G,dt,ev,{});ztVenueStep(G,ev);ztDirector(G,dt,ev,G.ents.filter(e=>!e.bot&&!e.buddy))}ztTagCheck(G,ev);ztRespawn(G);
   if(G.mode==="team"&&ztHearts(G)<=0&&!G.over){G.over=1;ev.push({k:"end",team:1,lost:1});return ev}
   if(G.t>=G.dur){G.over=1;if(G.mode==="team")ev.push({k:"end",team:1,survived:1});else{const Z=ztZombie(G);ev.push({k:"end",loser:Z&&Z.id})}}return ev}
 
@@ -479,7 +512,7 @@ function ztBotInput(G,e,dt){const B=e.B||(e.B={t:0,wp:null,path:null,pi:0,goal:n
   const go=(tx,tz,spr)=>{const dx=tx-e.x,dz=tz-e.z,l=Math.hypot(dx,dz)||1;return{mx:dx/l,mz:dz/l,sprint:!!spr}};
   if(B.jig>0){B.jig-=dt;return{mx:Math.sin(B.R()*6.28),mz:Math.cos(B.R()*6.28)}}
   if(e.role==="z"){/* chase the nearest human it can see */let T=null,td=1e9;for(const h of G.ents){if(h.role!=="h"||h.dead||(h.car!=null&&G.mode!=="team"))continue;let d=Math.hypot(h.x-e.x,h.z-e.z);if(h.hid&&d>3.5)continue;if(h.car!=null){const c=G.cars[h.car];if(c&&Math.abs(c.sp)>4)d+=12}if(h.fx.cloak>0&&d>3)continue;if(h.fx.immune>0)d+=25;if(!h.bot)d-=7;/* likes chasing real people */if(d<td){td=d;T=h}}
-    /* team mode: if a person in the street is a lot nearer than any human, go and turn them */if(G.mode==="team"){let w=null,wd=Math.min(22,td*.55);for(const n of G.npcs){if(n.zt!=null)continue;const d=Math.hypot(n.x-e.x,n.z-e.z);if(d<wd){wd=d;w=n}}if(w){T=w;td=wd}}
+    /* team mode: if a person in the street is a lot nearer than any human, go and turn them */if(G.mode==="team"){let w=null,wd=Math.min(22,td*.55);for(const n of G.npcs){if(n.zt!=null||n.dead||!ztCrowdOpen(G,n))continue;const d=Math.hypot(n.x-e.x,n.z-e.z);if(d<wd){wd=d;w=n}}if(w){T=w;td=wd}}
     if(!T){/* nobody visible: wander to a pickup */return ztBotWander(G,e,B,dt,go)}
     const tx=T.x+T.vx*.25,tz=T.z+T.vz*.25,spr=(td<12&&e.st>.2)||(e.st>.97&&td<35);
     if(td<9&&ztLos(W,e.x,e.z,tx,tz))return go(tx,tz,spr);
@@ -503,4 +536,4 @@ function ztBotWander(G,e,B,dt,go){if(B.goal&&B.goalL!=null&&G.letters[B.goalL].b
     if(!best){for(let n=0;n<50;n++){const x=e.x+(B.R()-.5)*50,z=e.z+(B.R()-.5)*50;if(x>2&&z>2&&x<G.W.S-2&&z<G.W.S-2&&!ztHit(G.W,x,z,1)&&G.W.reach[ztNi(G.W,x,z)]<65535){best=[x,z];break}}}
     B.goal=best;B.t=0;B.WD=best?ztBfs(G.W,ztNi(G.W,best[0],best[1]),200):null}
   if(!B.goal||!B.WD)return{};const wp=ztDescend(G.W,B.WD,e.x,e.z,12)||B.goal,r=go(wp[0],wp[1],false);if(e.role==="h"){r.mx*=.55;r.mz*=.55}return r}
-if(typeof module!=="undefined")module.exports={ztVenueState,ztVenueStep,ztNight,ztNightK,ZT_DAY,ztNpcHunt,ztFieldTo,ztBuddyInput,ztBuddyDrive,ztCarNav,ztWrap,ZT_RIVER,ZT_PKT,ztShelterAt,ztHide,ZT_BOW,ztCanShoot,ztShoot,ztBoltStep,ztBoltTarget,ztAutoAim,ztKill,ztKillHorde,ztZombieRise,ZT_BOSS,ztBossNew,ztBossZone,ztBossHurt,ztBossDie,ztBossSlam,ztBossStep,ztCarThreat,ztCarDanger,ztCarHurt,ztCarCollide,ztSegD,ztRide,ztZombies,ztTeamGame,ztHearts,ztTeamHit,ZT_HORDE,ztHordeCall,ztHordeStep,ZT_CAR,ztCarSetup,ztCarNear,ztCarToggle,ztCarExit,ztDrive,ztRam,ZT_WORD,ztLetterSpots,ztLetters,ztLetterCount,ztBoxSpots,ztBoxes,ztNpcSetup,ztNpcLoopAt,ztNpcStep,ZT,ZT_LOOKS,ZT_PK,ZT_PKI,ZT_PKN,ztRng,ztHash,ztWorld,ztHit,ztCollide,ztNav,ztNi,ztBfs,ztLos,ztDescend,ztPerson,ztGame,ztZombie,ztPickAt,ztCanGet,ztGive,ztPickups,ztRespawn,ztUseItem,ztSlips,ztSnap,ztMove,ztTagR,ztTagCheck,ztBite,ztStep,ztBotInput};
+if(typeof module!=="undefined")module.exports={ZT_PLAN,ztDirector,ztMission,ztSafe,ztCrowdOpen,ztSurvSpot,ztVenueState,ztVenueStep,ztNight,ztNightK,ZT_DAY,ztNpcHunt,ztFieldTo,ztBuddyInput,ztBuddyDrive,ztCarNav,ztWrap,ZT_RIVER,ZT_PKT,ztShelterAt,ztHide,ZT_BOW,ztCanShoot,ztShoot,ztBoltStep,ztBoltTarget,ztAutoAim,ztKill,ztKillHorde,ztZombieRise,ZT_BOSS,ztBossNew,ztBossZone,ztBossHurt,ztBossDie,ztBossSlam,ztBossStep,ztCarThreat,ztCarDanger,ztCarHurt,ztCarCollide,ztSegD,ztRide,ztZombies,ztTeamGame,ztHearts,ztTeamHit,ZT_HORDE,ztHordeCall,ztHordeStep,ZT_CAR,ztCarSetup,ztCarNear,ztCarToggle,ztCarExit,ztDrive,ztRam,ZT_WORD,ztLetterSpots,ztLetters,ztLetterCount,ztBoxSpots,ztBoxes,ztNpcSetup,ztNpcLoopAt,ztNpcStep,ZT,ZT_LOOKS,ZT_PK,ZT_PKI,ZT_PKN,ztRng,ztHash,ztWorld,ztHit,ztCollide,ztNav,ztNi,ztBfs,ztLos,ztDescend,ztPerson,ztGame,ztZombie,ztPickAt,ztCanGet,ztGive,ztPickups,ztRespawn,ztUseItem,ztSlips,ztSnap,ztMove,ztTagR,ztTagCheck,ztBite,ztStep,ztBotInput};

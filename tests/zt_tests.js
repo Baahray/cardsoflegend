@@ -204,7 +204,7 @@ console.log("THE OUTBREAK, DAY AND NIGHT");
  t("133 A BAR, a MALL and a SCHOOL full of people",W2.venues.map(v=>v.kind).join()==="bar,mall,school"&&G.npcs.filter(n=>n.crowd).length>=24);
  t("134 The computer zombies start at them",G.ents.filter(e=>e.bot).every((z,i)=>Math.hypot(z.x-W2.venues[i].dx,z.z-W2.venues[i].dz)<3));
  const seen=[];let d0=null,ev=[];for(let i=0;i<120*60;i++){const inp={};for(const e of G.ents)if(e.bot)inp[e.id]=Z.ztBotInput(G,e,1/60);me.fx.immune=99;ev=ev.concat(Z.ztStep(G,inp,1/60).filter(q=>q.k==="npcbite"));if(i===20*60)seen.push(G.npcs.filter(n=>n.zt!=null).length)}
- const ts=ev.map(q=>q.t);t("135 People get bitten one by one (not all at once) and it spreads",seen[0]>=2&&ev.length>=20&&new Set(ts.map(x=>Math.round(x))).size>=12,seen[0]+" turned at 20 s, "+ev.length+" by 2 min");
+ const ts=ev.map(q=>q.t);t("135 People get bitten one by one (not all at once) and it spreads",seen[0]>=1&&ev.length>=10&&new Set(ts.map(x=>Math.round(x))).size>=8,seen[0]+" turned at 20 s, "+ev.length+" by 2 min");
  t("136 ...and then the zombies come looking for you",G.npcs.filter(n=>n.zt!=null&&Math.hypot(n.x-me.x,n.z-me.z)<30).length>=3)}
 {const G=Z.ztGame({seed:4242,mode:"team",dur:0,players:[{id:"me",name:"YOU"}]});const at=s=>{G.t=s;return Z.ztNight(G)};
  t("137 Day and night: day, dusk, night, dawn, day again (same on both phones: it's the shared clock)",at(30)===0&&at(85)>0&&at(85)<1&&at(120)===1&&at(170)===0);
@@ -217,4 +217,17 @@ console.log("THE OUTBREAK, DAY AND NIGHT");
  const h0=Z.ztHearts(G);for(const z of G.ents)if(z.bot&&Math.hypot(z.x-v.x,z.z-v.z)<14)Z.ztKill(G,z,[],me);for(const n of G.npcs)if(n.zt!=null&&Math.hypot(n.x-v.x,n.z-v.z)<14)Z.ztKill(G,n,[],me);
  const e2=Z.ztStep(G,{},1/60);t("140 Splat every zombie there while people are still OK: the place is SAVED (a heart back)",e2.some(q=>q.k==="vsaved"&&q.kind===v.kind)&&Z.ztHearts(G)===h0+1);
  const ok=Z.ztVenueState(G,v).ok;G.ents.filter(e=>e.bot).forEach(z=>{z.dead=0;z.x=v.dx;z.z=v.dz;z.fx.frozen=0});for(let i=0;i<30*60;i++){me.fx.immune=99;Z.ztStep(G,{},1/60)}t("141 ...and its people are safe from then on",Z.ztVenueState(G,v).ok===ok)}
+
+console.log("THE GAME PLAN: something is always happening");
+{const G=Z.ztGame({seed:4242,mode:"team",dur:0,players:[{id:"me",name:"YOU"},{id:"bud",name:"CASS",buddy:1}]}),me=G.ents[0];let ev=[];
+ const run=(secs,f)=>{for(let i=0;i<secs*60;i++){me.fx.immune=G.ents[1].fx.immune=99;if(f)f();ev=ev.concat(Z.ztStep(G,{},1/60))}};
+ run(14);t("142 The outbreaks start one place at a time (the BAR first; the others wait their turn)",!G.npcs.some(n=>n.crowd&&n.zt!=null));run(6);t("142b ...the BAR goes at 0:15",G.npcs.some(n=>n.crowd&&n.crowd.v==="bar"&&n.zt!=null)&&!G.npcs.some(n=>n.crowd&&n.crowd.v!=="bar"&&n.zt!=null));
+ run(45);const sv=G.surv[0];t("143 A survivor needs rescuing at 1:00",!!sv&&sv.s===0&&Z.ztMission(G,"me").k==="surv");
+ me.x=sv.x+1;me.z=sv.z;run(1);t("144 Walk up to them: they follow you",sv.s===1&&sv.by==="me");const x0=sv.x;me.x+=1;run(1,()=>{me.x+=.04});t("145 ...trailing along behind",Math.abs(sv.x-x0)>1&&Z.ztMission(G,"me").k==="safe");
+ const h0=Z.ztHearts(G),sf=Z.ztSafe(G.W);me.x=sf.x;me.z=sf.z;run(.5);t("146 Bring them to the SAFE ZONE: rescued, a heart back",sv.s===2&&Z.ztHearts(G)===h0+1&&ev.some(q=>q.k==="svsaved"));
+ run(50);t("147 A horde (and its boss) always comes, with a 10-second warning first",ev.some(q=>q.k==="hordewarn")&&!!G.horde&&!!G.boss&&ev.findIndex(q=>q.k==="hordewarn")<ev.findIndex(q=>q.k==="horde"))}
+{const G=Z.ztGame({seed:99,mode:"team",dur:0,players:[{id:"me",name:"YOU"}]}),me=G.ents[0];let ev=[];for(let i=0;i<65*60;i++){me.fx.immune=99;ev=ev.concat(Z.ztStep(G,{},1/60))}const sv=G.surv[0],c=G.cars[0];
+ me.x=c.x+1.5;me.z=c.z;Z.ztCarToggle(G,me,[]);c.x=sv.x+2;c.z=sv.z;for(let i=0;i<30;i++){me.fx.immune=99;Z.ztStep(G,{},1/60)}t("148 Drive up to a survivor: they jump in",sv.s===1&&sv.ride===1);
+ for(let i=0;i<115*60;i++){me.fx.immune=99;Z.ztStep(G,{},1/60)}const s2=G.surv[0];
+ const G3=Z.ztGame({seed:7,mode:"team",dur:0,players:[{id:"me",name:"YOU"}]});let e3=[];for(let i=0;i<175*60;i++){G3.ents[0].fx.immune=99;e3=e3.concat(Z.ztStep(G3,{},1/60))}t("149 Too slow and the zombies get them",G3.surv[0].s===3&&e3.some(q=>q.k==="svlost"))}
 console.log(`\n${pass} passed, ${fail} failed`);if(fail)process.exit(1);
