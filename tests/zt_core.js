@@ -311,8 +311,8 @@ function ztZombieRise(G,e,ev){const R=ztRng(ztHash(G.seed,Math.floor(G.t*7),e.id
 /* ================= THE CROSSBOW (Team Up): the passenger aims and shoots; on foot it's the 🏹 button. Bolts are found round town ================= */
 const ZT_BOW={start:8,max:30,add:6,spd:36,range:32,cool:.5,hit:.75};
 function ztCanShoot(G,e){return G.mode==="team"&&G.t>=0&&e.role==="h"&&!e.npc&&!e.bot&&!e.dead&&(e.bolts||0)>0&&(e.bowT??-9)<=G.t&&!(e.car!=null&&e.seat!==1)&&e.fx.stun<=0&&e.fx.frozen<=0}
-function ztShoot(G,e,tx,tz,zone,ev){if(!ztCanShoot(G,e))return null;let dx=tx-e.x,dz=tz-e.z;const l=Math.hypot(dx,dz);if(!(l>.3))return null;dx/=l;dz/=l;e.bolts--;e.bowT=G.t+ZT_BOW.cool;
-  const b={id:e.id+"-"+(++G.bn)+"-"+Math.floor(G.t*10),by:e.id,x:e.x+dx*.5,z:e.z+dz*.5,dx,dz,left:ZT_BOW.range,zone:zone||null};G.bolts.push(b);if(e.car==null){e.yaw=e.ta=Math.atan2(dx,dz)}ev.push({k:"shoot",e:e.id,b});return b}
+function ztShoot(G,e,tx,tz,zone,ev,seek){if(!ztCanShoot(G,e))return null;let dx=tx-e.x,dz=tz-e.z;const l=Math.hypot(dx,dz);if(!(l>.3))return null;dx/=l;dz/=l;e.bolts--;e.bowT=G.t+ZT_BOW.cool;
+  const b={id:e.id+"-"+(++G.bn)+"-"+Math.floor(G.t*10),by:e.id,x:e.x+dx*.5,z:e.z+dz*.5,dx,dz,left:ZT_BOW.range,zone:zone||null};if(seek)b.seek=seek;G.bolts.push(b);if(e.car==null){e.yaw=e.ta=Math.atan2(dx,dz)}ev.push({k:"shoot",e:e.id,b});return b}
 /* only tall things stop a bolt (walls, buildings, containers); it flies over benches, bins and parked cars */
 function ztBoltWall(W,x,z){if(x<0||z<0||x>W.S||z>W.S)return true;for(const o of ztCell(W,x,z)){if(o.r!=null||!(o.h>1.5))continue;if(x>o.x0&&x<o.x1&&z>o.z0&&z<o.z1)return true}return false}
 function ztBoltTarget(G,b){const r=ZT_BOW.hit,B=G.boss;if(B&&!B.dead&&Math.hypot(B.x-b.x,B.z-b.z)<ZT_BOSS.r+.25)return{boss:B};
@@ -320,7 +320,7 @@ function ztBoltTarget(G,b){const r=ZT_BOW.hit,B=G.boss;if(B&&!B.dead&&Math.hypot
   for(const n of G.npcs)if(n.zt!=null&&!n.dead&&Math.hypot(n.x-b.x,n.z-b.z)<r*.85)return{e:n};
   if(G.horde){const L=G.horde.list;for(let j=0;j<L.length;j++){const m=L[j];if(!m.down&&Math.abs(m.x-b.x)<r&&Math.abs(m.z-b.z)<r&&Math.hypot(m.x-b.x,m.z-b.z)<r*.85)return{m,j}}}return null}
 function ztBoltStep(G,dt,ev,o={}){if(!(dt>1e-6))return;const W=G.W;for(const b of G.bolts){if(b.gone)continue;let go=ZT_BOW.spd*dt;
-    while(go>0&&!b.gone){const s=Math.min(.35,go);go-=s;b.x+=b.dx*s;b.z+=b.dz*s;b.left-=s;if(b.left<=0){b.gone=1;break}
+    while(go>0&&!b.gone){const s=Math.min(.35,go);go-=s;if(b.seek){const q=b.seek();if(q){const want=Math.atan2(q.x-b.x,q.z-b.z),cur=Math.atan2(b.dx,b.dz),a=cur+ztCl(ztWrap(want-cur),-.14,.14);b.dx=Math.sin(a);b.dz=Math.cos(a)}}b.x+=b.dx*s;b.z+=b.dz*s;b.left-=s;if(b.left<=0){b.gone=1;break}
       if(ztBoltWall(W,b.x,b.z)){b.gone=1;ev.push({k:"thunk",b:b.id,x:b.x,z:b.z});break}
       if(b.ghost){/* another phone's bolt: just for show, but it stops where it hits */const T=ztBoltTarget(G,b);if(T)b.gone=1;continue}
       const T=ztBoltTarget(G,b);if(T){b.gone=1;const by=G.ents.find(q=>q.id===b.by);if(T.boss)ztBossHurt(G,b.zone||"middle",ev,b.by,b.id);else if(T.m)ztKillHorde(G,T.m,T.j,ev,by);else ztKill(G,T.e,ev,by);ev.push({k:"bolthit",b:b.id,x:b.x,z:b.z})}}}
@@ -430,7 +430,7 @@ function ztBite(G,Z,H,ev){G.cool=ZT.tagCool;const dx=Z.x-H.x,dz=Z.z-H.z,d=Math.h
   Z.vx=Z.vz=H.vx=H.vz=0;Z.ta=Math.atan2(-dx,-dz);H.ta=Math.atan2(dx,dz);const e={k:"tag",by:Z.id,on:H.id,x:+((Z.x+H.x)/2).toFixed(2),z:+((Z.z+H.z)/2).toFixed(2)};ev.push(e);return e}
 /* one step of the whole game (solo: everyone is simulated here). inputs: {id:{mx,mz,sprint,item}} */
 function ztStep(G,inputs,dt){const ev=G.ev.length?G.ev.splice(0):[];if(G.over)return ev;G.t+=dt;G.cool=Math.max(0,G.cool-dt);const team=G.mode==="team";
-  for(const e of G.ents){if(e.dead){if(team&&G.t>=e.dead)ztZombieRise(G,e,ev);continue}const inp=(inputs&&inputs[e.id])||{};if(inp.item)ztUseItem(G,e,ev);if(inp.drive)ztCarToggle(G,e,ev,inp.car);if(inp.shoot)ztShoot(G,e,inp.shoot.x,inp.shoot.z,inp.shoot.zone,ev);ztMove(G,e,inp,dt);if(e.car!=null)ztRam(G,e,ev);ztPickups(G,e,ev);if(e.car==null)ztSlips(G,e,ev);if(!e.bot&&e.car==null)ztBoxes(G,e,ev);if(ztLetters(G,e,ev))return ev}
+  for(const e of G.ents){if(e.dead){if(team&&G.t>=e.dead)ztZombieRise(G,e,ev);continue}const inp=(inputs&&inputs[e.id])||{};if(inp.item)ztUseItem(G,e,ev);if(inp.drive)ztCarToggle(G,e,ev,inp.car);if(inp.shoot)ztShoot(G,e,inp.shoot.x,inp.shoot.z,inp.shoot.zone,ev,inp.shoot.seek);ztMove(G,e,inp,dt);if(e.car!=null)ztRam(G,e,ev);ztPickups(G,e,ev);if(e.car==null)ztSlips(G,e,ev);if(!e.bot&&e.car==null)ztBoxes(G,e,ev);if(ztLetters(G,e,ev))return ev}
   ztNpcStep(G,dt,ev,{convert:true,grab:G.ents,gum:true});ztHordeStep(G,dt,ev,{bite:G.ents});if(team){ztBossStep(G,dt,ev,{});ztBoltStep(G,dt,ev,{});ztCarDanger(G,dt,ev,{})}ztTagCheck(G,ev);ztRespawn(G);
   if(G.mode==="team"&&ztHearts(G)<=0&&!G.over){G.over=1;ev.push({k:"end",team:1,lost:1});return ev}
   if(G.t>=G.dur){G.over=1;if(G.mode==="team")ev.push({k:"end",team:1,survived:1});else{const Z=ztZombie(G);ev.push({k:"end",loser:Z&&Z.id})}}return ev}
