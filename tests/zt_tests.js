@@ -210,4 +210,11 @@ console.log("THE OUTBREAK, DAY AND NIGHT");
  t("137 Day and night: day, dusk, night, dawn, day again (same on both phones: it's the shared clock)",at(30)===0&&at(85)>0&&at(85)<1&&at(120)===1&&at(170)===0);
  G.t=120;const z=G.ents.find(e=>e.bot);z.fx.frozen=0;z.x=10;z.z=G.W.mid;Z.ztCollide(G.W,z,.5);z.vx=z.vz=0;for(let i=0;i<60;i++)Z.ztMove(G,z,{mx:1,mz:0},1/60);const vn=z.sp;G.t=30;z.vx=z.vz=0;for(let i=0;i<60;i++)Z.ztMove(G,z,{mx:1,mz:0},1/60);
  t("138 Zombies are faster at night",vn>z.sp*1.08,vn.toFixed(2)+" vs "+z.sp.toFixed(2))}
+
+{const G=Z.ztGame({seed:4242,mode:"team",dur:0,players:[{id:"me",name:"YOU"}]}),me=G.ents[0],v=G.W.venues[0];me.x=v.dx;me.z=v.dz;let ev=[];
+ for(let i=0;i<40*60;i++){const inp={};for(const e of G.ents)if(e.bot)inp[e.id]=Z.ztBotInput(G,e,1/60);me.fx.immune=99;ev=ev.concat(Z.ztStep(G,inp,1/60))}
+ const s1=Z.ztVenueState(G,v);t("139 The outbreak is slow at first: time to get there",s1.started&&s1.ok>=5,s1.ok+" still OK after 40 s");
+ const h0=Z.ztHearts(G);for(const z of G.ents)if(z.bot&&Math.hypot(z.x-v.x,z.z-v.z)<14)Z.ztKill(G,z,[],me);for(const n of G.npcs)if(n.zt!=null&&Math.hypot(n.x-v.x,n.z-v.z)<14)Z.ztKill(G,n,[],me);
+ const e2=Z.ztStep(G,{},1/60);t("140 Splat every zombie there while people are still OK: the place is SAVED (a heart back)",e2.some(q=>q.k==="vsaved"&&q.kind===v.kind)&&Z.ztHearts(G)===h0+1);
+ const ok=Z.ztVenueState(G,v).ok;G.ents.filter(e=>e.bot).forEach(z=>{z.dead=0;z.x=v.dx;z.z=v.dz;z.fx.frozen=0});for(let i=0;i<30*60;i++){me.fx.immune=99;Z.ztStep(G,{},1/60)}t("141 ...and its people are safe from then on",Z.ztVenueState(G,v).ok===ok)}
 console.log(`\n${pass} passed, ${fail} failed`);if(fail)process.exit(1);
