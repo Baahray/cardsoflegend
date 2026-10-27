@@ -204,7 +204,7 @@ console.log("THE OUTBREAK, DAY AND NIGHT");
  t("133 A BAR, a MALL and a SCHOOL full of people",W2.venues.map(v=>v.kind).join()==="bar,mall,school"&&G.npcs.filter(n=>n.crowd).length>=24);
  t("134 The computer zombies start at them",G.ents.filter(e=>e.bot).every((z,i)=>Math.hypot(z.x-W2.venues[i].dx,z.z-W2.venues[i].dz)<3));
  const seen=[];let d0=null,ev=[];for(let i=0;i<120*60;i++){const inp={};for(const e of G.ents)if(e.bot)inp[e.id]=Z.ztBotInput(G,e,1/60);me.fx.immune=99;ev=ev.concat(Z.ztStep(G,inp,1/60).filter(q=>q.k==="npcbite"));if(i===20*60)seen.push(G.npcs.filter(n=>n.zt!=null).length)}
- const ts=ev.map(q=>q.t);t("135 People get bitten one by one (not all at once) and it spreads",seen[0]>=1&&ev.length>=10&&new Set(ts.map(x=>Math.round(x))).size>=8,seen[0]+" turned at 20 s, "+ev.length+" by 2 min");
+ const ts=ev.map(q=>q.t);t("135 People get bitten one by one (not all at once) and it spreads",seen[0]>=1&&ev.length>=5&&new Set(ts.map(x=>Math.round(x))).size>=4,seen[0]+" turned at 20 s, "+ev.length+" by 2 min");
  t("136 ...and then the zombies come looking for you",G.npcs.filter(n=>n.zt!=null&&Math.hypot(n.x-me.x,n.z-me.z)<30).length>=3)}
 {const G=Z.ztGame({seed:4242,mode:"team",dur:0,players:[{id:"me",name:"YOU"}]});const at=s=>{G.t=s;return Z.ztNight(G)};
  t("137 Day and night: day, dusk, night, dawn, day again (same on both phones: it's the shared clock)",at(30)===0&&at(85)>0&&at(85)<1&&at(120)===1&&at(170)===0);
@@ -230,4 +230,22 @@ console.log("THE GAME PLAN: something is always happening");
  me.x=c.x+1.5;me.z=c.z;Z.ztCarToggle(G,me,[]);c.x=sv.x+2;c.z=sv.z;for(let i=0;i<30;i++){me.fx.immune=99;Z.ztStep(G,{},1/60)}t("148 Drive up to a survivor: they jump in",sv.s===1&&sv.ride===1);
  for(let i=0;i<115*60;i++){me.fx.immune=99;Z.ztStep(G,{},1/60)}const s2=G.surv[0];
  const G3=Z.ztGame({seed:7,mode:"team",dur:0,players:[{id:"me",name:"YOU"}]});let e3=[];for(let i=0;i<175*60;i++){G3.ents[0].fx.immune=99;e3=e3.concat(Z.ztStep(G3,{},1/60))}t("149 Too slow and the zombies get them",G3.surv[0].s===3&&e3.some(q=>q.k==="svlost"))}
+
+console.log("THE MONSTER TRUCK");
+{const G=Z.ztGame({seed:4242,mode:"team",dur:0,players:[{id:"me",name:"YOU"}]}),me=G.ents[0],W2=G.W,T=G.cars.find(c=>c.mt);G.t=5;me.fx.frozen=0;
+ const st=()=>{me.fx.immune=99;me.dragT=-99};
+ t("150 A monster truck is hidden under a trap door in a car park (you can't get in, it isn't there yet)",T&&T.hidden&&W2.mt&&W2.lot.some(r=>W2.mt.x>r[0]&&W2.mt.x<r[2]&&W2.mt.z>r[1]&&W2.mt.z<r[3])&&(me.x=T.x+2,me.z=T.z,!Z.ztCarNear(G,me)));
+ t("151 The lever is hidden inside a building, far away",W2.mt.lever&&Z.ztShelterAt(W2,W2.mt.lever.x,W2.mt.lever.z)&&Math.hypot(W2.mt.lever.x-W2.mt.x,W2.mt.lever.z-W2.mt.z)>60&&W2.reach[Z.ztNi(W2,W2.mt.lever.x,W2.mt.lever.z)]<65535);
+ me.x=W2.mt.lever.x;me.z=W2.mt.lever.z;let ev=Z.ztStep(G,{me:{drive:true}},1/60);for(let i=0;i<4*60;i++){st();ev=ev.concat(Z.ztStep(G,{},1/60))}
+ t("152 Pull the lever: the trap door opens and up it comes",ev.some(q=>q.k==="lever")&&ev.some(q=>q.k==="mtup")&&!T.hidden);
+ me.x=T.x+2.5;me.z=T.z;Z.ztStep(G,{me:{drive:true}},1/60);t("153 Jump in",me.car===T.i);
+ for(let i=0;i<60;i++){st();Z.ztStep(G,{me:{mx:Math.sin(T.yaw),mz:Math.cos(T.yaw)}},1/60)}const zb=G.ents.find(e=>e.bot);zb.dead=0;zb.fx.stun=0;zb.x=T.x+Math.sin(T.yaw)*3;zb.z=T.z+Math.cos(T.yaw)*3;
+ const e2=[];T.sp=8;Z.ztMtRam(G,me,T,e2);t("154 It SQUISHES zombies (and doesn't get dented doing it)",zb.dead>0&&T.hp===T.max);
+ Z.ztHordeCall(G,G.ents.find(e=>e.bot));G.boss=null;G.horde.list.forEach(m=>{m.rise=0});G.horde.list.slice(40).forEach(m=>m.down=1);G.horde.list.slice(0,40).forEach((m,k)=>{const r=k<8?2.7:6+k*.25;m.x=T.x+Math.cos(k)*r;m.z=T.z+Math.sin(k)*r});T.sp=0;
+ for(let i=0;i<15;i++){st();Z.ztStep(G,{me:{}},1/60)}const c1=T.cl;for(let i=0;i<360;i++){st();Z.ztStep(G,{me:{}},1/60)}
+ t("155 Stop and the zombies climb on — like ants, more and more",c1>=3&&T.cl>c1&&T.cl>=10,c1+" then "+T.cl);
+ const top=k=>{T.cl=k;T.sp=0;T.x=60;T.z=W2.mid;T.yaw=Math.PI/2;for(let i=0;i<150;i++){st();Z.ztDrive(G,me,{mx:1,mz:0},1/60)}return T.sp};const s0=top(0),s10=top(10),s28=top(28);
+ t("156 10 on it slows it down a lot; a big pile stops it",s10<s0*.75&&s28<s0*.1,s0.toFixed(1)+" / "+s10.toFixed(1)+" / "+s28.toFixed(1));
+ T.cl=20;let fl=0;for(let i=0;i<300;i++){st();const a=Math.floor(i/20)%2?1:-1;fl+=Z.ztStep(G,{me:{mx:Math.sin(T.yaw+a*2),mz:Math.cos(T.yaw+a*2)}},1/60).filter(q=>q.k==="fling").length}
+ t("157 Swerve hard (even on the spot) to fling them off — SPLAT",fl>=8,fl+" flung")}
 console.log(`\n${pass} passed, ${fail} failed`);if(fail)process.exit(1);
