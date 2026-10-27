@@ -198,4 +198,16 @@ console.log("THE GRAVEYARD");
  t("130 When the horde comes, zombies climb out of every grave",gz.length===BW.graves.length&&gz.every(m=>m.rise>0));const x0=gz.map(m=>m.x+","+m.z).join();
  for(let i=0;i<150;i++){Z.ztHordeStep(G,1/60,[],{bite:[]});G.t+=1/60}t("131 ...one after another, not all at once",gz.some(m=>m.rise>0)&&gz.some(m=>!(m.rise>0)));
  for(let i=0;i<8*60;i++){X.fx.immune=99;Z.ztHordeStep(G,1/60,[],{bite:[]});G.t+=1/60}t("132 ...then they come after you",gz.filter(m=>Math.hypot(m.x-BW.graves[0].x,m.z-BW.graves[0].z)>6).length>gz.length/2)}
+
+console.log("THE OUTBREAK, DAY AND NIGHT");
+{const G=Z.ztGame({seed:4242,mode:"team",dur:0,players:[{id:"me",name:"YOU"}]}),W2=G.W,me=G.ents[0];
+ t("133 A BAR, a MALL and a SCHOOL full of people",W2.venues.map(v=>v.kind).join()==="bar,mall,school"&&G.npcs.filter(n=>n.crowd).length>=24);
+ t("134 The computer zombies start at them",G.ents.filter(e=>e.bot).every((z,i)=>Math.hypot(z.x-W2.venues[i].dx,z.z-W2.venues[i].dz)<3));
+ const seen=[];let d0=null,ev=[];for(let i=0;i<120*60;i++){const inp={};for(const e of G.ents)if(e.bot)inp[e.id]=Z.ztBotInput(G,e,1/60);me.fx.immune=99;ev=ev.concat(Z.ztStep(G,inp,1/60).filter(q=>q.k==="npcbite"));if(i===20*60)seen.push(G.npcs.filter(n=>n.zt!=null).length)}
+ const ts=ev.map(q=>q.t);t("135 People get bitten one by one (not all at once) and it spreads",seen[0]>=2&&ev.length>=20&&new Set(ts.map(x=>Math.round(x))).size>=12,seen[0]+" turned at 20 s, "+ev.length+" by 2 min");
+ t("136 ...and then the zombies come looking for you",G.npcs.filter(n=>n.zt!=null&&Math.hypot(n.x-me.x,n.z-me.z)<30).length>=3)}
+{const G=Z.ztGame({seed:4242,mode:"team",dur:0,players:[{id:"me",name:"YOU"}]});const at=s=>{G.t=s;return Z.ztNight(G)};
+ t("137 Day and night: day, dusk, night, dawn, day again (same on both phones: it's the shared clock)",at(30)===0&&at(85)>0&&at(85)<1&&at(120)===1&&at(170)===0);
+ G.t=120;const z=G.ents.find(e=>e.bot);z.fx.frozen=0;z.x=10;z.z=G.W.mid;Z.ztCollide(G.W,z,.5);z.vx=z.vz=0;for(let i=0;i<60;i++)Z.ztMove(G,z,{mx:1,mz:0},1/60);const vn=z.sp;G.t=30;z.vx=z.vz=0;for(let i=0;i<60;i++)Z.ztMove(G,z,{mx:1,mz:0},1/60);
+ t("138 Zombies are faster at night",vn>z.sp*1.08,vn.toFixed(2)+" vs "+z.sp.toFixed(2))}
 console.log(`\n${pass} passed, ${fail} failed`);if(fail)process.exit(1);
