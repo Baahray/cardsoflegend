@@ -191,4 +191,11 @@ console.log("PLAYING ALONE: the computer buddy");
  t("126 Get out: your buddy takes the wheel; hop back in and YOU ride with the crossbow",me.car===c.i&&me.seat===1&&bud.seat===0);
  const x0=c.x,z0=c.z;step({},10*60);t("127 ...and your buddy drives you round town",Math.hypot(c.x-x0,c.z-z0)>30,Math.hypot(c.x-x0,c.z-z0).toFixed(0)+" away");
  step(i=>i?{}:{drive:true},1);step({},10*60);t("128 You get out for good: your buddy gets out too and follows",bud.car==null&&Math.hypot(me.x-bud.x,me.z-bud.z)<6)}
+
+console.log("THE GRAVEYARD");
+{const yard=BW.graveyard[0];t("129 The park at the top of town is a graveyard (headstones, a crypt, railings with gates)",yard&&BW.graves.length>=20&&BW.rects.some(r=>r.k==="crypt")&&BW.rects.filter(r=>r.k==="stone").length===BW.graves.length&&BW.graves.every(g=>BW.reach[Z.ztNi(BW,g.x,g.z)]<65535));
+ const G=big(),X=G.ents[0];X.x=BW.mid;X.z=BW.mid+40;Z.ztHordeCall(G,G.ents.find(e=>e.bot));const gz=G.horde.list.filter(m=>m.grave);
+ t("130 When the horde comes, zombies climb out of every grave",gz.length===BW.graves.length&&gz.every(m=>m.rise>0));const x0=gz.map(m=>m.x+","+m.z).join();
+ for(let i=0;i<150;i++){Z.ztHordeStep(G,1/60,[],{bite:[]});G.t+=1/60}t("131 ...one after another, not all at once",gz.some(m=>m.rise>0)&&gz.some(m=>!(m.rise>0)));
+ for(let i=0;i<8*60;i++){X.fx.immune=99;Z.ztHordeStep(G,1/60,[],{bite:[]});G.t+=1/60}t("132 ...then they come after you",gz.filter(m=>Math.hypot(m.x-BW.graves[0].x,m.z-BW.graves[0].z)>6).length>gz.length/2)}
 console.log(`\n${pass} passed, ${fail} failed`);if(fail)process.exit(1);

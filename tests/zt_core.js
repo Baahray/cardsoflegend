@@ -11,12 +11,12 @@ const ztWrap=a=>((a%(2*Math.PI))+3*Math.PI)%(2*Math.PI)-Math.PI;
 /* ---------------- the city: 6 x 6 blocks with roads between. Some blocks are special (park, plaza, court, car park, container yard) ---------------- */
 const ZT_SPECIAL={"2,3":"park","3,2":"plaza","1,1":"court","4,4":"lot","4,1":"yard","1,4":"park","3,4":"plaza","0,2":"yard","5,3":"court"};
 /* the big Team Up city: 8 x 8 blocks with a river across row 3 (bridges on roads 1, 4 and 7) */
-const ZT_SPECIAL_BIG={"1,1":"park","5,5":"park","2,6":"park","6,1":"court","2,4":"park","5,2":"park","4,1":"plaza","3,5":"plaza","6,6":"plaza","1,5":"court","6,4":"yard","4,6":"lot","0,6":"lot","3,0":"lot","0,1":"yard","7,5":"yard","2,0":"court"};
+const ZT_SPECIAL_BIG={"1,1":"grave","5,5":"park","2,6":"park","6,1":"court","2,4":"park","5,2":"park","4,1":"plaza","3,5":"plaza","6,6":"plaza","1,5":"court","6,4":"yard","4,6":"lot","0,6":"lot","3,0":"lot","0,1":"yard","7,5":"yard","2,0":"court"};
 const ZT_RIVER={row:3,bridges:[1,4,7]};
 const ZT_COLS=[0xe8d5b0,0xc9d8e6,0xd9b38c,0xb7c9a8,0xe6c3c3,0xcfc6e8,0xf0e2a8,0xbfd9d6,0xd8a07a,0xa9b8c9];
 const ZT_ROOFS=[0x8a8f99,0x6f7782,0x9a8577,0x7e8a76,0xa5a39c,0x5f6670,0xb58b6a,0x7b6f8f];
 function ztWorld(seed,big){const R=ztRng(seed),P=ZT.P,RD=ZT.RD,N=big?8:6,S=N*P+RD,SP=big?ZT_SPECIAL_BIG:ZT_SPECIAL;
-  const W={S,N,big:!!big,mid:Math.floor(N/2)*P+5,seed,rects:[],circs:[],asph:[],walk:[],grass:[],tile:[],court:[],lot:[],marks:[],blds:[],decor:[],water:[],bridges:[],shelters:[],floors:[]};
+  const W={S,N,big:!!big,mid:Math.floor(N/2)*P+5,seed,rects:[],circs:[],asph:[],walk:[],grass:[],tile:[],court:[],lot:[],marks:[],blds:[],decor:[],water:[],bridges:[],shelters:[],floors:[],graveyard:[],graves:[]};
   /* the river: a band of water across one row of blocks. Only the bridge roads cross it */
   const rj=big?ZT_RIVER.row:-9,rz0=rj*P+RD,rz1=(rj+1)*P,isBr=k=>ZT_RIVER.bridges.includes(k),inRiver=(z0,z1)=>big&&z1>rz0+.01&&z0<rz1-.01;
   if(big){W.river=[0,rz0,S,rz1];W.water.push([0,rz0,S,rz1]);let x=0;for(const k of ZT_RIVER.bridges){const a=k*P;W.bridges.push([a,rz0,a+RD,rz1]);if(a>x)W.rects.push({x0:x,z0:rz0,x1:a,z1:rz1,k:"water",h:0});x=a+RD}if(x<S)W.rects.push({x0:x,z0:rz0,x1:S,z1:rz1,k:"water",h:0});
@@ -41,6 +41,13 @@ function ztWorld(seed,big){const R=ztRng(seed),P=ZT.P,RD=ZT.RD,N=big?8:6,S=N*P+R
     if(t==="park"){W.grass.push([bx,bz,bx+B,bz+B]);W.tile.push([cx-1.5,bz,cx+1.5,bz+B],[bx,cz-1.5,bx+B,cz+1.5]);const pr=3.6+R()*1.2,px=cx+(R()<.5?-5.5:5.5),pz=cz+(R()<.5?-5.5:5.5);circ(px,pz,pr,{k:"pond"});
       for(let n=0;n<16;n++){const x=bx+1.5+R()*(B-3),z=bz+1.5+R()*(B-3);if(Math.abs(x-cx)<2.6||Math.abs(z-cz)<2.6||Math.hypot(x-px,z-pz)<pr+1.6)continue;circ(x,z,.55,{k:"tree",big:1})}
       rect(cx+2.2,cz-6,cx+2.9,cz-3.8,{k:"bench",h:.5});rect(cx-6,cz-2.9,cx-3.8,cz-2.2,{k:"bench",h:.5})}
+    else if(t==="grave"){/* THE GRAVEYARD: iron railings with a gate in each side, a crypt in the middle, rows of headstones, dead trees */W.graveyard.push([bx,bz,bx+B,bz+B]);
+      const f=(x0,z0,x1,z1)=>rect(x0,z0,x1,z1,{k:"rail2",h:1.7}),g=2.2;f(bx+.5,bz+.5,cx-g,bz+.7);f(cx+g,bz+.5,bx+B-.5,bz+.7);f(bx+.5,bz+B-.7,cx-g,bz+B-.5);f(cx+g,bz+B-.7,bx+B-.5,bz+B-.5);
+      f(bx+.5,bz+.5,bx+.7,cz-g);f(bx+.5,cz+g,bx+.7,bz+B-.5);f(bx+B-.7,bz+.5,bx+B-.5,cz-g);f(bx+B-.7,cz+g,bx+B-.5,bz+B-.5);
+      rect(cx-2.3,cz-1.9,cx+2.3,cz+1.9,{k:"crypt",h:3.4});
+      for(const [qx,qz] of [[bx+2.3,bz+2.1],[cx+2.9,bz+2.1],[bx+2.3,cz+2.5],[cx+2.9,cz+2.5]])for(let r=0;r<2;r++)for(let c=0;c<3;c++){const gx=qx+c*2.4,gz=qz+r*3.6;
+        rect(gx-.45,gz-.16,gx+.45,gz+.16,{k:"stone",h:.95,cross:R()<.3?1:0,tilt:+((R()-.5)*.25).toFixed(2)});W.graves.push({x:+gx.toFixed(2),z:+(gz+1.1).toFixed(2)})}
+      for(const [dx,dz] of [[1.6,B/2-3.2],[B-1.6,B/2+3.2],[B/2+4.2,1.6],[B/2-4.2,B-1.6]])circ(bx+dx,bz+dz,.32,{k:"tree",dead:1})}
     else if(t==="plaza"){W.tile.push([bx,bz,bx+B,bz+B]);circ(cx,cz,2.7,{k:"fountain"});
       for(const [dx,dz] of [[-6.5,-6.5],[6.5,-6.5],[-6.5,6.5],[6.5,6.5]]){rect(cx+dx-1.1,cz+dz-1.1,cx+dx+1.1,cz+dz+1.1,{k:"planter",h:.6});W.decor.push({k:"ptree",x:cx+dx,z:cz+dz})}
       rect(cx-1.2,bz+2,cx+1.2,bz+2.6,{k:"bench",h:.5});rect(cx-1.2,bz+B-2.6,cx+1.2,bz+B-2,{k:"bench",h:.5})}
@@ -157,7 +164,7 @@ function ztCanGet(e,t){return t==="bolts"?e.role==="h"&&!e.npc&&!e.bot&&(e.bolts
 function ztGive(G,e,t,R){if(t==="mystery"){const opts=["energy","shoes","banana",...(e.role==="h"?["shield","cloak","gum"]:["brain","horn"])].filter(k=>ztCanGet(e,k));t=opts[Math.floor((R?R():Math.random())*opts.length)]||"energy"}
   const f=e.fx;if(t==="bolts")e.bolts=Math.min(ZT_BOW.max,(e.bolts||0)+ZT_BOW.add);else if(t==="shield")f.shield=1;else if(t==="energy"){f.energy=4;e.st=1;e.tired=0}else if(t==="shoes")f.shoes=5;else if(t==="banana")e.item="banana";else if(t==="gum")e.item="gum";else if(t==="horn"){if(e.bot)ztHordeCall(G,e);else e.item="horn"}else if(t==="brain")f.brain=5;else if(t==="cloak")f.cloak=6;return t}
 function ztPickups(G,e,ev){if(e.dead)return;let inCar=null;if(e.car!=null){const c=G.cars[e.car];if(!c||G.mode!=="team")return;/* in a car you only scoop up bolts (the passenger gets them, or the driver if alone) */if(c.pas&&c.pas!==e.id)return;inCar=c}
-  for(const p of G.picks){if(!p.on||(inCar&&p.type!=="bolts")||Math.hypot(e.x-p.x,e.z-p.z)>(inCar?2.4:ZT.pickR)||(p.type==="horn"&&G.horde)||!ztCanGet(e,p.type))continue;
+  for(const p of G.picks){if(!p.on||(inCar&&p.type!=="bolts")||Math.hypot(e.x-p.x,e.z-p.z)>(inCar?3.4:p.type==="bolts"?1.8:ZT.pickR)||(p.type==="horn"&&G.horde)||!ztCanGet(e,p.type))continue;
     const got=ztGive(G,e,p.type,ztRng(ztHash(G.seed,p.i,p.s,9)));p.on=0;p.at=G.t+ZT.respawn;ev.push({k:"pick",e:e.id,i:p.i,s:p.s,type:p.type,got});if(got==="horn"&&e.bot&&G.horde)ev.push({k:"horde",by:e.id,t:G.horde.t0,seed:G.horde.seed})}}
 function ztRespawn(G){for(let j=0;j<G.picks.length;j++){const p=G.picks[j];if(!p.on&&G.t>=p.at)G.picks[j]=ztPickAt(G,p.i,p.s+1)}}
 /* bananas: drop one behind you; whoever else steps on it slips over */
@@ -225,6 +232,7 @@ function ztHordeCall(G,by,seed,t0){if(G.horde)return null;seed=seed??ztHash(G.se
   const cx=hs.length?hs.reduce((a,e)=>a+e.x,0)/hs.length:W.S/2,cz=hs.length?hs.reduce((a,e)=>a+e.z,0)/hs.length:W.S/2,list=[];
   for(let i=0;i<ZT_HORDE.n;i++){let x=0,z=0;for(let t=0;t<40;t++){const a=i/ZT_HORDE.n*Math.PI*2+R()*.3,r=34+R()*36;x=cx+Math.sin(a)*r;z=cz+Math.cos(a)*r;if(x>2&&z>2&&x<W.S-2&&z<W.S-2&&!ztHit(W,x,z,.5)&&W.reach[ztNi(W,x,z)]<65535)break;x=-1}
     if(x<0)continue;list.push({x,z,vx:0,vz:0,yaw:R()*6.28,ph:R(),spd:ZT_HORDE.spd*(.85+R()*.25),wob:R()*6.28,dumb:R()<.3,down:0,stuck:0,col:Math.floor(R()*6)})}
+  /* ...and out of every grave in the graveyard, one after another */for(const gv of W.graves||[])list.push({x:gv.x,z:gv.z,vx:0,vz:0,yaw:R()*.6-.3,ph:R(),spd:ZT_HORDE.spd*(.85+R()*.25),wob:R()*6.28,dumb:R()<.2,down:0,stuck:0,col:Math.floor(R()*6),rise:.6+R()*4,grave:1});
   G.horde={by:by.id,t0,seed,until:t0+ZT_HORDE.life,list,fields:{},ft:0};/* Team Up: a giant boss zombie comes with them */if(G.mode==="team")G.boss=ztBossNew(G,seed);return G.horde}
 function ztHordeStep(G,dt,ev,opts){const H=G.horde;if(!H||!(dt>1e-6))return;if(G.t>H.until+1.2){G.horde=null;if(G.boss&&!G.boss.dead)ev.push({k:"bossgone"});G.boss=null;ev.push({k:"hordeend"});return}const W=G.W,n=W.nav.n,ending=G.t>H.until;
   const hs=G.ents.filter(e=>e.role==="h"&&!e.dead&&(e.car==null||G.mode==="team"));H.ft-=dt;
@@ -232,7 +240,7 @@ function ztHordeStep(G,dt,ev,opts){const H=G.horde;if(!H||!(dt>1e-6))return;if(G
   const bucket=new Map(),key=(x,z)=>((x/1.5)|0)*1000+((z/1.5)|0);for(const m of H.list)if(!m.down){const k=key(m.x,m.z);if(!bucket.has(k))bucket.set(k,[]);bucket.get(k).push(m)}
   const RM=opts.remote&&opts.remote.s===H.seed?opts.remote:null;if(RM){/* another phone runs the horde: line up with its list */const n2=RM.l.length/3;while(H.list.length<n2){const j=H.list.length;H.list.push({x:RM.l[j*3]/10,z:RM.l[j*3+1]/10,vx:0,vz:0,yaw:0,ph:Math.random(),spd:ZT_HORDE.spd,wob:0,dumb:0,down:0,stuck:0,col:j%6})}if(H.list.length>n2)H.list.length=n2}
   const rage=RM?Math.min(.6,((typeof performance!=="undefined"?performance.now():Date.now())-RM.rt)/1000):0;
-  for(let j=0;j<H.list.length;j++){const m=H.list[j];if(m.down){m.down+=dt;continue}if(ending){m.sink=(m.sink||0)+dt;continue}
+  for(let j=0;j<H.list.length;j++){const m=H.list[j];if(m.down){m.down+=dt;continue}if(m.rise>0){/* still climbing out of the grave */m.rise-=dt;m.vx=m.vz=0;continue}if(ending){m.sink=(m.sink||0)+dt;continue}
     if(RM){const tx=RM.l[j*3]/10,tz=RM.l[j*3+1]/10,fl=RM.l[j*3+2],ox=m.x,oz=m.z,k=1-Math.exp(-dt*7);if(fl===1){if(!m.down&&G.mode==="team"){m.kill=1;ev.push({k:"kill",kind:"horde",j,x:m.x,z:m.z,col:m.col%3})}m.down=.001;continue}if(Math.hypot(tx-m.x,tz-m.z)>5){m.x=tx;m.z=tz}else{m.x+=(tx-m.x)*k;m.z+=(tz-m.z)*k}
       m.vx=(m.x-ox)/dt;m.vz=(m.z-oz)/dt;if(Math.hypot(m.vx,m.vz)>.2)m.yaw=Math.atan2(m.vx,m.vz);m.ph=(m.ph+dt*1.4)%1;let T=null,td=1e9;for(const h of hs){const d=Math.hypot(h.x-m.x,h.z-m.z);if(h.hid&&d>3)continue;if(d<td){td=d;T=h}}
       if(T&&T.car==null&&td<.9&&fl!==2&&(opts.bite||[]).includes(T)&&T.fx.immune<=0&&T.fx.frozen<=0)ztHordeBite(G,T,m,ev);continue}
