@@ -1,5 +1,5 @@
 /* Boom Town rule & physics checks: node wb/wb_tests.js */
-global.CANNON=require("cannon");const C=CANNON;const Z=require("./wb_core.js");const {play,aimAt}=require("./smart.js");
+global.CANNON=require("cannon");const C=CANNON;const Z=require("./wb_core.js");const {aimAt}=require("./smart.js");const {play}=require("./smart2.js");
 let pass=0,fail=0;const T=(name,ok,info)=>{if(ok)pass++;else fail++;console.log((ok?"  ok  ":"  FAIL ")+name+(info!=null?"  ("+info+")":""))};
 const run=(G,secs)=>{for(let i=0;i<secs*60;i++)Z.wbStep(G,Z.WB.step)};
 const shot=(G,p,yaw,a)=>{Z.wbFire(G,p,yaw,a);let n=0;while(!Z.wbSettled(G)&&n<600){Z.wbStep(G,Z.WB.step);n++}};
@@ -8,12 +8,13 @@ const fresh=k=>{const L=Z.WB_LEVELS.find(l=>l.k===k);const G=Z.wbWorld(C,Z.wbHou
 /* every house stands up by itself */
 for(const L of Z.WB_LEVELS){const G=fresh(L.k);run(G,4);T(L.name+" stands up on its own",G.down<.1,Math.round(G.down*100)+"% down")}
 /* there are eight houses, the last is the boss */
-T("8 houses, the haunted mansion is the boss",Z.WB_LEVELS.length===8&&Z.WB_LEVELS[7].boss&&Z.WB_LEVELS[7].k==="boss");
+T("15 places to smash, ending with Wobbleton Village",Z.WB_LEVELS.length===15&&Z.WB_LEVELS[7].k==="boss"&&Z.WB_LEVELS[14].k==="village"&&Z.WB_LEVELS[14].boss);
+{const v=Z.wbHouse("village");const xs=v.map(b=>b.x);T("The village is spread out (lots of little houses)",Math.max(...xs)-Math.min(...xs)>11&&v.length>100,v.length+" blocks")}
 /* the straw house: one good shot and it's gone */
 {let n=0;for(let p=.2;p<=.8;p+=.06){const G=fresh("straw");shot(G,p,0,"ball");if(Z.wbFlat(G))n++}T("Straw house goes in one shot at lots of powers",n>=3,n)}
 /* a sensible player gets every house flat; the mansion takes many shots */
-{const res={};for(const L of Z.WB_LEVELS)res[L.k]=play(L.k,"ball",L.boss?25:15);
-  T("A sensible player flattens every house",Object.values(res).every(r=>r.flat),Object.entries(res).map(([k,r])=>k+":"+r.s).join(" "));
+{const res={};for(const L of Z.WB_LEVELS)res[L.k]=play(L.k,"ball",L.boss?30:20);
+  T("A sensible player flattens every house and place",Object.values(res).every(r=>r.flat),Object.entries(res).map(([k,r])=>k+":"+r.s).join(" "));
   T("The mansion takes lots of shots, more than the first houses",res.boss.s>=5&&res.boss.s>res.straw.s&&res.boss.s>res.brick.s,res.boss.s);
   T("The brick house is harder than the straw house",res.brick.s>=res.straw.s);
   T("Knocked-down blocks drop coins",Object.values(res).every(r=>r.coins>0))}
@@ -41,7 +42,13 @@ T("8 houses, the haunted mansion is the boss",Z.WB_LEVELS.length===8&&Z.WB_LEVEL
 /* stars */
 T("3 stars at par, 2 a bit over, 1 after that",Z.wbStars(1,2)===3&&Z.wbStars(1,4)===2&&Z.wbStars(1,5)===1&&Z.wbStars(0,1)===3);
 /* build mode */
-T("Blocks go on the ground or on top of a block",Z.wbCanPlace([],3,0,3)&&!Z.wbCanPlace([],3,1,3)&&Z.wbCanPlace([["brick",3,0,3]],3,1,3)&&!Z.wbCanPlace([["brick",3,0,3]],3,0,3)&&!Z.wbCanPlace([],7,0,0));
+T("Blocks go on the ground, on top, or against the side of a block",Z.wbCanPlace([],3,0,3)&&!Z.wbCanPlace([],3,1,3)&&Z.wbCanPlace([["brick",3,0,3]],3,1,3)&&!Z.wbCanPlace([["brick",3,0,3]],3,0,3)&&!Z.wbCanPlace([],9,0,0)&&Z.wbCanPlace([["brick",3,2,3]],4,2,3)&&!Z.wbCanPlace([["brick",3,2,3]],5,2,3));
+T("Lots of blocks to build with",Object.keys(Z.WB_BUILD.price).length>=15&&Z.WB_BUILD.budget>=100&&Z.WB_BUILD.size>=9);
+{const c=[];for(let y=0;y<5;y++)c.push(["brick",4,y,4]);for(let x=1;x<=7;x++)if(x!==4)c.push(["brick",x,4,4]);const G=Z.wbWorld(C,Z.wbFromBuild(c));Z.wbSettle(G);run(G,4);T("Blocks sticking out sideways stay up",G.down<.05&&G.mortar.length>0);
+  const r=play("x","ball",10,Z.wbFromBuild(c),{});T("...until you knock them down",r.flat,r.s+" shots")}
+{const G=fresh("brick");Z.wbFireAt(G,0,1,Z.WB.dist-2.4,"ball");let hit=null;for(let i=0;i<120&&!hit;i++){Z.wbStep(G,Z.WB.step);if(G.ball.wbBall.hit)hit=G.ball.position.clone()}T("The cannon hits where you aim",hit&&Math.abs(hit.x)<.6&&Math.abs(hit.y-1)<.8,hit&&hit.toString())}
+{const s=Z.wbShotAt(0,1,22,"ball");T("Shots are fast and fairly flat",Math.hypot(s.vx,s.vy,s.vz)>=28&&s.pitch<.35,s.pitch.toFixed(2))}
+{const A=fresh("brick"),B=fresh("brick");Z.wbFireAt(A,0,1,20,"ball");for(let i=0;i<200;i++)Z.wbStep(A,Z.WB.step);const sn=Z.wbSnap(A);Z.wbApplySnap(B,sn);T("A house can be copied to the other phone",Math.abs(A.down-B.down)<.02&&sn.length<20000,Math.round(A.down*100)+"% vs "+Math.round(B.down*100)+"%, "+sn.length+" chars")}
 T("Build cost adds up the prices",Z.wbBuildCost([["straw",0,0,0],["gold",1,0,0],["brick",2,0,0]])===14);
 {const cells=[];for(let x=2;x<5;x++)for(let y=0;y<3;y++)cells.push(["brick",x,y,3]);const G=Z.wbWorld(C,Z.wbFromBuild(cells));Z.wbSettle(G);run(G,3);T("A house you built stands up",G.down<.1);
   let n=0;while(!Z.wbFlat(G)&&n<10){const st=G.blocks.filter(b=>b.wb.orig&&b.wb.down!==2&&!b.wb.gone).sort((a,b)=>b.position.y-a.position.y)[0];if(!st)break;const [p,y]=aimAt(st.position.x,Math.max(.5,st.position.y-.5),st.position.z-.5,"ball");shot(G,p,y,"ball");n++}T("...and can be knocked down",Z.wbFlat(G),n+" shots")}
