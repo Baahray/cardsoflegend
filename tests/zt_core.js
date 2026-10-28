@@ -102,9 +102,10 @@ function ztShelters(W){const R=ztRng(ztHash(W.seed,1212)),mid=W.mid;
 /* the lever: on a side wall inside a building far from the trap door */
 function ztLeverSpot(W){const R=ztRng(ztHash(W.seed,5151)),m=W.mt,c=W.shelters.filter(s=>!s.garage&&!s.venue).sort((a,b)=>Math.hypot((b.x0+b.x1)/2-m.x,(b.z0+b.z1)/2-m.z)-Math.hypot((a.x0+a.x1)/2-m.x,(a.z0+a.z1)/2-m.z));if(!c.length)return;
   const pick=c.slice(0,4).sort(()=>R()-.5);
-  for(const s of pick){const cx=(s.x0+s.x1)/2,cz=(s.z0+s.z1)/2,p=s.out[0]?[0,1]:[1,0],half=s.out[0]?(s.z1-s.z0)/2:(s.x1-s.x0)/2;
-    for(const sg of [1,-1])for(let k=1.1;k<half;k+=.3)for(const sh of [0,.8,-.8,1.6,-1.6]){const x=cx+p[0]*sg*(half-k)+s.out[0]*sh,z=cz+p[1]*sg*(half-k)+s.out[1]*sh;
-      if(!ztHit(W,x,z,.5)&&W.reach[ztNi(W,x,z)]<65535){m.lever={x:+x.toFixed(2),z:+z.toFixed(2),sh:s.id,face:Math.atan2(-p[0]*sg,-p[1]*sg)};return}}}}
+  /* just inside the door, to one side of it (you see it as soon as you step in) */
+  for(const s of pick){const dx=(s.door[0]+s.door[2])/2,dz=(s.door[1]+s.door[3])/2,o=s.out,p=o[0]?[0,1]:[1,0];
+    for(const sg of [R()<.5?1:-1].flatMap(v=>[v,-v]))for(const side of [2.4,2.8,2.1,3.2])for(const inn of [1.3,1.7,2.1]){const x=dx-o[0]*inn+p[0]*sg*side,z=dz-o[1]*inn+p[1]*sg*side;
+      if(!ztHit(W,x,z,.5)&&W.reach[ztNi(W,x,z)]<65535&&ztShelterAt(W,x,z)===s){m.lever={x:+x.toFixed(2),z:+z.toFixed(2),sh:s.id,face:Math.atan2(o[0],o[1])};return}}}}
 const ztShelterAt=(W,x,z)=>{for(const s of W.shelters||[])if(x>s.x0+.2&&x<s.x1-.2&&z>s.z0+.2&&z<s.z1-.2)return s;return null};
 
 /* ---------------- collision: a grid of buckets so we only test what is nearby ---------------- */
