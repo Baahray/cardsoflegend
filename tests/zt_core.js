@@ -99,13 +99,9 @@ function ztShelters(W){const R=ztRng(ztHash(W.seed,1212)),mid=W.mid;
   /* where people gather: the three biggest become the BAR, the MALL and the SCHOOL (the outbreak starts there) */
   W.venues=[];const big=W.shelters.filter(s=>!s.garage).sort((a,b)=>(b.x1-b.x0)*(b.z1-b.z0)-(a.x1-a.x0)*(a.z1-a.z0)).slice(0,3);
   big.forEach((s,k)=>{s.venue=["bar","mall","school"][k];const dx=(s.door[0]+s.door[2])/2,dz=(s.door[1]+s.door[3])/2;W.venues.push({kind:s.venue,sh:s.id,x:(s.x0+s.x1)/2,z:(s.z0+s.z1)/2,dx:+(dx+s.out[0]*2.2).toFixed(2),dz:+(dz+s.out[1]*2.2).toFixed(2)})})}
-/* the lever: on a side wall inside a building far from the trap door */
-function ztLeverSpot(W){const R=ztRng(ztHash(W.seed,5151)),m=W.mt,c=W.shelters.filter(s=>!s.garage&&!s.venue).sort((a,b)=>Math.hypot((b.x0+b.x1)/2-m.x,(b.z0+b.z1)/2-m.z)-Math.hypot((a.x0+a.x1)/2-m.x,(a.z0+a.z1)/2-m.z));if(!c.length)return;
-  const pick=c.slice(0,4).sort(()=>R()-.5);
-  /* just inside the door, to one side of it (you see it as soon as you step in) */
-  for(const s of pick){const dx=(s.door[0]+s.door[2])/2,dz=(s.door[1]+s.door[3])/2,o=s.out,p=o[0]?[0,1]:[1,0];
-    for(const sg of [R()<.5?1:-1].flatMap(v=>[v,-v]))for(const side of [2.4,2.8,2.1,3.2])for(const inn of [1.3,1.7,2.1]){const x=dx-o[0]*inn+p[0]*sg*side,z=dz-o[1]*inn+p[1]*sg*side;
-      if(!ztHit(W,x,z,.5)&&W.reach[ztNi(W,x,z)]<65535&&ztShelterAt(W,x,z)===s){m.lever={x:+x.toFixed(2),z:+z.toFixed(2),sh:s.id,face:Math.atan2(o[0],o[1])};return}}}}
+/* the lever: right next to the trap door, at the edge of the car park */
+function ztLeverSpot(W){const m=W.mt;for(const [dx,dz] of [[6.2,0],[-6.2,0],[6.2,3],[-6.2,3],[6.2,-3],[-6.2,-3],[0,7],[0,-7]]){const x=m.x+dx,z=m.z+dz;
+    if(!ztHit(W,x,z,.6)&&W.reach[ztNi(W,x,z)]<65535){m.lever={x:+x.toFixed(2),z:+z.toFixed(2),sh:-1,face:Math.atan2(-dx,-dz)};return}}}
 const ztShelterAt=(W,x,z)=>{for(const s of W.shelters||[])if(x>s.x0+.2&&x<s.x1-.2&&z>s.z0+.2&&z<s.z1-.2)return s;return null};
 
 /* ---------------- collision: a grid of buckets so we only test what is nearby ---------------- */

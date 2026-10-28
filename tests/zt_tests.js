@@ -235,7 +235,7 @@ console.log("THE MONSTER TRUCK");
 {const G=Z.ztGame({seed:4242,mode:"team",dur:0,players:[{id:"me",name:"YOU"}]}),me=G.ents[0],W2=G.W,T=G.cars.find(c=>c.mt);G.t=5;me.fx.frozen=0;
  const st=()=>{me.fx.immune=99;me.dragT=-99};
  t("150 A monster truck is hidden under a trap door in a car park (you can't get in, it isn't there yet)",T&&T.hidden&&W2.mt&&W2.lot.some(r=>W2.mt.x>r[0]&&W2.mt.x<r[2]&&W2.mt.z>r[1]&&W2.mt.z<r[3])&&(me.x=T.x+2,me.z=T.z,!Z.ztCarNear(G,me)));
- t("151 The lever is hidden inside a building, far away",W2.mt.lever&&Z.ztShelterAt(W2,W2.mt.lever.x,W2.mt.lever.z)&&Math.hypot(W2.mt.lever.x-W2.mt.x,W2.mt.lever.z-W2.mt.z)>60&&W2.reach[Z.ztNi(W2,W2.mt.lever.x,W2.mt.lever.z)]<65535);
+ t("151 The lever is right next to the trap door",W2.mt.lever&&Math.hypot(W2.mt.lever.x-W2.mt.x,W2.mt.lever.z-W2.mt.z)<8&&W2.reach[Z.ztNi(W2,W2.mt.lever.x,W2.mt.lever.z)]<65535);
  me.x=W2.mt.lever.x;me.z=W2.mt.lever.z;let ev=Z.ztStep(G,{me:{drive:true}},1/60);for(let i=0;i<4*60;i++){st();ev=ev.concat(Z.ztStep(G,{},1/60))}
  t("152 Pull the lever: the trap door opens and up it comes",ev.some(q=>q.k==="lever")&&ev.some(q=>q.k==="mtup")&&!T.hidden);
  me.x=T.x+2.5;me.z=T.z;Z.ztStep(G,{me:{drive:true}},1/60);t("153 Jump in",me.car===T.i);
