@@ -2,7 +2,7 @@
    Wobbleton's empty old houses are made of physics blocks; you knock them down with a cannon.
    World: the cannon sits at the origin and fires along +z; houses stand around z = WB.dist; y is up. Units are metres.
    The physics engine (cannon.js) is passed in as C so the game and the tests share this code. */
-const WB={townK:.5,townDown:.5,mortar:60,vshot:30,reload:.45,densK:3,dist:22,pitch:.34,vmin:11,vmax:31,yawMax:.42,step:1/60,settle:7,flat:.8,muzzle:[0,1.35,1.3]};
+const WB={townK:.5,townDown:.5,mortar:60,vshot:34,reload:.45,densK:3,dist:22,pitch:.34,vmin:11,vmax:31,yawMax:.42,step:1/60,settle:7,flat:.8,muzzle:[0,1.35,1.3]};
 
 /* ---------------- what things are made of ---------------- */
 /* dens: kg per cubic metre (scaled), fric/rest: friction and bounciness, brk: how hard a hit has to be to break it (0 = never), bits: what it breaks into */
@@ -17,6 +17,7 @@ const WB_MAT={
   icing:{dens:.5,fric:.6,rest:.05,brk:5,bits:2,col:0xfafafa},
   candy:{dens:.4,fric:.6,rest:.2,col:0xff4fa3},
   ice:{dens:.9,fric:.02,rest:.1,brk:7,bits:2,col:0xbfe8ff},
+  office:{dens:.35,fric:.6,rest:.03,brk:4.5,bits:2,col:0x9fc6e8},apart:{dens:.5,fric:.7,rest:.02,brk:5,bits:2,col:0xe8c9a6},shopf:{dens:.45,fric:.7,rest:.03,brk:7,bits:2,col:0xf0e0c0},car:{dens:.35,fric:.6,rest:.15,col:0xff4040},metal:{dens:.9,fric:.6,rest:.05,col:0x55585e},
   snow:{dens:.6,fric:.7,rest:.02,brk:5.5,bits:2,col:0xf4fbff},
   sand:{dens:1.1,fric:.95,rest:0,brk:2.6,bits:2,col:0xe6c98a},
   jelly:{dens:.5,fric:.5,rest:.9,col:0x7dff5a,wobble:1},
@@ -31,14 +32,16 @@ const WB_MAT={
   ball:{dens:0,fric:.4,rest:.15},bowl:{dens:0,fric:.15,rest:.05},bouncy:{dens:0,fric:.5,rest:.95},melon:{dens:0,fric:.6,rest:.05},chicken:{dens:0,fric:.5,rest:.6},mallow:{dens:0,fric:.95,rest:0},mega:{dens:0,fric:.5,rest:.05}};
 
 /* ---------------- things to shoot ---------------- */
+/* materials drawn in each building's own colour */
+const WB_TINT={office:1,apart:1,shopf:1,car:1};
 const WB_AMMO=[
-  {k:"ball",name:"CANNONBALL",icon:"⚫",r:.38,mass:5,vk:1,unlock:0,say:"BOOM!"},
+  {k:"ball",name:"CANNONBALL",icon:"⚫",r:.46,mass:10,vk:1,unlock:0,say:"BOOM!",blast:{r:3.8,dv:16}},
   {k:"bowl",name:"BOWLING BALL",icon:"🎳",r:.55,mass:11,vk:.92,unlock:1,say:"STRIKE!",rolls:1},
   {k:"bouncy",name:"BOUNCY BALL",icon:"🔴",r:.45,mass:2.2,vk:1.05,unlock:2,say:"BOING!"},
   {k:"melon",name:"WATERMELON",icon:"🍉",r:.5,mass:6,vk:.95,unlock:3,say:"SPLAT!",splat:1},
   {k:"chicken",name:"RUBBER CHICKEN",icon:"🐔",r:.3,mass:2,vk:1.1,unlock:4,say:"BAWK!",chicken:1},
   {k:"mallow",name:"GIANT MARSHMALLOW",icon:"☁️",r:.55,mass:3,vk:.95,unlock:5,say:"SPLODGE!",sticky:1},
-  {k:"mega",name:"MEGA BALL",icon:"🌑",r:1.3,mass:70,vk:.62,unlock:8,cost:300,say:"MEGA!!"}];
+  {k:"mega",name:"MEGA BALL",icon:"🌑",r:1.5,mass:150,vk:.62,unlock:8,cost:300,say:"MEGA!!",blast:{r:5,dv:13}}];
 
 /* ---------------- the houses of Wobbleton ---------------- */
 /* a house is a list of blocks {t, x,y,z (centre), w,h,d, ry (turned round y)} */
@@ -48,24 +51,24 @@ const WB_LEVELS=[
   {k:"ginger",name:"GINGERBREAD HOUSE",icon:"🍪",par:2,tip:"It crumbles into cookie bits"},
   {k:"igloo",name:"IGLOO",icon:"🧊",par:3,tip:"Slippery ice — it slides and shatters"},
   {k:"sand",name:"SANDCASTLE",icon:"🏰",par:3,tip:"Crumbles into a pile of sand"},
-  {k:"jelly",name:"JELLY HOUSE",icon:"🍮",par:4,tip:"Wobbly! Soft shots bounce back — fire hard!"},
+  {k:"jelly",name:"JELLY HOUSE",icon:"🍮",par:3,tip:"Wobbly! Soft shots bounce back — fire hard!"},
   {k:"tree",name:"TREEHOUSE",icon:"🌳",par:3,tip:"Knock the tree down first!"},
-  {k:"boss",name:"HAUNTED MANSION",icon:"👻",par:6,tip:"The big one. It'll take a lot of shots!",boss:1},
+  {k:"boss",name:"HAUNTED MANSION",icon:"👻",par:4,tip:"The big one. It'll take a lot of shots!",boss:1},
   {k:"domino",name:"DOMINO STREET",icon:"🁢",par:2,tip:"Knock the first one over…"},
   {k:"pyramid",name:"SAND PYRAMID",icon:"🔺",par:4,tip:"Chip away at the corners"},
   {k:"jenga",name:"WOBBLY TOWER",icon:"🪵",par:3,tip:"Hit it near the bottom!"},
   {k:"light",name:"LIGHTHOUSE",icon:"🗼",par:2,tip:"Tall and thin — topple it!"},
   {k:"castle",name:"STONE CASTLE",icon:"🏯",par:9,tip:"Thick walls and four towers",boss:1},
   {k:"sky",name:"SKYSCRAPER",icon:"🏢",par:4,tip:"Knock out the bottom floors"},
-  {k:"farm",name:"WOBBLY FARM",icon:"🚜",par:8,tip:"Barn, windmill, cottages — flatten the farm!",town:1},
-  {k:"village",name:"WOBBLETON VILLAGE",icon:"🏘️",par:8,tip:"Knock down every building in the village!",town:1},
-  {k:"seaside",name:"SEASIDE TOWN",icon:"⛵",par:11,tip:"Don't forget the lighthouse!",town:1},
+  {k:"farm",name:"WOBBLY FARM",icon:"🚜",par:6,tip:"Barn, windmill, cottages — flatten the farm!",town:1},
+  {k:"village",name:"WOBBLETON VILLAGE",icon:"🏘️",par:7,tip:"Knock down every building in the village!",town:1},
+  {k:"seaside",name:"SEASIDE TOWN",icon:"⛵",par:7,tip:"Don't forget the lighthouse!",town:1},
   {k:"candy",name:"CANDY TOWN",icon:"🍭",par:8,tip:"Gingerbread, jelly towers and a candy castle",town:1},
-  {k:"snow",name:"SNOWY VILLAGE",icon:"⛄",par:7,tip:"Igloos everywhere — they slide and shatter",town:1},
-  {k:"spooky",name:"SPOOKY TOWN",icon:"🎃",par:15,tip:"Haunted houses and a creepy church",town:1},
-  {k:"market",name:"MARKET TOWN",icon:"🏪",par:20,tip:"A whole high street, a church and a clock tower!",town:1},
-  {k:"city",name:"BIG CITY",icon:"🏙️",par:17,tip:"Skyscrapers! Hit them low to topple them",town:1},
-  {k:"mega",name:"MEGA CITY",icon:"🌆",par:22,tip:"The biggest city of all. Good luck!",town:1}];
+  {k:"snow",name:"SNOWY VILLAGE",icon:"⛄",par:6,tip:"Igloos everywhere — they slide and shatter",town:1},
+  {k:"spooky",name:"SPOOKY TOWN",icon:"🎃",par:9,tip:"Haunted houses and a creepy church",town:1},
+  {k:"market",name:"MARKET TOWN",icon:"🏪",par:13,tip:"A whole high street, a church and a clock tower!",town:1},
+  {k:"city",name:"BIG CITY",icon:"🏙️",par:14,tip:"Skyscrapers! Hit them low to topple them",town:1},
+  {k:"mega",name:"MEGA CITY",icon:"🌆",par:20,tip:"The biggest city of all. Good luck!",town:1}];
 function wbHouse(k,D=WB.dist){if(typeof WB_TOWNS!=="undefined"&&WB_TOWNS[k])return wbTown(k);const B=[];let OX=0,OZ=0;const b=(t,x,y,z,w,h,d,ry)=>B.push({t,x:+(x+OX).toFixed(3),y:+y.toFixed(3),z:+(z+D+OZ).toFixed(3),w,h,d,ry:ry||0});
   /* a rectangular wall-ring of blocks, rows of bh high; alternate rows offset so it holds together like real bricks */
   const ring=(t,W,Dp,rows,bw,bh,bt,y0=0,door=0)=>{for(let r=0;r<rows;r++){const y=y0+bh*(r+.5),off=(r%2)*bw/2;
@@ -109,7 +112,7 @@ function wbHouse(k,D=WB.dist){if(typeof WB_TOWNS!=="undefined"&&WB_TOWNS[k])retu
 const wbBlocksOf=k=>wbHouse(k);
 
 /* ---------------- a house you built (cubes on a 7 x 7 plot) ---------------- */
-const WB_BUILD={size:13,maxH:24,max:1500,price:{straw:1,wood:2,plank:2,brick:3,stone:4,slate:3,roof:3,sand:2,ginger:3,candy:3,icing:2,ice:3,glass:2,jelly:4,leaf:1,haunt:4,trunk:3,gold:10}};
+const WB_BUILD={size:13,maxH:24,max:1500,price:{office:3,apart:3,car:2,straw:1,wood:2,plank:2,brick:3,stone:4,slate:3,roof:3,sand:2,ginger:3,candy:3,icing:2,ice:3,glass:2,jelly:4,leaf:1,haunt:4,trunk:3,gold:10}};
 function wbFromBuild(cells,D=WB.dist){const half=(WB_BUILD.size-1)/2;return cells.map(([t,gx,gy,gz])=>({t,x:gx-half,y:gy+.5,z:gz-half+D,w:.99,h:.99,d:.99,ry:0,g:[gx,gy,gz]}))}
 const wbBuildCost=cells=>cells.reduce((a,c)=>a+(WB_BUILD.price[c[0]]||1),0);
 /* can this block go here? on the ground, or touching another block (on top, underneath or on any side), inside the plot, not in the same spot */
@@ -172,6 +175,8 @@ function wbLaunch(G,s){const C=G.C,a=s.a,b=new C.Body({mass:a.mass,material:G.ma
     if(a.splat&&!b.wbBall.hit&&v>4)G.queue.push({k:"splat",b});
     if(a.sticky&&!b.wbBall.stuck&&o&&o.wb)G.queue.push({k:"stick",b,o});
     if(o&&o.wb&&G.mortar&&G.mortar.length&&v>4)G.queue.push({k:"unglue",p:b.position.clone(),r:Math.min(3.2,.3*Math.pow(.5*a.mass*v*v,.25))});
+    /* jelly: a soft hit boings straight back off it */if(o&&o.wb&&o.wb.mat==="jelly"&&!b.wbBall.jb&&v<19&&a.k!=="mega"){b.wbBall.jb=1;G.queue.push({k:"jbounce",b})}
+    /* KABOOM: the first hard hit on a building blows the blocks round about outwards */if(a.blast&&o&&o.wb&&!b.wbBall.blasted&&v>5){b.wbBall.blasted=1;G.queue.push({k:"blast",p:b.position.clone(),r:a.blast.r,dv:a.blast.dv*Math.min(1.2,v/22),ball:b})}
     if(o&&o.wb)b.wbBall.hit=1});
   G.W.addBody(b);G.balls.push(b);G.ball=b;G.shots++;G.fireT=G.t;G.ev.push({k:"fire",ammo:a.k});
   /* not too many balls lying about: the oldest one goes */const live=G.balls.filter(q=>!q.wbGone);if(live.length>6){const o=live[0];o.wbGone=1;if(o.wbBall.con)G.W.removeConstraint(o.wbBall.con);G.W.removeBody(o)}
@@ -189,6 +194,11 @@ function wbStep(G,dt,quiet){const C=G.C;G.W.step(WB.step,dt,4);G.t+=dt;G.nstep=(
   const Q=G.queue.splice(0);for(const q of Q){
     if(q.k==="break"&&!q.b.wb.gone)wbBreak(G,q.b,q.v);
     else if(q.k==="splat"&&!q.b.wbBall.hit2){q.b.wbBall.hit2=1;wbSplat(G,q.b)}
+    else if(q.k==="blast"){const P=q.p,hitB=new Set();for(const o of G.blocks){if(o.wb.gone||!o.world)continue;const d=o.position.distanceTo(P);if(d>q.r)continue;o.wakeUp();if(o.wb.s.bld!=null&&o.wb.s.bld>=0)hitB.add(o.wb.s.bld);const k=1-d/q.r,dir=o.position.vsub(P);dir.y=Math.max(dir.y,0)+.35*d;const L=dir.length()||1,dv=q.dv*k*Math.max(.35,Math.min(1.5,Math.pow(8/o.mass,.35)));
+        o.velocity.x+=dir.x/L*dv;o.velocity.y+=dir.y/L*dv;o.velocity.z+=dir.z/L*dv;o.angularVelocity.x+=(Math.random()-.5)*dv;o.angularVelocity.z+=(Math.random()-.5)*dv}
+      /* the whole building that got hit wakes up and feels it */if(hitB.size)for(const o of G.blocks)if(!o.wb.gone&&o.world&&hitB.has(o.wb.s.bld))o.wakeUp();
+      if(q.ball&&!q.ball.wbGone)q.ball.velocity.scale(.55,q.ball.velocity);if(G.mortar&&G.mortar.length)G.queue.push({k:"unglue",p:P,r:q.r});G.ev.push({k:"blast",x:P.x,y:P.y,z:P.z,r:q.r})}
+    else if(q.k==="jbounce"){const v=q.b.velocity;q.b.velocity.set(-v.x*.5,Math.abs(v.y)*.5+3,-Math.abs(v.z)*.75-2);q.b.wbBall.blasted=1}
     else if(q.k==="unglue"){for(let i=G.mortar.length-1;i>=0;i--){const m=G.mortar[i];if(m.a.position.distanceTo(q.p)<q.r||m.b.position.distanceTo(q.p)<q.r){G.W.removeConstraint(m.c);G.mortar.splice(i,1);G.ev.push({k:"snap",x:m.a.position.x,y:m.a.position.y,z:m.a.position.z})}}}
     else if(q.k==="stick"&&!q.b.wbBall.stuck&&!q.o.wb.gone){q.b.wbBall.stuck=1;const c=new C.LockConstraint(q.b,q.o);G.W.addConstraint(c);q.b.wbBall.con=c;G.ev.push({k:"stick",x:q.b.position.x,y:q.b.position.y,z:q.b.position.z})}}
   /* mortar snaps when the blocks get pulled apart or one breaks */if(G.mortar&&G.mortar.length)for(let i=G.mortar.length-1;i>=0;i--){const m=G.mortar[i];if(m.a.wb.gone||m.b.wb.gone||Math.abs(m.a.position.distanceTo(m.b.position)-m.d)>.1){G.W.removeConstraint(m.c);G.mortar.splice(i,1);if(!quiet)G.ev.push({k:"snap",x:m.a.position.x,y:m.a.position.y,z:m.a.position.z})}}
@@ -232,4 +242,4 @@ function wbSnap(G){return G.blocks.filter(b=>b.wb.orig).map(b=>b.wb.gone?"x":[b.
 function wbApplySnap(G,str){const o=G.blocks.filter(b=>b.wb.orig),L=(str||"").split(";");if(L.length!==o.length)return false;
   o.forEach((b,i)=>{const t=L[i];if(t==="x"){if(!b.wb.gone){b.wb.gone=1;b.wb.down=2;G.W.removeBody(b)}return}if(b.wb.gone)return;const v=t.split(",").map(Number);b.position.set(v[0],v[1],v[2]);b.quaternion.set(v[3],v[4],v[5],v[6]);b.velocity.set(0,0,0);b.angularVelocity.set(0,0,0);b.sleep()});
   if(G.mortar)for(let i=G.mortar.length-1;i>=0;i--){const m=G.mortar[i];if(m.a.wb.gone||m.b.wb.gone||Math.abs(m.a.position.distanceTo(m.b.position)-m.d)>.12){G.W.removeConstraint(m.c);G.mortar.splice(i,1)}}wbCount(G);return true}
-if(typeof module!=="undefined")module.exports={wbBldCount,wbWakeNear,wbShotAt,wbArcS,wbFireAt,wbLaunch,wbSnap,wbApplySnap,WB,WB_MAT,WB_AMMO,WB_LEVELS,WB_BUILD,wbHouse,wbFromBuild,wbBuildCost,wbCanPlace,wbWorld,wbAddBlock,wbSettle,wbAim,wbArc,wbFire,wbStep,wbBreak,wbSplat,wbIsDown,wbCount,wbSettled,wbFlat,wbStars,wbDuelWinner};
+if(typeof module!=="undefined")module.exports={WB_TINT,wbBldCount,wbWakeNear,wbShotAt,wbArcS,wbFireAt,wbLaunch,wbSnap,wbApplySnap,WB,WB_MAT,WB_AMMO,WB_LEVELS,WB_BUILD,wbHouse,wbFromBuild,wbBuildCost,wbCanPlace,wbWorld,wbAddBlock,wbSettle,wbAim,wbArc,wbFire,wbStep,wbBreak,wbSplat,wbIsDown,wbCount,wbSettled,wbFlat,wbStars,wbDuelWinner};
