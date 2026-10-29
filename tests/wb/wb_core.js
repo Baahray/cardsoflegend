@@ -26,7 +26,7 @@ const WB_MAT={
   stone:{dens:1.3,fric:.85,rest:.02,col:0x8d8a94},
   haunt:{dens:1.2,fric:.8,rest:.02,col:0x5a4a78},
   slate:{dens:1,fric:.8,rest:.02,col:0x2e2a3a},
-  glass:{dens:.4,fric:.4,rest:.05,brk:3,bits:2,col:0x9fe3ff},
+  glass:{dens:.4,fric:.4,rest:.05,brk:2.2,shatter:1,col:0x9fe3ff},
   gold:{dens:3,fric:.8,rest:.02,col:0xffc93a},
   crumb:{dens:.7,fric:.85,rest:.03},
   ball:{dens:0,fric:.4,rest:.15},bowl:{dens:0,fric:.15,rest:.05},bouncy:{dens:0,fric:.5,rest:.95},melon:{dens:0,fric:.6,rest:.05},chicken:{dens:0,fric:.5,rest:.6},mallow:{dens:0,fric:.95,rest:0},mega:{dens:0,fric:.5,rest:.05}};
@@ -207,6 +207,7 @@ function wbStep(G,dt,quiet){const C=G.C;G.W.step(WB.step,dt,4);G.t+=dt;G.nstep=(
   /* tidy: balls and bits that fell off the world */for(const b of G.balls)if(!b.wbGone&&(b.position.y<-5||Math.abs(b.position.x)>80||b.position.z>90||b.position.z<-20)){b.wbGone=1;G.W.removeBody(b)}}
 /* a breakable block shatters into smaller bits (cookie crumbs, ice shards, sand) */
 function wbBreak(G,b,v){const s=b.wb.s,m=WB_MAT[b.wb.mat],n=m.bits||2;b.wb.gone=1;b.wb.down=b.wb.down||1;G.W.removeBody(b);const C=G.C,q=b.quaternion,p=b.position;
+  /* glass doesn't break into blocks: it shatters into a shower of shards (drawn by the game, nothing left to bump into) */if(m.shatter)return G.ev.push({k:"break",mat:b.wb.mat,x:p.x,y:p.y,z:p.z,n:0,shatter:1,w:s.w,h:s.h,d:s.d,vx:b.velocity.x,vy:b.velocity.y,vz:b.velocity.z,v});
   const bw=s.w/n,bh=s.h/n,bd=s.d/n;const pieces=[];if(G.crumbs>320)return G.ev.push({k:"break",mat:b.wb.mat,x:p.x,y:p.y,z:p.z,n:0});
   for(let i=0;i<n;i++)for(let j=0;j<n;j++)for(let k=0;k<n;k++){const lp=new C.Vec3((i+.5)*bw-s.w/2,(j+.5)*bh-s.h/2,(k+.5)*bd-s.d/2),wp=q.vmult(lp).vadd(p);
     const nb=wbAddBlock(G,{t:b.wb.mat,x:wp.x,y:wp.y,z:wp.z,w:bw*.96,h:bh*.96,d:bd*.96,ry:0},0);nb.quaternion.copy(q);nb.velocity.copy(b.velocity).vadd(new C.Vec3((Math.random()-.5)*v*.3,Math.random()*v*.2,(Math.random()-.5)*v*.3),nb.velocity);
