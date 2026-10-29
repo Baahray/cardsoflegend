@@ -2,7 +2,7 @@
 global.CANNON=require("cannon");Object.assign(global,require("./wb_town.js"));const C=CANNON;const Z=require("./wb_core.js");const {aimAt}=require("./smart.js");const {play}=require("./smart2.js");
 let pass=0,fail=0;const T=(name,ok,info)=>{if(ok)pass++;else fail++;console.log((ok?"  ok  ":"  FAIL ")+name+(info!=null?"  ("+info+")":""))};
 const run=(G,secs)=>{for(let i=0;i<secs*60;i++)Z.wbStep(G,Z.WB.step)};
-const shot=(G,p,yaw,a)=>{Z.wbFire(G,p,yaw,a);let n=0;while(!Z.wbSettled(G)&&n<600){Z.wbStep(G,Z.WB.step);n++}};
+const shot=(G,p,yaw,a)=>{Z.wbFire(G,p,yaw,a);let n=0;while(!Z.wbSettled(G)&&n<600){Z.wbStep(G,Z.WB.step);n++;G.brk=(G.brk||[]).concat(G.ev.filter(e=>e.k==="break"));G.ev.length=0}};
 const fresh=k=>{const L=Z.WB_LEVELS.find(l=>l.k===k);const G=Z.wbWorld(C,Z.wbHouse(k),{boss:L&&L.boss,easy:L&&L.easy});Z.wbSettle(G);return G};
 
 /* every house stands up by itself */
@@ -23,11 +23,11 @@ for(const k of ["farm","village"]){const r=play(k,"ball",40);T("A sensible playe
   T("The brick house is harder than the straw house",res.brick.s>=res.straw.s);
   T("Knocked-down blocks drop coins",Object.values(res).every(r=>r.coins>0))}
 /* gingerbread crumbles into cookie bits */
-{const G=fresh("ginger");let br=0;for(const p of [.45,.55,.5]){shot(G,p,0,"ball");br+=G.blocks.filter(b=>b.wb.crumb).length}T("Gingerbread crumbles into bits",br>0,br)}
+{const G=fresh("ginger");for(const p of [.45,.55,.5])shot(G,p,0,"ball");const br=(G.brk||[]).filter(e=>e.debris&&e.mat==="ginger").length;T("Gingerbread smashes into pieces",br>0,br)}
 /* ice breaks and is slippery */
-{const G=fresh("igloo");for(const p of [.45,.5]){shot(G,p,0,"bowl")}T("Igloo shatters",G.blocks.some(b=>b.wb.crumb))}
+{const G=fresh("igloo");for(const p of [.45,.5]){shot(G,p,0,"bowl")}T("Igloo shatters",(G.brk||[]).some(e=>e.mat==="ice"))}
 /* the sandcastle collapses into a pile */
-{const G=fresh("sand");for(const p of [.45,.5,.4])shot(G,p,0,"ball");T("Sandcastle crumbles",G.blocks.some(b=>b.wb.crumb)&&G.down>.15,Math.round(G.down*100))}
+{const G=fresh("sand");for(const p of [.45,.5,.4])shot(G,p,0,"ball");T("Sandcastle crumbles",(G.brk||[]).some(e=>e.mat==="sand")&&G.down>.15,Math.round(G.down*100))}
 /* the jelly house bounces your ball back */
 {const G=fresh("jelly");const b=Z.wbFire(G,.3,0,"ball");let back=0;for(let i=0;i<180;i++){Z.wbStep(G,Z.WB.step);if(b.velocity.z<-1)back=1}T("Jelly bounces a soft shot back",back)}
 /* the watermelon splats */
@@ -58,4 +58,5 @@ T("Build cost adds up the prices",Z.wbBuildCost([["straw",0,0,0],["gold",1,0,0],
   let n=0;while(!Z.wbFlat(G)&&n<10){const st=G.blocks.filter(b=>b.wb.orig&&b.wb.down!==2&&!b.wb.gone).sort((a,b)=>b.position.y-a.position.y)[0];if(!st)break;const [p,y]=aimAt(st.position.x,Math.max(.5,st.position.y-.5),st.position.z-.5,"ball");shot(G,p,y,"ball");n++}T("...and can be knocked down",Z.wbFlat(G),n+" shots")}
 /* build for each other: who wins */
 T("Build-off: the house that took more shots wins",Z.wbDuelWinner({shots:5,flat:1},{shots:3,flat:1})==="a"&&Z.wbDuelWinner({shots:2,flat:1},{shots:9,flat:0})==="b"&&Z.wbDuelWinner({shots:4,flat:1},{shots:4,flat:1})===null);
+{const G=fresh("brick");Z.wbFireAt(G,0,1.5,20.2,"ball");let ev=[];for(let i=0;i<200;i++){Z.wbStep(G,Z.WB.step);ev=ev.concat(G.ev.filter(e=>e.k==="break"));G.ev.length=0}T("A cannonball smashes bricks into pieces (not blocks)",ev.some(e=>e.debris&&e.mat==="brick")&&!G.blocks.some(b=>b.wb.crumb),ev.length+" smashed")}
 console.log(`\n${pass} passed, ${fail} failed`);process.exit(fail?1:0);

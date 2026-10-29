@@ -8,26 +8,26 @@ const WB={townK:.5,townDown:.5,mortar:60,vshot:34,reload:.45,densK:3,dist:22,pit
 /* dens: kg per cubic metre (scaled), fric/rest: friction and bounciness, brk: how hard a hit has to be to break it (0 = never), bits: what it breaks into */
 const WB_MAT={
   grass:{dens:0,fric:.9,rest:.05},
-  straw:{dens:.06,fric:.55,rest:.05,col:0xe8c55a},
-  wood:{dens:.55,fric:.7,rest:.05,col:0xb07a45},
-  plank:{dens:.5,fric:.7,rest:.05,col:0xc99358},
-  brick:{dens:1.5,fric:.85,rest:.02,col:0xc0563a},
-  roof:{dens:.8,fric:.8,rest:.03,col:0x9b2f2f},
+  straw:{dens:.06,brk:3,fric:.55,rest:.05,col:0xe8c55a},
+  wood:{dens:.55,brk:6,fric:.7,rest:.05,col:0xb07a45},
+  plank:{dens:.5,brk:6,fric:.7,rest:.05,col:0xc99358},
+  brick:{dens:1.5,brk:7,fric:.85,rest:.02,col:0xc0563a},
+  roof:{dens:.8,brk:6,fric:.8,rest:.03,col:0x9b2f2f},
   ginger:{dens:.7,fric:.75,rest:.03,brk:6.5,bits:2,col:0xb8743a},
   icing:{dens:.5,fric:.6,rest:.05,brk:5,bits:2,col:0xfafafa},
-  candy:{dens:.4,fric:.6,rest:.2,col:0xff4fa3},
+  candy:{dens:.4,brk:6,fric:.6,rest:.2,col:0xff4fa3},
   ice:{dens:.9,fric:.02,rest:.1,brk:7,bits:2,col:0xbfe8ff},
-  office:{dens:.35,fric:.6,rest:.03,brk:4.5,bits:2,col:0x9fc6e8},apart:{dens:.5,fric:.7,rest:.02,brk:5,bits:2,col:0xe8c9a6},shopf:{dens:.45,fric:.7,rest:.03,brk:7,bits:2,col:0xf0e0c0},car:{dens:.35,fric:.6,rest:.15,col:0xff4040},metal:{dens:.9,fric:.6,rest:.05,col:0x55585e},
+  office:{dens:.35,fric:.6,rest:.03,brk:4.5,bits:2,col:0x9fc6e8},apart:{dens:.5,fric:.7,rest:.02,brk:5,bits:2,col:0xe8c9a6},shopf:{dens:.45,brk:6,fric:.7,rest:.03,brk:7,bits:2,col:0xf0e0c0},car:{dens:.35,brk:9,fric:.6,rest:.15,col:0xff4040},metal:{dens:.9,brk:11,fric:.6,rest:.05,col:0x55585e},
   snow:{dens:.6,fric:.7,rest:.02,brk:5.5,bits:2,col:0xf4fbff},
   sand:{dens:1.1,fric:.95,rest:0,brk:2.6,bits:2,col:0xe6c98a},
   jelly:{dens:.5,fric:.5,rest:.9,col:0x7dff5a,wobble:1},
-  trunk:{dens:.75,fric:.9,rest:.02,col:0x6b4426},
-  leaf:{dens:.12,fric:.8,rest:.05,col:0x4caf50},
-  stone:{dens:1.3,fric:.85,rest:.02,col:0x8d8a94},
-  haunt:{dens:1.2,fric:.8,rest:.02,col:0x5a4a78},
-  slate:{dens:1,fric:.8,rest:.02,col:0x2e2a3a},
+  trunk:{dens:.75,brk:8,fric:.9,rest:.02,col:0x6b4426},
+  leaf:{dens:.12,brk:3,fric:.8,rest:.05,col:0x4caf50},
+  stone:{dens:1.3,brk:8.5,fric:.85,rest:.02,col:0x8d8a94},
+  haunt:{dens:1.2,brk:7,fric:.8,rest:.02,col:0x5a4a78},
+  slate:{dens:1,brk:7,fric:.8,rest:.02,col:0x2e2a3a},
   glass:{dens:.4,fric:.4,rest:.05,brk:2.2,shatter:1,col:0x9fe3ff},
-  gold:{dens:3,fric:.8,rest:.02,col:0xffc93a},
+  gold:{dens:3,brk:11,fric:.8,rest:.02,col:0xffc93a},
   crumb:{dens:.7,fric:.85,rest:.03},
   ball:{dens:0,fric:.4,rest:.15},bowl:{dens:0,fric:.15,rest:.05},bouncy:{dens:0,fric:.5,rest:.95},melon:{dens:0,fric:.6,rest:.05},chicken:{dens:0,fric:.5,rest:.6},mallow:{dens:0,fric:.95,rest:0},mega:{dens:0,fric:.5,rest:.05}};
 
@@ -97,7 +97,7 @@ function wbHouse(k,D=WB.dist){if(typeof WB_TOWNS!=="undefined"&&WB_TOWNS[k])retu
   else if(k==="domino"){/* a long row of dominoes going away from the cannon */for(let i=0;i<14;i++)b(i%2?"candy":"wood",0,1.2,-6+i*.92,1.6,2.4,.26)}
   else if(k==="pyramid"){let y=0;for(let n=5;n>=1;n--){for(let i=0;i<n;i++)for(let j=0;j<n;j++)b("sand",(i-(n-1)/2)*1.02,y+.4,(j-(n-1)/2)*1.02,1,.8,1);y+=.8}}
   else if(k==="jenga"){for(let l=0;l<14;l++){const y=.2+l*.4;for(let i=-1;i<=1;i++){if(l%2)b("plank",i*1,y,0,.95,.4,3);else b("plank",0,y,i*1,3,.4,.95)}}}
-  else if(k==="light"){let y=0;for(let r=0;r<12;r++)y=ring(r%4<2?"brick":"icing",2.4,2.4,1,.8,.55,.5,y);b("slate",0,y+.1,0,2.8,.2,2.8);y+=.2;for(const [x,z] of [[-.75,-.75],[.75,-.75],[-.75,.75],[.75,.75]])b("glass",x,y+.45,z,.6,.9,.6);b("gold",0,y+.45,0,.7,.7,.7);roof("roof",2.6,2.6,y+.9,3,.3,.4)}
+  else if(k==="light"){let y=0;for(let r=0;r<12;r++){const t=r%4<2?"brick":"icing";if(r%2){b(t,-.6,y+.275,0,1.18,.55,2.4);b(t,.6,y+.275,0,1.18,.55,2.4)}else{b(t,0,y+.275,-.6,2.4,.55,1.18);b(t,0,y+.275,.6,2.4,.55,1.18)}y+=.55}b("slate",0,y+.1,0,2.8,.2,2.8);y+=.2;for(const [x,z] of [[-.75,-.75],[.75,-.75],[-.75,.75],[.75,.75]])b("glass",x,y+.45,z,.6,.9,.6);b("gold",0,y+.45,0,.7,.7,.7);roof("roof",2.6,2.6,y+.9,3,.3,.4)}
   else if(k==="castle"){const top=ring("stone",6.6,5,3,1,.7,.5,0,2);for(const [x,z] of [[-4,-3.2],[4,-3.2],[-4,3.2],[4,3.2]]){for(let r=0;r<6;r++)b("stone",x,.35+r*.7,z,1.2,.7,1.2);b("slate",x,4.2+.2,z,1.4,.4,1.4)}
     let y=ring("stone",2.6,2.4,4,.9,.7,.5,0);b("slate",0,y+.1,0,2.8,.2,2.6);roof("roof",2.8,2.6,y+.2,3,.35,.45);for(const x of [-2.6,-.9,.9,2.6])b("stone",x,top+.25,-2.5+.3,.6,.5,.6)}
   else if(k==="sky"){let y=0;for(let f=0;f<8;f++){for(const [x,z] of [[-1.05,-1.05],[1.05,-1.05],[-1.05,1.05],[1.05,1.05]])b("stone",x,y+.6,z,.5,1.2,.5);b("glass",0,y+.6,-1.05,1.5,1.1,.12);b("glass",0,y+.6,1.05,1.5,1.1,.12);b("slate",0,y+1.3,0,2.7,.2,2.7);y+=1.4}b("gold",0,y+.4,0,.8,.8,.8)}
@@ -207,13 +207,10 @@ function wbStep(G,dt,quiet){const C=G.C;G.W.step(WB.step,dt,4);G.t+=dt;G.nstep=(
   /* if the maths ever goes wrong for a block, take it away rather than let it spoil everything */if(G.nstep%3===0)for(const b of G.blocks)if(!b.wb.gone&&b.world&&b.sleepState!==2&&!isFinite(b.position.x+b.position.y+b.position.z+b.quaternion.w)){b.wb.gone=1;b.wb.down=2;G.W.removeBody(b)}
   /* tidy: balls and bits that fell off the world */for(const b of G.balls)if(!b.wbGone&&(b.position.y<-5||Math.abs(b.position.x)>80||b.position.z>90||b.position.z<-20)){b.wbGone=1;G.W.removeBody(b)}}
 /* a breakable block shatters into smaller bits (cookie crumbs, ice shards, sand) */
-function wbBreak(G,b,v){const s=b.wb.s,m=WB_MAT[b.wb.mat],n=m.bits||2;b.wb.gone=1;b.wb.down=b.wb.down||1;G.W.removeBody(b);const C=G.C,q=b.quaternion,p=b.position;
-  /* glass doesn't break into blocks: it shatters into a shower of shards (drawn by the game, nothing left to bump into) */if(m.shatter)return G.ev.push({k:"break",mat:b.wb.mat,x:p.x,y:p.y,z:p.z,n:0,shatter:1,w:s.w,h:s.h,d:s.d,vx:b.velocity.x,vy:b.velocity.y,vz:b.velocity.z,v});
-  const bw=s.w/n,bh=s.h/n,bd=s.d/n;const pieces=[];if(G.crumbs>320)return G.ev.push({k:"break",mat:b.wb.mat,x:p.x,y:p.y,z:p.z,n:0});
-  for(let i=0;i<n;i++)for(let j=0;j<n;j++)for(let k=0;k<n;k++){const lp=new C.Vec3((i+.5)*bw-s.w/2,(j+.5)*bh-s.h/2,(k+.5)*bd-s.d/2),wp=q.vmult(lp).vadd(p);
-    const nb=wbAddBlock(G,{t:b.wb.mat,x:wp.x,y:wp.y,z:wp.z,w:bw*.96,h:bh*.96,d:bd*.96,ry:0},0);nb.quaternion.copy(q);nb.velocity.copy(b.velocity).vadd(new C.Vec3((Math.random()-.5)*v*.3,Math.random()*v*.2,(Math.random()-.5)*v*.3),nb.velocity);
-    nb.wb.crumb=1;nb.wb.down=1;G.crumbs++;pieces.push(nb)}
-  G.ev.push({k:"break",mat:b.wb.mat,x:p.x,y:p.y,z:p.z,n:pieces.length})}
+function wbBreak(G,b,v){const s=b.wb.s,m=WB_MAT[b.wb.mat];b.wb.gone=1;b.wb.down=b.wb.down||1;G.W.removeBody(b);const q=b.quaternion,p=b.position;
+  /* glass shatters into shards; everything else smashes into rough chunks of rubble (the game draws the pieces; nothing left to bump into) */
+  G.ev.push({k:"break",mat:b.wb.mat,x:p.x,y:p.y,z:p.z,n:0,shatter:m.shatter?1:0,debris:m.shatter?0:1,w:s.w,h:s.h,d:s.d,vx:b.velocity.x,vy:b.velocity.y,vz:b.velocity.z,v,col:s.col!=null?s.col:m.col});
+  /* what was resting on it should feel it go */for(const o of G.blocks)if(!o.wb.gone&&o.world&&o.sleepState===2&&o.position.distanceTo(p)<Math.max(s.w,s.h,s.d)+1.2)o.wakeUp()}
 /* the watermelon goes SPLAT: it's gone, chunks fly */
 function wbSplat(G,b){const C=G.C,p=b.position;b.wbGone=1;G.W.removeBody(b);for(let i=0;i<7;i++){const nb=wbAddBlock(G,{t:"crumb",x:p.x+(Math.random()-.5)*.4,y:p.y+(Math.random()-.2)*.4,z:p.z+(Math.random()-.5)*.4,w:.25,h:.18,d:.3,ry:Math.random()*3},0);
     nb.wb.melon=i%3?1:2;nb.wb.down=1;nb.velocity.set(b.velocity.x*.3+(Math.random()-.5)*6,2+Math.random()*4,b.velocity.z*.3+(Math.random()-.5)*6)}G.ev.push({k:"splat",x:p.x,y:p.y,z:p.z})}
