@@ -147,6 +147,7 @@ function wbAddBlock(G,s,orig){const C=G.C,m=WB_MAT[s.t]||WB_MAT.wood,mass=Math.m
   b.addShape(new C.Box(new C.Vec3(s.w/2,s.h/2,s.d/2)));b.position.set(s.x,s.y,s.z);if(s.ry)b.quaternion.setFromAxisAngle(new C.Vec3(0,1,0),s.ry);b.linearDamping=.03;b.angularDamping=.08;
   b.sleepSpeedLimit=.12;b.sleepTimeLimit=.5;b.wb={s,orig:!!orig,i:G.blocks.length,y0:s.y,x0:s.x,z0:s.z,h:s.h,down:0,mat:s.t,born:G.t};
   if(m.brk)b.addEventListener("collide",e=>{if(G.t<.6||b.wb.gone||!b.wb.orig&&!b.wb.canBreak)return;const v=Math.abs(e.contact.getImpactVelocityAlongNormal());if(v>m.brk)G.queue.push({k:"break",b,v})});
+  if(m.shatter)b.addEventListener("collide",e=>{if(G.t<.6||b.wb.gone||b.wb.cracked)return;const v=Math.abs(e.contact.getImpactVelocityAlongNormal());if(v>.9&&v<=m.brk){b.wb.cracked=1;G.ev.push({k:"crack",x:b.position.x,y:b.position.y,z:b.position.z})}});
   if(m.wobble)b.addEventListener("collide",e=>{const v=Math.abs(e.contact.getImpactVelocityAlongNormal());if(v>1.5){b.wb.wob=Math.min(1,v/8);b.wb.wobT=G.t}});
   G.W.addBody(b);G.bodies.push(b);G.blocks.push(b);return b}
 /* let the house settle before you start (so it doesn't fall down by itself); then remember where everything is */
