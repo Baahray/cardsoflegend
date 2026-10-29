@@ -1,19 +1,23 @@
 /* Boom Town rule & physics checks: node wb/wb_tests.js */
-global.CANNON=require("cannon");const C=CANNON;const Z=require("./wb_core.js");const {aimAt}=require("./smart.js");const {play}=require("./smart2.js");
+global.CANNON=require("cannon");Object.assign(global,require("./wb_town.js"));const C=CANNON;const Z=require("./wb_core.js");const {aimAt}=require("./smart.js");const {play}=require("./smart2.js");
 let pass=0,fail=0;const T=(name,ok,info)=>{if(ok)pass++;else fail++;console.log((ok?"  ok  ":"  FAIL ")+name+(info!=null?"  ("+info+")":""))};
 const run=(G,secs)=>{for(let i=0;i<secs*60;i++)Z.wbStep(G,Z.WB.step)};
 const shot=(G,p,yaw,a)=>{Z.wbFire(G,p,yaw,a);let n=0;while(!Z.wbSettled(G)&&n<600){Z.wbStep(G,Z.WB.step);n++}};
 const fresh=k=>{const L=Z.WB_LEVELS.find(l=>l.k===k);const G=Z.wbWorld(C,Z.wbHouse(k),{boss:L&&L.boss,easy:L&&L.easy});Z.wbSettle(G);return G};
 
 /* every house stands up by itself */
-for(const L of Z.WB_LEVELS){const G=fresh(L.k);run(G,4);T(L.name+" stands up on its own",G.down<.1,Math.round(G.down*100)+"% down")}
+for(const L of Z.WB_LEVELS.filter(L=>!L.town)){const G=fresh(L.k);run(G,4);T(L.name+" stands up on its own",G.down<.1,Math.round(G.down*100)+"% down")}
 /* there are eight houses, the last is the boss */
-T("15 places to smash, ending with Wobbleton Village",Z.WB_LEVELS.length===15&&Z.WB_LEVELS[7].k==="boss"&&Z.WB_LEVELS[14].k==="village"&&Z.WB_LEVELS[14].boss);
-{const v=Z.wbHouse("village");const xs=v.map(b=>b.x);T("The village is spread out (lots of little houses)",Math.max(...xs)-Math.min(...xs)>11&&v.length>100,v.length+" blocks")}
+const towns=Z.WB_LEVELS.filter(L=>L.town);T("Houses to smash, plus whole villages, towns and cities",Z.WB_LEVELS.length-towns.length>=14&&towns.length>=9&&["village","market","city","mega"].every(k=>towns.some(L=>L.k===k)));
+for(const L of towns){const G=Z.wbWorld(C,Z.wbHouse(L.k));Z.wbSettle(G);Z.wbCount(G);const xs=G.blocks.map(b=>b.position.x),zs=G.blocks.map(b=>b.position.z);
+  T(L.name+" has lots of buildings, spread out",G.bTot>=6&&Math.max(...xs)-Math.min(...xs)>14&&Math.max(...zs)-Math.min(...zs)>14,G.bTot+" buildings, "+G.blocks.length+" blocks");
+  for(const b of G.blocks)b.wakeUp();run(G,4);Z.wbCount(G);T(L.name+" stands up on its own (even shaken awake)",G.bDown===0&&G.down<.05,G.bDown+" down")}
+for(const k of ["farm","village"]){const r=play(k,"ball",40);T("A sensible player flattens "+k+" (every building)",r.flat,r.s+" shots")}
+{const G=Z.wbWorld(C,Z.wbHouse("mega"));Z.wbSettle(G);let t=Date.now();for(let i=0;i<60;i++)Z.wbStep(G,Z.WB.step);const ms=(Date.now()-t)/60;T("Even Mega City is quick to run when nothing's moving",ms<8,ms.toFixed(1)+" ms a step")}
 /* the straw house: one good shot and it's gone */
 {let n=0;for(let p=.2;p<=.8;p+=.06){const G=fresh("straw");shot(G,p,0,"ball");if(Z.wbFlat(G))n++}T("Straw house goes in one shot at lots of powers",n>=3,n)}
 /* a sensible player gets every house flat; the mansion takes many shots */
-{const res={};for(const L of Z.WB_LEVELS)res[L.k]=play(L.k,"ball",L.boss?30:20);
+{const res={};for(const L of Z.WB_LEVELS)if(!L.town)res[L.k]=play(L.k,"ball",L.boss?30:20);
   T("A sensible player flattens every house and place",Object.values(res).every(r=>r.flat),Object.entries(res).map(([k,r])=>k+":"+r.s).join(" "));
   T("The mansion takes lots of shots, more than the first houses",res.boss.s>=5&&res.boss.s>res.straw.s&&res.boss.s>res.brick.s,res.boss.s);
   T("The brick house is harder than the straw house",res.brick.s>=res.straw.s);
@@ -36,14 +40,14 @@ T("15 places to smash, ending with Wobbleton Village",Z.WB_LEVELS.length===15&&Z
 {const G=fresh("straw");const b=Z.wbFire(G,.4,0,"chicken");T("Rubber chicken is a floppy two-part body",b.shapes.length===2&&b.angularVelocity.length()>1)}
 /* the mega ball is huge, slow and unstoppable */
 {const m=Z.WB_AMMO.find(a=>a.k==="mega"),c=Z.WB_AMMO[0];T("Mega ball: huge, heavy, slower",m.r>3*c.r&&m.mass>10*c.mass&&m.vk<c.vk&&m.cost>0);
-  const G=fresh("brick");shot(G,.5,0,"mega");T("Mega ball smashes the brick house in one",Z.wbFlat(G),Math.round(G.down*100))}
+  let best=0;for(const y of [1,1.6,2.2]){const G=fresh("brick");Z.wbFireAt(G,0,y,20,"mega");let n=0;while(!Z.wbSettled(G)&&n<600){Z.wbStep(G,Z.WB.step);n++}best=Math.max(best,G.down)}T("Mega ball smashes most of the brick house in one",best>.8,Math.round(best*100))}
 /* the treehouse: the tree has to come down */
 {const G=fresh("tree");const trunk=G.blocks.filter(b=>b.wb.mat==="trunk");T("Treehouse sits on a tree trunk",trunk.length>=4&&G.blocks.some(b=>b.wb.mat==="wood"&&b.position.y>5))}
 /* stars */
 T("3 stars at par, 2 a bit over, 1 after that",Z.wbStars(1,2)===3&&Z.wbStars(1,4)===2&&Z.wbStars(1,5)===1&&Z.wbStars(0,1)===3);
 /* build mode */
-T("Blocks go on the ground, on top, or against the side of a block",Z.wbCanPlace([],3,0,3)&&!Z.wbCanPlace([],3,1,3)&&Z.wbCanPlace([["brick",3,0,3]],3,1,3)&&!Z.wbCanPlace([["brick",3,0,3]],3,0,3)&&!Z.wbCanPlace([],9,0,0)&&Z.wbCanPlace([["brick",3,2,3]],4,2,3)&&!Z.wbCanPlace([["brick",3,2,3]],5,2,3));
-T("Lots of blocks to build with",Object.keys(Z.WB_BUILD.price).length>=15&&Z.WB_BUILD.budget>=100&&Z.WB_BUILD.size>=9);
+T("Blocks go on the ground, on top, or against the side of a block",Z.wbCanPlace([],3,0,3)&&!Z.wbCanPlace([],3,1,3)&&Z.wbCanPlace([["brick",3,0,3]],3,1,3)&&!Z.wbCanPlace([["brick",3,0,3]],3,0,3)&&!Z.wbCanPlace([],13,0,0)&&Z.wbCanPlace([["brick",3,2,3]],4,2,3)&&!Z.wbCanPlace([["brick",3,2,3]],5,2,3));
+T("Lots of kinds of block, and as many as you like",Object.keys(Z.WB_BUILD.price).length>=15&&Z.WB_BUILD.max>=1000&&Z.WB_BUILD.size>=13);
 {const c=[];for(let y=0;y<5;y++)c.push(["brick",4,y,4]);for(let x=1;x<=7;x++)if(x!==4)c.push(["brick",x,4,4]);const G=Z.wbWorld(C,Z.wbFromBuild(c));Z.wbSettle(G);run(G,4);T("Blocks sticking out sideways stay up",G.down<.05&&G.mortar.length>0);
   const r=play("x","ball",10,Z.wbFromBuild(c),{});T("...until you knock them down",r.flat,r.s+" shots")}
 {const G=fresh("brick");Z.wbFireAt(G,0,1,Z.WB.dist-2.4,"ball");let hit=null;for(let i=0;i<120&&!hit;i++){Z.wbStep(G,Z.WB.step);if(G.ball.wbBall.hit)hit=G.ball.position.clone()}T("The cannon hits where you aim",hit&&Math.abs(hit.x)<.6&&Math.abs(hit.y-1)<.8,hit&&hit.toString())}

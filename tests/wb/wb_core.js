@@ -2,7 +2,7 @@
    Wobbleton's empty old houses are made of physics blocks; you knock them down with a cannon.
    World: the cannon sits at the origin and fires along +z; houses stand around z = WB.dist; y is up. Units are metres.
    The physics engine (cannon.js) is passed in as C so the game and the tests share this code. */
-const WB={mortar:60,vshot:30,reload:.45,densK:3,dist:22,pitch:.34,vmin:11,vmax:31,yawMax:.42,step:1/60,settle:7,flat:.8,muzzle:[0,1.35,1.3]};
+const WB={townK:.5,townDown:.5,mortar:60,vshot:30,reload:.45,densK:3,dist:22,pitch:.34,vmin:11,vmax:31,yawMax:.42,step:1/60,settle:7,flat:.8,muzzle:[0,1.35,1.3]};
 
 /* ---------------- what things are made of ---------------- */
 /* dens: kg per cubic metre (scaled), fric/rest: friction and bounciness, brk: how hard a hit has to be to break it (0 = never), bits: what it breaks into */
@@ -17,6 +17,7 @@ const WB_MAT={
   icing:{dens:.5,fric:.6,rest:.05,brk:5,bits:2,col:0xfafafa},
   candy:{dens:.4,fric:.6,rest:.2,col:0xff4fa3},
   ice:{dens:.9,fric:.02,rest:.1,brk:7,bits:2,col:0xbfe8ff},
+  snow:{dens:.6,fric:.7,rest:.02,brk:5.5,bits:2,col:0xf4fbff},
   sand:{dens:1.1,fric:.95,rest:0,brk:2.6,bits:2,col:0xe6c98a},
   jelly:{dens:.5,fric:.5,rest:.9,col:0x7dff5a,wobble:1},
   trunk:{dens:.75,fric:.9,rest:.02,col:0x6b4426},
@@ -56,8 +57,16 @@ const WB_LEVELS=[
   {k:"light",name:"LIGHTHOUSE",icon:"🗼",par:2,tip:"Tall and thin — topple it!"},
   {k:"castle",name:"STONE CASTLE",icon:"🏯",par:9,tip:"Thick walls and four towers",boss:1},
   {k:"sky",name:"SKYSCRAPER",icon:"🏢",par:4,tip:"Knock out the bottom floors"},
-  {k:"village",name:"WOBBLETON VILLAGE",icon:"🏘️",par:8,tip:"A whole village to flatten!",boss:1}];
-function wbHouse(k,D=WB.dist){const B=[];let OX=0,OZ=0;const b=(t,x,y,z,w,h,d,ry)=>B.push({t,x:+(x+OX).toFixed(3),y:+y.toFixed(3),z:+(z+D+OZ).toFixed(3),w,h,d,ry:ry||0});
+  {k:"farm",name:"WOBBLY FARM",icon:"🚜",par:8,tip:"Barn, windmill, cottages — flatten the farm!",town:1},
+  {k:"village",name:"WOBBLETON VILLAGE",icon:"🏘️",par:8,tip:"Knock down every building in the village!",town:1},
+  {k:"seaside",name:"SEASIDE TOWN",icon:"⛵",par:11,tip:"Don't forget the lighthouse!",town:1},
+  {k:"candy",name:"CANDY TOWN",icon:"🍭",par:8,tip:"Gingerbread, jelly towers and a candy castle",town:1},
+  {k:"snow",name:"SNOWY VILLAGE",icon:"⛄",par:7,tip:"Igloos everywhere — they slide and shatter",town:1},
+  {k:"spooky",name:"SPOOKY TOWN",icon:"🎃",par:15,tip:"Haunted houses and a creepy church",town:1},
+  {k:"market",name:"MARKET TOWN",icon:"🏪",par:20,tip:"A whole high street, a church and a clock tower!",town:1},
+  {k:"city",name:"BIG CITY",icon:"🏙️",par:17,tip:"Skyscrapers! Hit them low to topple them",town:1},
+  {k:"mega",name:"MEGA CITY",icon:"🌆",par:22,tip:"The biggest city of all. Good luck!",town:1}];
+function wbHouse(k,D=WB.dist){if(typeof WB_TOWNS!=="undefined"&&WB_TOWNS[k])return wbTown(k);const B=[];let OX=0,OZ=0;const b=(t,x,y,z,w,h,d,ry)=>B.push({t,x:+(x+OX).toFixed(3),y:+y.toFixed(3),z:+(z+D+OZ).toFixed(3),w,h,d,ry:ry||0});
   /* a rectangular wall-ring of blocks, rows of bh high; alternate rows offset so it holds together like real bricks */
   const ring=(t,W,Dp,rows,bw,bh,bt,y0=0,door=0)=>{for(let r=0;r<rows;r++){const y=y0+bh*(r+.5),off=(r%2)*bw/2;
       for(let x=-W/2+bw/2-off;x<W/2-bw/2+.01;x+=bw){if(x<-W/2+bw/2-.01)continue;if(door&&r<door&&Math.abs(x)<bw*.9)continue;b(t,x,y,-Dp/2+bt/2,bw,bh,bt);b(t,x,y,Dp/2-bt/2,bw,bh,bt)}
@@ -100,7 +109,7 @@ function wbHouse(k,D=WB.dist){const B=[];let OX=0,OZ=0;const b=(t,x,y,z,w,h,d,ry
 const wbBlocksOf=k=>wbHouse(k);
 
 /* ---------------- a house you built (cubes on a 7 x 7 plot) ---------------- */
-const WB_BUILD={size:9,maxH:12,budget:100,price:{straw:1,wood:2,plank:2,brick:3,stone:4,slate:3,roof:3,sand:2,ginger:3,candy:3,icing:2,ice:3,glass:2,jelly:4,leaf:1,haunt:4,trunk:3,gold:10}};
+const WB_BUILD={size:13,maxH:24,max:1500,price:{straw:1,wood:2,plank:2,brick:3,stone:4,slate:3,roof:3,sand:2,ginger:3,candy:3,icing:2,ice:3,glass:2,jelly:4,leaf:1,haunt:4,trunk:3,gold:10}};
 function wbFromBuild(cells,D=WB.dist){const half=(WB_BUILD.size-1)/2;return cells.map(([t,gx,gy,gz])=>({t,x:gx-half,y:gy+.5,z:gz-half+D,w:.99,h:.99,d:.99,ry:0,g:[gx,gy,gz]}))}
 const wbBuildCost=cells=>cells.reduce((a,c)=>a+(WB_BUILD.price[c[0]]||1),0);
 /* can this block go here? on the ground, or touching another block (on top, underneath or on any side), inside the plot, not in the same spot */
@@ -108,7 +117,14 @@ function wbCanPlace(cells,gx,gy,gz){const n=WB_BUILD.size;if(gx<0||gz<0||gx>=n||
   return gy===0||cells.some(c=>Math.abs(c[1]-gx)+Math.abs(c[2]-gy)+Math.abs(c[3]-gz)===1)}
 
 /* ---------------- the physics world ---------------- */
-function wbWorld(C,blocks,o={}){const W=new C.World();W.gravity.set(0,-9.82,0);W.broadphase=new C.SAPBroadphase(W);W.solver.iterations=o.iter||14;W.solver.tolerance=.0005;W.allowSleep=true;
+/* the physics engine's "who might be touching whom" check looked at every pair of sleeping blocks (very slow for a whole city);
+   this version stops looking as soon as blocks are too far apart along the sorting direction */
+/* …and it remembered touching pairs in a table the size of (blocks x blocks), cleared every step; a small list is much quicker */
+const wbCM=()=>({s:new Set(),get(a,b){let i=a.id,j=b.id;if(j>i){const t=i;i=j;j=t}return this.s.has(i*4194304+j)},set(a,b,v){let i=a.id,j=b.id;if(j>i){const t=i;i=j;j=t}if(v)this.s.add(i*4194304+j);else this.s.delete(i*4194304+j)},reset(){this.s.clear()},setNumObjects(){}});
+function wbFastSAP(C){if(C.SAPBroadphase.prototype.wbFast)return;C.SAPBroadphase.prototype.wbFast=1;
+  C.SAPBroadphase.prototype.collisionPairs=function(world,p1,p2){const bodies=this.axisList,N=bodies.length,ax=this.axisIndex;if(this.dirty){this.sortList();this.dirty=false}
+    for(let i=0;i!==N;i++){const bi=bodies[i];for(let j=i+1;j<N;j++){const bj=bodies[j];if(!C.SAPBroadphase.checkBounds(bi,bj,ax))break;if(!this.needBroadphaseCollision(bi,bj))continue;this.intersectionTest(bi,bj,p1,p2)}}}}
+function wbWorld(C,blocks,o={}){wbFastSAP(C);const W=new C.World();W.gravity.set(0,-9.82,0);W.broadphase=new C.SAPBroadphase(W);W.broadphase.axisIndex=2;W.collisionMatrix=wbCM();W.collisionMatrixPrevious=wbCM();W.solver.iterations=o.iter||14;W.solver.tolerance=.0005;W.allowSleep=true;
   W.quatNormalizeFast=true;W.quatNormalizeSkip=2;const mats={},M=k=>mats[k]||(mats[k]=new C.Material(k));W.wbMats=mats;
   /* friction and bounce for every pair of materials (the slipperier and the bouncier one wins) */const ks=Object.keys(WB_MAT);
   for(let i=0;i<ks.length;i++)for(let j=i;j<ks.length;j++){const a=WB_MAT[ks[i]],b=WB_MAT[ks[j]];W.addContactMaterial(new C.ContactMaterial(M(ks[i]),M(ks[j]),{friction:Math.min(a.fric,b.fric),restitution:Math.max(a.rest,b.rest),contactEquationStiffness:1e7,contactEquationRelaxation:4}))}
@@ -124,14 +140,14 @@ function wbWorld(C,blocks,o={}){const W=new C.World();W.gravity.set(0,-9.82,0);W
       let q=o,h=o.wb.s.g;while(h[1]>0){const u=K(h[0],h[1]-1,h[2]);if(!u)break;glue(q,u);q=u;h=u.wb.s.g}}}
     /* a hard knock shakes the mortar loose round about */for(const b of G.blocks)if(b.wb.s.g)b.addEventListener("collide",e=>{if(G.t<.3||!G.mortar.length)return;const v=Math.abs(e.contact.getImpactVelocityAlongNormal());if(v>5)G.queue.push({k:"unglue",p:b.position.clone(),r:Math.min(1.4,.18*v)})})}
   return G}
-function wbAddBlock(G,s,orig){const C=G.C,m=WB_MAT[s.t]||WB_MAT.wood,mass=Math.max(.05,m.dens*WB.densK*s.w*s.h*s.d),b=new C.Body({mass,material:G.mats(s.t)});
+function wbAddBlock(G,s,orig){const C=G.C,m=WB_MAT[s.t]||WB_MAT.wood,mass=Math.max(.05,m.dens*WB.densK*s.w*s.h*s.d*(s.bld!=null&&s.bld>=-1?WB.townK:1)),b=new C.Body({mass,material:G.mats(s.t)});
   b.addShape(new C.Box(new C.Vec3(s.w/2,s.h/2,s.d/2)));b.position.set(s.x,s.y,s.z);if(s.ry)b.quaternion.setFromAxisAngle(new C.Vec3(0,1,0),s.ry);b.linearDamping=.03;b.angularDamping=.08;
   b.sleepSpeedLimit=.12;b.sleepTimeLimit=.5;b.wb={s,orig:!!orig,i:G.blocks.length,y0:s.y,x0:s.x,z0:s.z,h:s.h,down:0,mat:s.t,born:G.t};
   if(m.brk)b.addEventListener("collide",e=>{if(G.t<.6||b.wb.gone||!b.wb.orig&&!b.wb.canBreak)return;const v=Math.abs(e.contact.getImpactVelocityAlongNormal());if(v>m.brk)G.queue.push({k:"break",b,v})});
   if(m.wobble)b.addEventListener("collide",e=>{const v=Math.abs(e.contact.getImpactVelocityAlongNormal());if(v>1.5){b.wb.wob=Math.min(1,v/8);b.wb.wobT=G.t}});
   G.W.addBody(b);G.bodies.push(b);G.blocks.push(b);return b}
 /* let the house settle before you start (so it doesn't fall down by itself); then remember where everything is */
-function wbSettle(G,secs=1.2){for(let i=0;i<secs*60;i++)wbStep(G,WB.step,true);for(const b of G.blocks){const w=b.wb;w.y0=b.position.y;w.x0=b.position.x;w.z0=b.position.z;w.q0=b.quaternion.clone();b.sleep()}G.t=0;G.ev=[]}
+function wbSettle(G,secs=1.2){if(G.blocks.length>260)secs=Math.min(secs,.35);for(let i=0;i<secs*60;i++)wbStep(G,WB.step,true);for(const b of G.blocks){const w=b.wb;w.y0=b.position.y;w.x0=b.position.x;w.z0=b.position.z;w.q0=b.quaternion.clone();b.sleep()}G.t=0;G.ev=[]}
 
 /* ---------------- firing ---------------- */
 function wbAim(power,yaw,ammo){const a=WB_AMMO.find(q=>q.k===ammo)||WB_AMMO[0],v=(WB.vmin+(WB.vmax-WB.vmin)*Math.max(0,Math.min(1,power)))*a.vk,p=WB.pitch,y=Math.max(-WB.yawMax,Math.min(WB.yawMax,yaw));
@@ -159,10 +175,16 @@ function wbLaunch(G,s){const C=G.C,a=s.a,b=new C.Body({mass:a.mass,material:G.ma
     if(o&&o.wb)b.wbBall.hit=1});
   G.W.addBody(b);G.balls.push(b);G.ball=b;G.shots++;G.fireT=G.t;G.ev.push({k:"fire",ammo:a.k});
   /* not too many balls lying about: the oldest one goes */const live=G.balls.filter(q=>!q.wbGone);if(live.length>6){const o=live[0];o.wbGone=1;if(o.wbBall.con)G.W.removeConstraint(o.wbBall.con);G.W.removeBody(o)}
-  /* wake the house up so it can fall */for(const q of G.blocks)q.wakeUp();return b}
+  /* small houses: wake the whole house so it can fall; big places wake up bit by bit round whatever is moving */if(G.blocks.length<260)for(const q of G.blocks)q.wakeUp();return b}
+/* wake sleeping blocks next to anything that's moving (so a wall knocked out from under a roof lets the roof fall) */
+function wbWakeNear(G){const S=2,H={},key=(x,y,z)=>x+","+y+","+z;let any=0;
+  const mv=G.blocks.concat(G.balls).filter(b=>!b.wbGone&&b.world&&b.sleepState!==2&&(b.velocity.lengthSquared()>.09||b.angularVelocity.lengthSquared()>.25));if(!mv.length)return;
+  for(const b of G.blocks){if(b.wb.gone||!b.world||b.sleepState!==2)continue;const p=b.position;const k=key(Math.floor(p.x/S),Math.floor(p.y/S),Math.floor(p.z/S));(H[k]||(H[k]=[])).push(b);any=1}if(!any)return;
+  for(const b of mv){const p=b.position,cx=Math.floor(p.x/S),cy=Math.floor(p.y/S),cz=Math.floor(p.z/S),r=b.wbBall?2:1;for(let i=-r;i<=r;i++)for(let j=-1;j<=r;j++)for(let k=-r;k<=r;k++){const L=H[key(cx+i,cy+j,cz+k)];if(!L)continue;
+    for(const q of L)if(q.sleepState===2&&q.position.distanceTo(p)<(b.wbBall?b.wbBall.a.r+2.2:2.4)){q.wakeUp()}}}}
 
 /* ---------------- one step of the world ---------------- */
-function wbStep(G,dt,quiet){const C=G.C;G.W.step(WB.step,dt,4);G.t+=dt;
+function wbStep(G,dt,quiet){const C=G.C;G.W.step(WB.step,dt,4);G.t+=dt;G.nstep=(G.nstep||0)+1;if(!quiet&&G.blocks.length>=260&&G.nstep%3===0)wbWakeNear(G);
   /* things that happen after a hit: breaking, splatting, sticking */
   const Q=G.queue.splice(0);for(const q of Q){
     if(q.k==="break"&&!q.b.wb.gone)wbBreak(G,q.b,q.v);
@@ -170,7 +192,8 @@ function wbStep(G,dt,quiet){const C=G.C;G.W.step(WB.step,dt,4);G.t+=dt;
     else if(q.k==="unglue"){for(let i=G.mortar.length-1;i>=0;i--){const m=G.mortar[i];if(m.a.position.distanceTo(q.p)<q.r||m.b.position.distanceTo(q.p)<q.r){G.W.removeConstraint(m.c);G.mortar.splice(i,1);G.ev.push({k:"snap",x:m.a.position.x,y:m.a.position.y,z:m.a.position.z})}}}
     else if(q.k==="stick"&&!q.b.wbBall.stuck&&!q.o.wb.gone){q.b.wbBall.stuck=1;const c=new C.LockConstraint(q.b,q.o);G.W.addConstraint(c);q.b.wbBall.con=c;G.ev.push({k:"stick",x:q.b.position.x,y:q.b.position.y,z:q.b.position.z})}}
   /* mortar snaps when the blocks get pulled apart or one breaks */if(G.mortar&&G.mortar.length)for(let i=G.mortar.length-1;i>=0;i--){const m=G.mortar[i];if(m.a.wb.gone||m.b.wb.gone||Math.abs(m.a.position.distanceTo(m.b.position)-m.d)>.1){G.W.removeConstraint(m.c);G.mortar.splice(i,1);if(!quiet)G.ev.push({k:"snap",x:m.a.position.x,y:m.a.position.y,z:m.a.position.z})}}
-  if(!quiet)wbCount(G);
+  if(!quiet&&(G.blocks.length<260||G.nstep%4===0))wbCount(G);
+  /* if the maths ever goes wrong for a block, take it away rather than let it spoil everything */if(G.nstep%3===0)for(const b of G.blocks)if(!b.wb.gone&&b.world&&b.sleepState!==2&&!isFinite(b.position.x+b.position.y+b.position.z+b.quaternion.w)){b.wb.gone=1;b.wb.down=2;G.W.removeBody(b)}
   /* tidy: balls and bits that fell off the world */for(const b of G.balls)if(!b.wbGone&&(b.position.y<-5||Math.abs(b.position.x)>80||b.position.z>90||b.position.z<-20)){b.wbGone=1;G.W.removeBody(b)}}
 /* a breakable block shatters into smaller bits (cookie crumbs, ice shards, sand) */
 function wbBreak(G,b,v){const s=b.wb.s,m=WB_MAT[b.wb.mat],n=m.bits||2;b.wb.gone=1;b.wb.down=b.wb.down||1;G.W.removeBody(b);const C=G.C,q=b.quaternion,p=b.position;
@@ -186,16 +209,22 @@ function wbSplat(G,b){const C=G.C,p=b.position;b.wbGone=1;G.W.removeBody(b);for(
 function wbIsDown(b){const w=b.wb;if(w.gone)return true;const p=b.position,dy=w.y0-p.y,dh=Math.hypot(p.x-w.x0,p.z-w.z0);if(dy>Math.max(.45,w.h*.7)||dh>1.4)return true;
   if(w.q0){const d=Math.abs(w.q0.x*b.quaternion.x+w.q0.y*b.quaternion.y+w.q0.z*b.quaternion.z+w.q0.w*b.quaternion.w);if(d<.82)return true}return false}
 /* how much is knocked down: the blocks that fell, and how low what's still standing is (the bottom row lying where it was doesn't count as standing) */
-function wbCount(G){let n=0,tot=0,top=0;for(const b of G.blocks){if(!b.wb.orig)continue;tot++;if(b.wb.down!==2&&wbIsDown(b)){b.wb.down=2;const v=G.boss?2:1;G.coins+=v;const p=b.position;G.ev.push({k:"coin",v,x:p.x,y:p.y,z:p.z})}
+/* how many buildings are knocked down (a building counts once it's mostly fallen or knocked down low) */
+function wbBldCount(G){if(!G.blds){const n=1+Math.max(-1,...G.blocks.map(b=>b.wb.orig&&b.wb.s.bld!=null?b.wb.s.bld:-1));if(n<=1)return null;G.blds=Array.from({length:n},()=>({n:0,h0:0}));
+    for(const b of G.blocks){const k=b.wb.s.bld;if(!b.wb.orig||k==null||k<0)continue;const B=G.blds[k];B.n++;B.h0=Math.max(B.h0,b.wb.y0+b.wb.h/2);B.x0=(B.x0||0)+b.wb.x0;B.z0=(B.z0||0)+b.wb.z0}for(const B of G.blds)if(B.n){B.x0/=B.n;B.z0/=B.n}for(const B of G.blds)B.low=Math.max(.8,B.h0*.3)}
+  for(const B of G.blds){B.f=0;B.top=0}for(const b of G.blocks){const k=b.wb.s.bld;if(!b.wb.orig||k==null||k<0)continue;const B=G.blds[k];if(b.wb.down===2)B.f++;else if(isFinite(b.position.y))B.top=Math.max(B.top,b.position.y+b.wb.h/2)}
+  let tot=0,sum=0,dn=0;for(const B of G.blds){if(!B.n)continue;const hk=Math.max(0,Math.min(1,(B.h0-B.top)/Math.max(.1,B.h0-B.low))),d=Math.min(1,Math.max(B.f/B.n/.8,hk));B.d=d;B.down=d>=WB.townDown-1e-6;if(B.down)dn++;sum+=Math.min(1,d/WB.townDown)*B.n;tot+=B.n}
+  G.bTot=G.blds.filter(B=>B.n).length;G.bDown=dn;return tot?sum/tot:0}
+function wbCount(G){let n=0,tot=0,top=0;for(const b of G.blocks){if(!b.wb.orig||!isFinite(b.position.y))continue;tot++;if(b.wb.down!==2&&wbIsDown(b)){b.wb.down=2;const v=G.boss?2:1;G.coins+=v;const p=b.position;G.ev.push({k:"coin",v,x:p.x,y:p.y,z:p.z})}
     if(b.wb.down===2)n++;else top=Math.max(top,b.position.y+b.wb.h/2)}
   if(G.h0==null){let h=0;for(const b of G.blocks)if(b.wb.orig)h=Math.max(h,b.wb.y0+b.wb.h/2);G.h0=h}
-  const low=Math.max(1,G.h0*.18),hk=Math.max(0,Math.min(1,(G.h0-top)/Math.max(.1,G.h0-low)));G.fell=tot?n/tot:0;G.down=Math.max(G.fell,hk);G.top=top;G.total=tot;return G.down}
+  const low=Math.max(1,G.h0*.18),hk=Math.max(0,Math.min(1,(G.h0-top)/Math.max(.1,G.h0-low)));G.fell=tot?n/tot:0;G.down=Math.max(G.fell,hk);if(G.townMode!==0){const bd=wbBldCount(G);if(bd!=null){G.townMode=1;G.down=bd}else G.townMode=0}G.top=top;G.total=tot;return G.down}
 /* has everything stopped moving? (then the shot is over) */
 function wbSettled(G){if(G.fireT==null)return true;const since=G.t-G.fireT;if(since>WB.settle)return true;if(since<1.2)return false;
   for(const b of G.bodies.concat(G.balls)){if(b.wbGone||(b.wb&&b.wb.gone))continue;if(b.world&&b.sleepState!==2&&b.velocity.length()>.6)return false}return true}
-const wbFlat=G=>G.down>=(G.easy?.85:.999)||G.fell>=(G.boss?.75:WB.flat);
+const wbFlat=G=>G.townMode===1?G.bDown>=G.bTot:G.down>=(G.easy?.85:.999)||G.fell>=(G.boss?.75:WB.flat);
 /* stars: as few shots as possible */
-function wbStars(level,shots){const p=WB_LEVELS[level]?WB_LEVELS[level].par:3;return shots<=p?3:shots<=p+2?2:1}
+function wbStars(level,shots){const L=WB_LEVELS[level],p=L?L.par:3;return shots<=p?3:shots<=(L&&L.town?Math.ceil(p*1.5):p+2)?2:1}
 /* who wins a build-for-each-other round: the house that took more shots to knock flat (if it was never flattened, it took the most) */
 function wbDuelWinner(a,b){const sa=a.flat?a.shots:99,sb=b.flat?b.shots:99;return sa===sb?null:sa>sb?"a":"b"}
 /* the state of a house as a short string (sent to the other phone) and back */
@@ -203,4 +232,4 @@ function wbSnap(G){return G.blocks.filter(b=>b.wb.orig).map(b=>b.wb.gone?"x":[b.
 function wbApplySnap(G,str){const o=G.blocks.filter(b=>b.wb.orig),L=(str||"").split(";");if(L.length!==o.length)return false;
   o.forEach((b,i)=>{const t=L[i];if(t==="x"){if(!b.wb.gone){b.wb.gone=1;b.wb.down=2;G.W.removeBody(b)}return}if(b.wb.gone)return;const v=t.split(",").map(Number);b.position.set(v[0],v[1],v[2]);b.quaternion.set(v[3],v[4],v[5],v[6]);b.velocity.set(0,0,0);b.angularVelocity.set(0,0,0);b.sleep()});
   if(G.mortar)for(let i=G.mortar.length-1;i>=0;i--){const m=G.mortar[i];if(m.a.wb.gone||m.b.wb.gone||Math.abs(m.a.position.distanceTo(m.b.position)-m.d)>.12){G.W.removeConstraint(m.c);G.mortar.splice(i,1)}}wbCount(G);return true}
-if(typeof module!=="undefined")module.exports={wbShotAt,wbArcS,wbFireAt,wbLaunch,wbSnap,wbApplySnap,WB,WB_MAT,WB_AMMO,WB_LEVELS,WB_BUILD,wbHouse,wbFromBuild,wbBuildCost,wbCanPlace,wbWorld,wbAddBlock,wbSettle,wbAim,wbArc,wbFire,wbStep,wbBreak,wbSplat,wbIsDown,wbCount,wbSettled,wbFlat,wbStars,wbDuelWinner};
+if(typeof module!=="undefined")module.exports={wbBldCount,wbWakeNear,wbShotAt,wbArcS,wbFireAt,wbLaunch,wbSnap,wbApplySnap,WB,WB_MAT,WB_AMMO,WB_LEVELS,WB_BUILD,wbHouse,wbFromBuild,wbBuildCost,wbCanPlace,wbWorld,wbAddBlock,wbSettle,wbAim,wbArc,wbFire,wbStep,wbBreak,wbSplat,wbIsDown,wbCount,wbSettled,wbFlat,wbStars,wbDuelWinner};
