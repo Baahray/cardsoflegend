@@ -2,7 +2,7 @@
 global.planck=require("planck");const D=require("./dr_core.js");
 const car0=process.argv[2]||"b0:40,60,160,60,160,40,120,30,60,30,40,60|w0:60,70,18|w0:140,70,18";
 function run(T,ride,cass,verbose){const W=D.drWorld(T),G=D.drGeo(D.drDec(ride));const dt=1/60;
-  let car=null,cp=0;const fails={};const spawn=(x,f)=>{if(car)D.drCarKill(W,car);if(f)fails[x]=(fails[x]||0)+1;const gy=D.drGroundAt(T,x)??0;car=D.drCar(W,G,x,gy-G.minY+.15,{cass,help:Math.max(0,Math.min(3,(fails[x]||0)-1))});car.fuel=car.fuel0};
+  let car=null,cp=0;const fails={};const spawn=(x,f)=>{if(car)D.drCarKill(W,car);D.drPlanksReset(W,T,x);if(f)fails[x]=(fails[x]||0)+1;const gy=D.drGroundAt(T,x)??0;car=D.drCar(W,G,x,gy-G.minY+.15,{cass,help:Math.max(0,Math.min(3,(fails[x]||0)-1))});car.fuel=car.fuel0};
   spawn(0);let t=0,stuck=0,falls=0,resp=0,snaps=0,maxx=0;
   while(t<150){const p=car.ch.getPosition(),a=car.ch.getAngle(),air=car.air>.1;
     const an=car.an||0;let inp={go:1,back:0,rk:0};if(air){inp=an<-.3?{back:1}:an>.3?{go:1}:{}}
