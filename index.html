@@ -730,6 +730,20 @@ body.dfon{overflow:hidden}
 .drac button.go{background:linear-gradient(135deg,#43c94f,#14a34a);color:#fff;font-size:15px;padding:10px 18px;box-shadow:0 6px 16px -6px rgba(20,163,74,.8)}
 @media (min-width:700px){.drdbot{left:50%;right:auto;transform:translateX(-50%);width:640px}}
 #drc #g2q{z-index:6}
+/* full-screen drawing page */
+.drtools.draw .drdtop{left:62px;right:10px}
+.drok{border:0;border-radius:99px;height:44px;padding:0 14px;font:900 15px 'Outfit',sans-serif;color:#fff;background:linear-gradient(135deg,#43c94f,#14a34a);box-shadow:0 6px 16px -6px rgba(20,163,74,.8);white-space:nowrap}
+.drtools.draw .drhint{top:calc(58px + env(safe-area-inset-top,0px));color:#5a3a1a;text-shadow:0 1px 0 rgba(255,255,255,.7)}
+.drtools.draw .drdbot{padding-top:6px;gap:6px;background:rgba(30,20,60,.72)}
+.drtools.draw .drtl button{padding:4px 1px}.drtools.draw .drtl button span{font-size:20px}
+.drcl .drclr{width:auto;height:30px;border-radius:99px;padding:0 8px;background:rgba(255,255,255,.88);border:0;font-size:15px}
+.drzm{position:absolute;right:calc(6px + env(safe-area-inset-right,0px));top:50%;transform:translateY(-62%);opacity:.85;display:flex;flex-direction:column;align-items:center;gap:6px;background:rgba(30,20,60,.45);border-radius:22px;padding:6px 4px}
+.drzm button{width:36px;height:36px;border-radius:50%;border:0;background:rgba(255,255,255,.9);font:900 20px/1 'Outfit',sans-serif;color:#2b2b2b;padding:0}
+.drzt{position:relative;width:36px;height:150px;touch-action:none}
+.drzt:before{content:"";position:absolute;left:50%;top:0;bottom:0;width:6px;margin-left:-3px;border-radius:3px;background:rgba(255,255,255,.55)}
+.drzt i{position:absolute;left:50%;width:26px;height:26px;margin:0 0 -13px -13px;border-radius:50%;background:#ffd23f;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35)}
+.drtools.draw .drzm{display:flex}.drtools.edit .drzm{display:none}
+@media (max-height:520px){.drzt{height:70px}}
 </style></head><body><main>
 <div class="top"><div><h1 class="px" style="font-size:15px;line-height:1.2">CASS &amp; DAD&#39;S<br>CARDS OF LEGENDS</h1><div id="onl" class="onl"></div></div><div class="row" style="flex-wrap:nowrap"><button class="b d" id="snd" style="min-height:44px;padding:0 12px"><span class="ico ico-horn" style="width:28px;height:28px"></span></button><div class="b y" id="pt" style="cursor:default"><span class="pot" id="pot"></span><b id="ptn">0</b></div></div></div>
 <div class="chk"></div><div id="v"></div></main><nav id="nav"></nav>
@@ -2326,50 +2340,69 @@ function drTracks(live){const G=DRG;G.mode="tracks";G.pick=live?"live":"";const 
 
 /* ---------- drawing a ride ---------- */
 const DR_TOOLS=[["b","✏️","BODY"],["w","⭕","WHEEL"],["g","🪽","WING"],["r","🚀","ROCKET"],["e","👀","EYES"]];
+const DR_PW=600,DR_PH=600;/* the drawing paper, in grid units (1 unit = 2cm on the real ride) */
 function drDraw(ride){const G=DRG;G.mode="draw";drShow(0);
-  G.draw={id:ride?ride.id:null,nm:ride?ride.nm:drFun(),st:ride?drDec(ride.s):[],tool:"b",col:ride?1:5,cur:null,undo:[],saved:!!ride};const D=G.draw;
-  const tb=$("#drtools");tb.innerHTML=`<div class="drdtop"><input id="drname" maxlength="22" value="${drEsc(D.nm)}" aria-label="Ride name"><button class="drdice" id="drdice">🎲</button></div>
+  G.draw={id:ride?ride.id:null,nm:ride?ride.nm:drFun(),st:ride?drDec(ride.s):[],tool:"b",col:ride?1:5,cur:null,undo:[],saved:!!ride,pinch:null,hold:0};const D=G.draw;
+  const tb=$("#drtools");tb.innerHTML=`<div class="drdtop"><input id="drname" maxlength="22" value="${drEsc(D.nm)}" aria-label="Ride name"><button class="drdice" id="drdice">🎲</button><button class="drok" id="drok">RIDE IT! ▶</button></div>
     <div class="drhint" id="drhint"></div>
-    <div class="drdbot"><div class="drtl">${DR_TOOLS.map(([k,i,l])=>`<button data-tl="${k}"><span>${i}</span>${l}</button>`).join("")}</div>
-    <div class="drcl">${DR_COL.map((c,i)=>`<button data-c="${i}" style="background:${c}"></button>`).join("")}</div>
-    <div class="drac"><button id="drund">↶ UNDO</button><button id="drclr">🗑️ CLEAR</button><button class="go" id="drok">RIDE IT! ▶</button></div></div>`;
-  drShow(0);
+    <div class="drzm" id="drzm"><button id="drzi">＋</button><div class="drzt" id="drzt"><i id="drzk"></i></div><button id="drzo">－</button><button id="drzf" title="Fit">⤢</button></div>
+    <div class="drdbot"><div class="drtl">${DR_TOOLS.map(([k,i,l])=>`<button data-tl="${k}"><span>${i}</span>${l}</button>`).join("")}<button id="drund"><span>↶</span>UNDO</button></div>
+    <div class="drcl">${DR_COL.map((c,i)=>`<button data-c="${i}" style="background:${c}"></button>`).join("")}<button id="drclr" class="drclr">🗑️</button></div></div>`;
+  drShow(0);drFit();
   const up=()=>{tb.querySelectorAll("[data-tl]").forEach(b=>b.classList.toggle("on",b.dataset.tl===D.tool));tb.querySelectorAll("[data-c]").forEach(b=>b.classList.toggle("on",+b.dataset.c===D.col));
     const hw={b:"Draw the body — any shape you like!",w:"Draw a circle for each wheel. Big wheels climb, small ones are quick",g:"Wings make you float through the air 🪽 — bigger wings = longer glides!",r:"Tap to stick on a rocket — hold 🚀 in the race to blast!",e:"Tap to add googly eyes 👀"}[D.tool];
-    const nw=D.st.filter(s=>s.k==="w").length;$("#drhint").textContent=!D.st.length?"Draw your ride! Start with the body ✏️":D.tool==="b"&&!nw&&D.st.length>1?"Now add some wheels ⭕":hw}
+    const nw=D.st.filter(s=>s.k==="w").length;$("#drhint").textContent=!D.st.length?"Draw your ride! ✏️  Pinch with 2 fingers to zoom":D.tool==="b"&&!nw&&D.st.length>1?"Now add some wheels ⭕":hw}
   tb.querySelectorAll("[data-tl]").forEach(b=>b.onclick=()=>{D.tool=b.dataset.tl;sfx("tap");up()});
   tb.querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>{D.col=+b.dataset.c;sfx("tap");up()});
   $("#drname").oninput=e=>{D.nm=e.target.value};$("#drdice").onclick=()=>{D.nm=drFun();$("#drname").value=D.nm;sfx("tap")};
   $("#drund").onclick=()=>{if(D.st.length){D.st.pop();D.saved=0;sfx("tap");up()}};
-  $("#drclr").onclick=()=>{if(D.st.length&&confirm("Rub out the whole drawing?")){D.st=[];D.saved=0;up()}};
+  $("#drclr").onclick=()=>{if(D.st.length&&confirm("Rub out the whole drawing?")){D.st=[];D.saved=0;drFit();up()}};
+  /* zooming: buttons, a slider, pinching, or the mouse wheel */
+  const zt=$("#drzt");let zon=null;const zset=e=>{const r=zt.getBoundingClientRect();drZoomTo(1-(e.clientY-r.top)/Math.max(1,r.height))};
+  zt.onpointerdown=e=>{e.preventDefault();e.stopPropagation();zon=e.pointerId;try{zt.setPointerCapture(e.pointerId)}catch(_){}zset(e)};zt.onpointermove=e=>{if(zon===e.pointerId)zset(e)};zt.onpointerup=zt.onpointercancel=()=>{zon=null};
+  $("#drzi").onclick=()=>{drZoomBy(1.4);sfx("tap")};$("#drzo").onclick=()=>{drZoomBy(1/1.4);sfx("tap")};$("#drzf").onclick=()=>{drFit();sfx("tap")};
   $("#drok").onclick=()=>{if(!D.st.length){toast("Draw something first! ✏️");return}const S=drLoad(),s=drEnc(D.st),nm=(D.nm||"").trim()||drFun();
     if(D.id){const r=S.rides.find(x=>x.id===D.id);if(r){r.s=s;r.nm=nm;r.t=Date.now()}}else{const id="r"+Date.now().toString(36);S.rides.push({id,nm,s,t:Date.now()});D.id=id;if(S.rides.length>24)S.rides.splice(S.rides.findIndex(x=>x.id!==S.sel&&x.id!==id),1)}
     S.sel=D.id;D.saved=1;drSave(1);sfx("win");if(!D.st.some(x=>x.k==="w"))toast("No wheels! It'll scoot along on its belly 😄");drTracks()};
   D.up=up;up()}
-/* where the drawing paper sits on screen */
-function drPaper(){const G=DRG,tb=document.querySelector("#drtools .drdbot"),bot=(tb&&tb.offsetHeight?tb.offsetHeight:180)+8,top=88,aw=G.W-12,ah=Math.max(110,G.H-top-bot),k=Math.max(.5,Math.min(aw/200,ah/110)),gw=Math.min(280,aw/k),gh=Math.min(300,ah/k);
-  return{k,gw,gh,x:(G.W-gw*k)/2,y:top+(ah-gh*k)/2}}
-function drDrawDown(e){const G=DRG,D=G.draw,P=drPaper(),gx=Math.max(0,Math.min(P.gw,(e.x-P.x)/P.k)),gy=Math.max(0,Math.min(P.gh,(e.y-P.y)/P.k));if(D.cur)return;
+/* the view of the paper: centre (cx,cy) in grid units, k = screen pixels per grid unit */
+function drZLim(){const G=DRG,k0=Math.min(G.W/230,G.H/200);return{lo:Math.min(G.W,G.H)/(Math.max(DR_PW,DR_PH)*1.15),hi:k0*6,k0}}
+function drFit(){const G=DRG,D=G.draw;if(!D)return;const L=drZLim();let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+  for(const s of D.st){if(s.k==="w"||s.k==="e"){const r=s.p[2]||7;x0=Math.min(x0,s.p[0]-r);x1=Math.max(x1,s.p[0]+r);y0=Math.min(y0,s.p[1]-r);y1=Math.max(y1,s.p[1]+r)}else for(let i=0;i+1<s.p.length;i+=2){x0=Math.min(x0,s.p[i]);x1=Math.max(x1,s.p[i]);y0=Math.min(y0,s.p[i+1]);y1=Math.max(y1,s.p[i+1])}}
+  if(x0>x1){D.v={cx:DR_PW/2,cy:DR_PH/2,k:L.k0}}else{const w=Math.max(120,(x1-x0)*1.5),h=Math.max(90,(y1-y0)*1.8);D.v={cx:(x0+x1)/2,cy:(y0+y1)/2+(y1-y0)*.1,k:Math.max(L.lo,Math.min(L.hi,Math.min(G.W/w,(G.H-260)/h)))}}
+  drZoomShow()}
+function drZoomShow(){const D=DRG.draw,k=$("#drzk");if(!D||!k)return;const L=drZLim(),f=Math.log(D.v.k/L.lo)/Math.log(L.hi/L.lo);k.style.bottom=(Math.max(0,Math.min(1,f))*100)+"%"}
+function drZoomAt(k,sx,sy){const G=DRG,D=G.draw,L=drZLim();k=Math.max(L.lo,Math.min(L.hi,k));const gx=(sx-G.W/2)/D.v.k+D.v.cx,gy=(sy-G.H/2)/D.v.k+D.v.cy;D.v.k=k;D.v.cx=gx-(sx-G.W/2)/k;D.v.cy=gy-(sy-G.H/2)/k;drClampView();drZoomShow()}
+function drZoomBy(f){const G=DRG;drZoomAt(G.draw.v.k*f,G.W/2,G.H/2)}
+function drZoomTo(f){const L=drZLim();drZoomAt(L.lo*Math.pow(L.hi/L.lo,Math.max(0,Math.min(1,f))),DRG.W/2,DRG.H/2)}
+function drClampView(){const D=DRG.draw,v=D.v;v.cx=Math.max(-20,Math.min(DR_PW+20,v.cx));v.cy=Math.max(-20,Math.min(DR_PH+20,v.cy))}
+function drPaper(){const G=DRG,v=G.draw.v;return{k:v.k,x:G.W/2-v.cx*v.k,y:G.H/2-v.cy*v.k,gw:DR_PW,gh:DR_PH}}
+const drGrid=(e,P)=>({gx:Math.max(0,Math.min(DR_PW,(e.x-P.x)/P.k)),gy:Math.max(0,Math.min(DR_PH,(e.y-P.y)/P.k))});
+function drDrawDown(e){const G=DRG,D=G.draw;
+  if(G.ptr.size>=2){/* a second finger: stop drawing and pinch/move the paper instead */if(D.cur&&D.cur.p.length<40)D.cur=null;else if(D.cur)drDrawUp({id:D.pid});
+    const[a,b]=[...G.ptr.values()];D.pinch={d0:Math.hypot(a.x-b.x,a.y-b.y)||1,mx:(a.x+b.x)/2,my:(a.y+b.y)/2,k0:D.v.k,cx:D.v.cx,cy:D.v.cy};D.hold=1;return}
+  if(D.hold||D.cur)return;const P=drPaper(),{gx,gy}=drGrid(e,P);
   if(D.tool==="r"||D.tool==="e"){const n=D.st.filter(s=>s.k===D.tool).length;if(n>=(D.tool==="r"?4:10)){toast(D.tool==="r"?"4 rockets is the most!":"That's a lot of eyes! 👀");return}
     D.st.push({k:D.tool,c:D.col,p:D.tool==="e"?[gx,gy,7]:[gx,gy]});D.saved=0;sfx("flip");D.up();return}
   if(D.tool==="w"&&D.st.filter(s=>s.k==="w").length>=6){toast("6 wheels is the most!");return}
   D.cur={k:D.tool,c:D.col,p:[gx,gy]};D.pid=e.id}
-function drDrawMove(e){const D=DRG.draw;if(!D||!D.cur||e.id!==D.pid)return;const P=drPaper(),gx=Math.max(0,Math.min(P.gw,(e.x-P.x)/P.k)),gy=Math.max(0,Math.min(P.gh,(e.y-P.y)/P.k)),p=D.cur.p;
-  if(Math.hypot(gx-p[p.length-2],gy-p[p.length-1])>=1.6&&p.length<1200)p.push(gx,gy)}
-function drDrawUp(e){const D=DRG.draw;if(!D||!D.cur||e.id!==D.pid)return;const c=D.cur;D.cur=null;
-  if(c.k==="w"){const f=drFitCircle(c.p);if(!f)return;c.p=f.map(v=>Math.round(v))}else c.p=drSimp(c.p,.7).map(v=>Math.round(v));
-  if(D.st.length>=60){toast("That's a big drawing! Try UNDO");return}D.st.push(c);D.saved=0;sfx("tap");D.up()}
+function drDrawMove(e){const G=DRG,D=G.draw;if(!D)return;
+  if(D.pinch&&G.ptr.size>=2){const[a,b]=[...G.ptr.values()],P=D.pinch,L=drZLim(),k=Math.max(L.lo,Math.min(L.hi,P.k0*Math.hypot(a.x-b.x,a.y-b.y)/P.d0)),mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+    const gx=(P.mx-G.W/2)/P.k0+P.cx,gy=(P.my-G.H/2)/P.k0+P.cy;D.v.k=k;D.v.cx=gx-(mx-G.W/2)/k;D.v.cy=gy-(my-G.H/2)/k;drClampView();drZoomShow();return}
+  if(!D.cur||e.id!==D.pid)return;const P=drPaper(),{gx,gy}=drGrid(e,P),p=D.cur.p;
+  if(Math.hypot(gx-p[p.length-2],gy-p[p.length-1])>=Math.max(.4,4/P.k)&&p.length<1600)p.push(gx,gy)}
+function drDrawUp(e){const G=DRG,D=G.draw;if(!D)return;if(G.ptr.size<2)D.pinch=null;if(G.ptr.size===0)D.hold=0;if(!D.cur||e.id!==D.pid)return;const c=D.cur;D.cur=null;
+  if(c.k==="w"){const f=drFitCircle(c.p);if(!f)return;if(c.p.length<6)f[2]=Math.max(6,Math.min(42,14));c.p=f.map(v=>Math.round(v))}else c.p=drSimp(c.p,Math.max(.25,.7*Math.min(1,1.9/D.v.k))).map(v=>Math.round(v*2)/2);
+  if(D.st.length>=80){toast("That's a big drawing! Try UNDO");return}D.st.push(c);D.saved=0;sfx("tap");D.up()}
 function drDrawFrame(){const G=DRG,x=G.ctx,D=G.draw,P=drPaper();x.setTransform(G.dpr,0,0,G.dpr,0,0);
-  const gr=x.createLinearGradient(0,0,0,G.H);gr.addColorStop(0,"#ffcf6b");gr.addColorStop(1,"#ff8a5c");x.fillStyle=gr;x.fillRect(0,0,G.W,G.H);
-  x.save();x.translate(P.x,P.y);x.scale(P.k,P.k);x.fillStyle="rgba(0,0,0,.18)";x.fillRect(3,5,P.gw,P.gh);x.fillStyle="#fffdf6";x.fillRect(0,0,P.gw,P.gh);
-  x.strokeStyle="rgba(80,120,200,.13)";x.lineWidth=.4;x.beginPath();for(let i=10;i<P.gw;i+=10){x.moveTo(i,0);x.lineTo(i,P.gh)}for(let j=10;j<P.gh;j+=10){x.moveTo(0,j);x.lineTo(P.gw,j)}x.stroke();
-  x.strokeStyle="rgba(120,180,80,.5)";x.setLineDash([4,3]);x.lineWidth=.8;x.beginPath();x.moveTo(0,P.gh-4);x.lineTo(P.gw,P.gh-4);x.stroke();x.setLineDash([]);
-  x.fillStyle="rgba(120,160,80,.6)";x.font="5px Outfit,sans-serif";x.fillText("→ this way to the finish",4,P.gh-6);
+  x.fillStyle="#c9a27a";x.fillRect(0,0,G.W,G.H);
+  x.save();x.translate(P.x,P.y);x.scale(P.k,P.k);x.fillStyle="rgba(0,0,0,.2)";x.fillRect(4/P.k,6/P.k,DR_PW,DR_PH);x.fillStyle="#fffdf6";x.fillRect(0,0,DR_PW,DR_PH);
+  const step=P.k*10<7?50:10;x.strokeStyle="rgba(80,120,200,.14)";x.lineWidth=Math.max(.3,.8/P.k);x.beginPath();for(let i=step;i<DR_PW;i+=step){x.moveTo(i,0);x.lineTo(i,DR_PH)}for(let j=step;j<DR_PH;j+=step){x.moveTo(0,j);x.lineTo(DR_PW,j)}x.stroke();
   const st=D.cur?D.st.concat([D.cur.k==="w"?{k:"w",c:D.cur.c,p:drFitCircle(D.cur.p)||[0,0,1],draft:D.cur}:D.cur]):D.st;
   /* paint in grid units: convert to the ride painter, which works y-up */
   x.save();x.scale(1/DR_U,-1/DR_U);for(const s of st)drPaintStroke(x,s,G.t);x.restore();
   if(D.cur&&D.cur.k==="w"){x.strokeStyle="rgba(0,0,0,.35)";x.lineWidth=1;x.beginPath();const p=D.cur.p;x.moveTo(p[0],p[1]);for(let i=2;i<p.length;i+=2)x.lineTo(p[i],p[i+1]);x.stroke()}
-  x.restore()}
+  x.restore();const tb=document.querySelector("#drtools .drdbot"),by=G.H-((tb&&tb.offsetHeight)||130)-10;x.font="800 12px Outfit,sans-serif";x.textAlign="left";x.fillStyle="rgba(90,140,60,.75)";x.fillText("→ your ride drives this way →",12,by)}
 /* one stroke, in metres y-up, from grid units (used only on the drawing paper) */
 function drPaintStroke(x,s,t){const U=DR_U,p=s.p,X=v=>v*U,Y=v=>-v*U;
   if(s.k==="w"){drWheel(x,X(p[0]),Y(p[1]),p[2]*U,t*2,s.c);return}
@@ -2596,6 +2629,7 @@ function drInput(){const cv=DRG.cv,pt=e=>{const r=cv.getBoundingClientRect();ret
     if(G.mode==="draw")drDrawMove(p);else if(G.mode==="edit")drEditMove(p,o)};
   const up=e=>{const G=DRG;if(!G)return;const p=pt(e);G.ptr.delete(e.pointerId);if(G.mode==="draw")drDrawUp(p);else if(G.mode==="edit")drEditUp(p)};
   cv.onpointerup=up;cv.onpointercancel=up;cv.oncontextmenu=e=>e.preventDefault();
+  cv.onwheel=e=>{const G=DRG;if(!G)return;e.preventDefault();const p=pt(e),f=Math.exp(-e.deltaY*.0015);if(G.mode==="draw"&&G.draw)drZoomAt(G.draw.v.k*f,p.x,p.y);else if(G.mode==="edit"&&G.edit)drEditZoomAt(G.edit.z*f,p.x,p.y)};
   const rk=$("#drrk");rk.onpointerdown=e=>{e.preventDefault();e.stopPropagation();if(DRG)DRG.rkOn=1};rk.onpointerup=rk.onpointercancel=rk.onpointerleave=e=>{if(DRG)DRG.rkOn=0};
   $("#drrs").onclick=e=>{e.stopPropagation();const R=DRG&&DRG.race;if(R&&R.st==="go")drRespawn(R,"stuck")};
   window.onkeydown=e=>{if(!DRG||e.target&&e.target.tagName==="INPUT")return;DRG.keys[e.key]=1;if(DRG.mode==="race"&&[" ","ArrowLeft","ArrowRight","ArrowUp"].includes(e.key))e.preventDefault()};
@@ -2605,7 +2639,7 @@ function drInput(){const cv=DRG.cv,pt=e=>{const r=cv.getBoundingClientRect();ret
 function drEdit(back){const G=DRG;G.mode="edit";const S=drLoad();
   if(!back||!G.edit){const t=drTDec(S.draft||"");G.edit={lines:t.lines,boosts:t.boosts,mush:t.mush,gems:t.gems||[],crates:t.crates||[],tool:"l",cx:12,cy:2,cur:null,undo:[]};G.editTest=null}
   const E=G.edit,them=drNm(drThem());drShow(0);
-  const tb=$("#drtools");tb.innerHTML=`<div class="drhint" id="drhint">Draw the ground with your finger · lift off to make a gap to jump!</div>
+  const tb=$("#drtools");tb.innerHTML=`<div class="drhint" id="drhint">Draw the ground with your finger · lift off to make a gap · pinch to zoom</div>
     <div class="drdbot"><div class="drtl">${[["l","✏️","GROUND"],["b","⚡","BOOST"],["m","🍄","BOUNCE"],["g","💎","GEMS"],["c","📦","CRATES"],["x","🧽","RUB OUT"]].map(([k,i,l])=>`<button data-tl="${k}"><span>${i}</span>${l}</button>`).join("")}</div>
     <div class="drac"><button id="drpl">◀◀</button><button id="drpr">▶▶</button><button id="drund">↶ UNDO</button><button id="drclr">🗑️</button><button id="drtst">▶ TRY IT</button><button class="go" id="drsend">SEND TO ${them.toUpperCase()} ✉️</button></div></div>`;
   drShow(0);
@@ -2616,19 +2650,20 @@ function drEdit(back){const G=DRG;G.mode="edit";const S=drLoad();
   $("#drclr").onclick=()=>{if((E.lines.length||E.boosts.length||E.mush.length||E.gems.length||E.crates.length)&&confirm("Rub out the whole track?")){E.lines=[];E.boosts=[];E.mush=[];E.gems=[];E.crates=[];E.undo=[];E.cx=12;drEditSaveDraft()}};
   $("#drtst").onclick=()=>{if(!E.lines.length){toast("Draw some ground first! ✏️");return}drEditSaveDraft();drRace({kind:"u",s:drTEnc(E),nm:"Test drive",from:"edit"})};
   $("#drsend").onclick=()=>drEditSend()}
+function drEditZoomAt(z,sx,sy){const G=DRG,E=G.edit;const w=drEditW({x:sx,y:sy});E.z=Math.max(.35,Math.min(3,z));const S=drEditS();E.cx=w.x-(sx-G.W*.5)/S;E.cy=w.y+(sy-G.H*.45)/S}
 function drEditSaveDraft(){const E=DRG&&DRG.edit;if(!E)return;const S=drLoad();S.draft=drTEnc(E);drSave()}
-function drEditS(){const G=DRG;return Math.max(12,Math.min(G.W/24,(G.H-200)/12))}
+function drEditS(){const G=DRG;return Math.max(12,Math.min(G.W/24,(G.H-200)/12))*((G.edit&&G.edit.z)||1)}
 function drEditW(p){const G=DRG,E=G.edit,S=drEditS();return{x:E.cx+(p.x-G.W*.5)/S,y:E.cy-(p.y-G.H*.45)/S}}
-function drEditDown(p){const G=DRG,E=G.edit;if(G.ptr.size>=2){E.cur=null;E.pan=1;return}const w=drEditW(p);
+function drEditDown(p){const G=DRG,E=G.edit;if(G.ptr.size>=2){if(E.cur&&E.cur.length>3)drEditUp({id:E.pid});E.cur=null;E.pan=1;const[a,b]=[...G.ptr.values()];E.pinch={d0:Math.hypot(a.x-b.x,a.y-b.y)||1,mx:(a.x+b.x)/2,my:(a.y+b.y)/2,z0:E.z||1,w:drEditW({x:(a.x+b.x)/2,y:(a.y+b.y)/2})};return}const w=drEditW(p);
   if(E.tool==="l"){if(E.lines.length>=40){toast("That's lots of lines! Try UNDO");return}E.cur=[[+w.x.toFixed(1),+w.y.toFixed(1)]];E.pid=p.id;return}
   if(E.tool==="x"){drEditRub(w);E.pid=p.id;E.rub=1;return}
   const T=drFromDrawn(E),gy=drGroundAt(T,w.x,w.y+1.5),y=gy!=null?gy:w.y;
   if(E.tool==="b"){E.boosts.push({x:+w.x.toFixed(1),y:+y.toFixed(1)});E.undo.push("boosts")}else if(E.tool==="m"){E.mush.push({x:+w.x.toFixed(1),y:+y.toFixed(1)});E.undo.push("mush")}
   else if(E.tool==="g"){E.gems.push({x:+w.x.toFixed(1),y:+(gy!=null&&w.y<gy+1.2?gy+1.2:w.y).toFixed(1)});E.undo.push("gems")}else if(E.tool==="c"){E.crates.push({x:+w.x.toFixed(1),y:+y.toFixed(1)});E.undo.push("crates")}sfx("flip");drEditSaveDraft()}
-function drEditMove(p,o){const G=DRG,E=G.edit;if(E.pan||G.ptr.size>=2){E.pan=1;E.cur=null;const S=drEditS();E.cx-=(p.x-o.x)/S/Math.max(1,G.ptr.size);E.cy+=(p.y-o.y)/S/Math.max(1,G.ptr.size);E.cx=Math.max(-4,E.cx);return}
+function drEditMove(p,o){const G=DRG,E=G.edit;if(E.pan||G.ptr.size>=2){E.pan=1;E.cur=null;if(E.pinch&&G.ptr.size>=2){const[a,b]=[...G.ptr.values()],P=E.pinch;E.z=Math.max(.35,Math.min(3,P.z0*Math.hypot(a.x-b.x,a.y-b.y)/P.d0));const S=drEditS(),mx=(a.x+b.x)/2,my=(a.y+b.y)/2;E.cx=P.w.x-(mx-G.W*.5)/S;E.cy=P.w.y+(my-G.H*.45)/S;E.cx=Math.max(-10,E.cx);return}const S=drEditS();E.cx-=(p.x-o.x)/S/Math.max(1,G.ptr.size);E.cy+=(p.y-o.y)/S/Math.max(1,G.ptr.size);E.cx=Math.max(-10,E.cx);return}
   if(E.rub&&p.id===E.pid){drEditRub(drEditW(p));return}
   if(!E.cur||p.id!==E.pid)return;const w=drEditW(p),l=E.cur[E.cur.length-1];if(Math.hypot(w.x-l[0],w.y-l[1])>=.45&&E.cur.length<400)E.cur.push([+w.x.toFixed(1),+w.y.toFixed(1)])}
-function drEditUp(p){const G=DRG,E=G.edit;if(G.ptr.size===0)E.pan=0;E.rub=0;if(!E.cur||p.id!==E.pid)return;const l=E.cur;E.cur=null;if(l.length<2)return;
+function drEditUp(p){const G=DRG,E=G.edit;if(G.ptr.size<2)E.pinch=null;if(G.ptr.size===0)E.pan=0;E.rub=0;if(!E.cur||p.id!==E.pid)return;const l=E.cur;E.cur=null;if(l.length<2)return;
   const flat=[];for(const q of l)flat.push(q[0],q[1]);const s=drSimp(flat,.08),pts=[];for(let i=0;i+1<s.length;i+=2)pts.push([s[i],s[i+1]]);E.lines.push(pts);E.undo.push("lines");sfx("tap");drEditSaveDraft()}
 function drEditRub(w){const E=DRG.edit;let hit=0;E.lines=E.lines.filter(l=>{const near=l.some((q,i)=>{const r=l[i+1];if(!r)return Math.hypot(q[0]-w.x,q[1]-w.y)<.8;const dx=r[0]-q[0],dy=r[1]-q[1],L2=dx*dx+dy*dy||1e-9,t=Math.max(0,Math.min(1,((w.x-q[0])*dx+(w.y-q[1])*dy)/L2));return Math.hypot(q[0]+dx*t-w.x,q[1]+dy*t-w.y)<.8});if(near)hit=1;return!near});
   E.boosts=E.boosts.filter(b=>Math.hypot(b.x-w.x,b.y-w.y)>1.4||(hit=1,0));E.mush=E.mush.filter(m=>Math.hypot(m.x-w.x,m.y-w.y)>1.6||(hit=1,0));E.gems=E.gems.filter(m=>Math.hypot(m.x-w.x,m.y-w.y)>.9||(hit=1,0));E.crates=E.crates.filter(m=>Math.hypot(m.x+.37-w.x,m.y+.6-w.y)>1.2||(hit=1,0));if(hit){sfx("tap");drEditSaveDraft()}}
