@@ -19,7 +19,12 @@ const RW_WEP=[
   {k:"drum",nm:"Drum",ic:"🥁",kg:14,pow:4.5,say:"A spinning drum that bounces robots up in the air."},
   {k:"axe",nm:"Axe",ic:"🪓",kg:11,pow:4,say:"Swings down hard."},
   {k:"crush",nm:"Crusher",ic:"🦀",kg:14,pow:3.5,say:"Big jaws that grab and squeeze."},
-  {k:"spike",nm:"Spike",ic:"📌",kg:3,pow:1.5,say:"A sharp spike. Light, so you can stick on lots!"}];
+  {k:"spike",nm:"Spike",ic:"📌",kg:3,pow:1.5,say:"A sharp spike. Light, so you can stick on lots!"},
+  {k:"flame",nm:"Flamethrower",ic:"🔥",kg:12,pow:3.5,say:"Shoots a jet of fire that sets things alight!"},
+  {k:"saw",nm:"Buzz saw",ic:"🪚",kg:13,pow:4,say:"A screaming spinning saw blade that cuts into robots."}];
+/* weapon sizes: small, medium, large, extra large */
+const RW_WSZ=[{k:"s",nm:"S",s:.7},{k:"m",nm:"M",s:1},{k:"l",nm:"L",s:1.4},{k:"xl",nm:"XL",s:1.9}];
+const rwWkg=w=>rwFind(RW_WEP,w.k).kg*Math.pow(w.s||1,1.6),rwWpow=w=>rwFind(RW_WEP,w.k).pow+((w.s||1)-1)*1.2;
 const RW_WHEEL=[{k:"s",nm:"Small wheel",ic:"⚫",r:.13,kg:2,say:"Small and light."},{k:"m",nm:"Wheel",ic:"⚫",r:.19,kg:3,say:"A normal wheel."},{k:"l",nm:"Big wheel",ic:"⚫",r:.27,kg:4.5,say:"Big wheels go faster and climb over things."},
   {k:"t",nm:"Tank track",ic:"🛞",r:.17,kg:7,say:"Really hard to push around — but slower."}];
 const RW_PAT=[{k:"",nm:"Plain",ic:"⬜"},{k:"two",nm:"Two-tone",ic:"🌗"},{k:"stripe",nm:"Racing stripes",ic:"🏁"},{k:"flame",nm:"Flames",ic:"🔥"},{k:"camo",nm:"Camo",ic:"🪖"},{k:"tiger",nm:"Tiger",ic:"🐯"},
@@ -126,17 +131,17 @@ function rwStartShape(k){const P=RW_STARTS[k]||RW_STARTS.box;return rwSmoothShap
 /* ---------- weight and stars ---------- */
 /* no weight limit: heavy is just heavy — slower to get going, but harder to push around */
 function rwStats(R,body,cass){const m=rwFind(RW_MAT,R.mat),mo=rwFind(RW_MOT,R.mot),W=R.weps||[],H=R.wheels||[];
-  const skin=body?body.area*m.kg:0,wkg=W.reduce((a,w)=>a+rwFind(RW_WEP,w.k).kg,0),hkg=H.reduce((a,w)=>a+rwFind(RW_WHEEL,w.k).kg,0),kg=Math.round(skin+wkg+hkg+mo.kg+6);
+  const skin=body?body.area*m.kg:0,wkg=Math.round(W.reduce((a,w)=>a+rwWkg(w),0)),hkg=H.reduce((a,w)=>a+rwFind(RW_WHEEL,w.k).kg,0),kg=Math.round(skin+wkg+hkg+mo.kg+6);
   const cl=v=>Math.max(0,Math.min(5,Math.round(v*2)/2)),tr=H.filter(w=>w.k==="t").length,nW=H.length+tr,avgR=H.length?H.reduce((a,w)=>a+rwFind(RW_WHEEL,w.k).r,0)/H.length:0;
-  const pw=W.length?Math.max(...W.map(w=>rwFind(RW_WEP,w.k).pow))+.5*(W.length-1):0,slow=Math.max(0,(kg-60)/(cass?40:28));
+  const pw=W.length?Math.max(...W.map(rwWpow))+.5*(W.length-1):0,slow=Math.max(0,(kg-60)/(cass?40:28));
   return{kg,over:false,cls:kg<60?"Light":kg<90?"Medium":kg<120?"Heavy":"SUPER HEAVY 🐘",parts:{body:Math.round(skin),weapons:wkg,wheels:hkg,motors:mo.kg,battery:6},noWheels:!H.length,
     arm:m.arm,spd:H.length?Math.max(1,cl(mo.spd+(avgR-.2)*6-tr*.4-slow+(cass?.5:0))):0,push:H.length?Math.max(1,cl(mo.push+tr*.6+Math.min(1,(nW-2)*.25)+(kg-60)/30)):0,pow:Math.min(5,cl(pw))}}
 function rwNew(){return{id:"b"+Date.now().toString(36),nm:"",shapes:{side:[],top:[],front:[]},ops:[],mat:"alu",weps:[],wheels:[],mot:"mid",col:"#e53935",col2:"#fdd835",pat:"",paint:[],stk:[],t:Date.now()}}
 /* ---------- placed parts and paint, as short strings for saving ---------- */
 const r2=v=>Math.round(v*100);
-function rwEncParts(L){return(L||[]).map(o=>o.k+":"+o.p.map(r2).join(",")+(o.n?":"+o.n.map(r2).join(","):""))}
+function rwEncParts(L){return(L||[]).map(o=>o.k+":"+o.p.map(r2).join(",")+(o.n?":"+o.n.map(r2).join(","):"")+(o.s&&o.s!==1?":"+r2(o.s):""))}
 function rwDecParts(L,kinds){if(!Array.isArray(L))return[];return L.map(s=>{if(typeof s!=="string")return null;const a=s.split(":");if(!kinds.includes(a[0]))return null;const p=(a[1]||"").split(",").map(n=>+n/100),n=a[2]?a[2].split(",").map(n=>+n/100):null;
-  if(p.length!==3||!p.every(isFinite))return null;return n&&n.length===3&&n.every(isFinite)?{k:a[0],p,n}:{k:a[0],p}}).filter(Boolean)}
+  if(p.length!==3||!p.every(isFinite))return null;const o=n&&n.length===3&&n.every(isFinite)?{k:a[0],p,n}:{k:a[0],p};const sz=+a[3]/100;if(a[3]&&isFinite(sz))o.s=Math.max(.5,Math.min(2.5,sz));return o}).filter(Boolean)}
 function rwEncPaint(L){return(L||[]).map(o=>o.c+"|"+r2(o.r)+"|"+(o.m?1:0)+"|"+o.p.map(q=>q.map(r2).join(",")).join(" "))}
 function rwDecPaint(L){if(!Array.isArray(L))return[];return L.map(s=>{if(typeof s!=="string")return null;const a=s.split("|");if(a.length<4||!/^#[0-9a-f]{6}$/i.test(a[0]))return null;
   const p=a[3].split(" ").map(q=>q.split(",").map(n=>+n/100)).filter(q=>q.length===3&&q.every(isFinite));return p.length?{c:a[0],r:Math.max(.03,Math.min(.4,+a[1]/100||.1)),m:a[2]==="1",p}:null}).filter(Boolean)}
@@ -172,4 +177,4 @@ function rwPaintInto(C,P,o,from=0){const c=rwHex(o.c),n=P.length/3,r=o.r;
       C[3*v]+=(c[0]-C[3*v])*w;C[3*v+1]+=(c[1]-C[3*v+1])*w;C[3*v+2]+=(c[2]-C[3*v+2])*w}}}
 const RW_N1=["Mega","Turbo","Iron","Thunder","Steel","Rapid","Crusher","Atomic","Rusty","Dynamo","Hyper","Nitro","Spike","Volt","Big","Little"],RW_N2=["Bob","Smasher","Wedge","Basher","Bulldog","Tornado","Destroyer","Beetle","Biter","Thumper","Ripper","Rocket","Bruiser","Hammer","Chomper","Dozer"];
 const rwFun=()=>RW_N1[Math.random()*RW_N1.length|0]+" "+RW_N2[Math.random()*RW_N2.length|0];
-if(typeof module!=="undefined")module.exports={RW_B,RW_VIEWS,RW_MAT,RW_WEP,RW_DRIVE,RW_MOT,RW_LIMIT,rwFind,rwSmoothShape,rwEncShapes,rwDecShapes,RW_WHEEL,RW_PAT,RW_STK,rwPaintLayer,rwPaintAdd,rwHex,rwEncParts,rwDecParts,rwEncPaint,rwDecPaint,rwEncStk,rwDecStk,rwColors,rwPaintInto,rwSDF2,rwBuildBody,rwStats,rwNew,rwFun,rwField,rwFieldCopy,rwBrush,rwOp,rwEncOps,rwDecOps,rwMesh,rwBody,rwStartShape};
+if(typeof module!=="undefined")module.exports={RW_B,RW_VIEWS,RW_MAT,RW_WEP,RW_DRIVE,RW_MOT,RW_LIMIT,rwFind,rwSmoothShape,rwEncShapes,rwDecShapes,RW_WHEEL,RW_WSZ,rwWkg,RW_PAT,RW_STK,rwPaintLayer,rwPaintAdd,rwHex,rwEncParts,rwDecParts,rwEncPaint,rwDecPaint,rwEncStk,rwDecStk,rwColors,rwPaintInto,rwSDF2,rwBuildBody,rwStats,rwNew,rwFun,rwField,rwFieldCopy,rwBrush,rwOp,rwEncOps,rwDecOps,rwMesh,rwBody,rwStartShape};
