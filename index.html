@@ -804,6 +804,14 @@ body.dfon{overflow:hidden}
 .rwfire{position:absolute;right:calc(22px + env(safe-area-inset-right,0px));bottom:calc(36px + env(safe-area-inset-bottom,0px));z-index:4;width:104px;height:104px;border-radius:50%;border:4px solid #fff;background:radial-gradient(circle at 40% 35%,#ff6b4a,#c62828);color:#fff;font:900 34px/1 'Outfit',sans-serif;display:none;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 8px 20px -6px rgba(0,0,0,.6);touch-action:none}
 .rwfire.on{display:flex}.rwfire small{font-size:11px;letter-spacing:.06em;margin-top:2px}.rwfire:active{transform:scale(.94)}
 #rwc canvas{background:transparent!important}
+.rwstarts{display:flex;gap:6px}.rwstarts button{flex:1;border:0;border-radius:14px;padding:8px 4px;background:rgba(255,255,255,.12);color:#fff;font:900 12px 'Outfit',sans-serif;display:flex;flex-direction:column;align-items:center;gap:2px}
+.rwstarts button span{font-size:26px;line-height:1.1}
+.rwtools{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.rwtools button{border:2px solid transparent;border-radius:14px;padding:6px 2px;background:rgba(255,255,255,.12);color:#fff;font:900 11px 'Outfit',sans-serif;display:flex;flex-direction:column;align-items:center;gap:1px}
+.rwtools button span{font-size:26px;line-height:1.15}.rwtools button.on{border-color:#ffc400;background:rgba(255,196,0,.22)}
+#rwmir.on{border-color:#43c94f;background:rgba(67,201,79,.22)}
+.rwsz{display:flex;gap:4px;background:rgba(255,255,255,.12);border-radius:99px;padding:3px}
+.rwsz button{width:36px;height:34px;border-radius:99px!important;padding:0!important;background:transparent!important;color:#fff!important}.rwsz button.on{background:#ffc400!important;color:#2a1d00!important}
 
 /*RW-END*/
 </style></head><body><main>
@@ -2884,58 +2892,81 @@ function rwSDF2(shapes,u0,u1,v0,v1,res){const nu=Math.ceil((u1-u0)/res)+1,nv=Mat
   return{D,nu,nv,u0,v0,res,at(u,v){let fi=(u-u0)/res,fj=(v-v0)/res;if(fi<0||fj<0||fi>nu-1||fj>nv-1)return Math.max(-fi*res,-fj*res,(fi-(nu-1))*res,(fj-(nv-1))*res,0)+.2;
     const i=Math.min(nu-2,Math.floor(fi)),j=Math.min(nv-2,Math.floor(fj)),a=fi-i,b=fj-j,q=j*nu+i;return D[q]*(1-a)*(1-b)+D[q+1]*a*(1-b)+D[q+nu]*(1-a)*b+D[q+nu+1]*a*b}}}
 const rwSmax=(a,b,k)=>{const h=Math.max(k-Math.abs(a-b),0)/k;return Math.max(a,b)+h*h*k*.25};
-/* ---------- the 3D body: carve, then mesh with "surface nets", then smooth ---------- */
-function rwBuildBody(S,opt={}){const B=RW_B,res=opt.res||.04,round=opt.round||.09;
-  const has=v=>S[v]&&S[v].length;if(!has("side")&&!has("top")&&!has("front"))return null;
-  const r2=.025,F={};if(has("side"))F.side=rwSDF2(S.side,B.x0-.1,B.x1+.1,B.y0-.1,B.y1+.1,r2);if(has("top"))F.top=rwSDF2(S.top,B.x0-.1,B.x1+.1,B.z0-.1,B.z1+.1,r2);if(has("front"))F.front=rwSDF2(S.front,B.z0-.1,B.z1+.1,B.y0-.1,B.y1+.1,r2);
-  /* not drawn from above or the front: the body is a sensible width */
-  const hw=opt.halfWidth||.5;
+/* ---------- the 3D body as clay: a grid of numbers (below 0 = clay). Draw the side to start, then mould it ---------- */
+const RW_RES=.04;
+function rwField(S,opt={}){const B=RW_B,res=RW_RES,round=opt.round||.09;
+  const has=v=>S&&S[v]&&S[v].length;if(!has("side")&&!has("top")&&!has("front"))return null;
+  const r2=.025,F2={};if(has("side"))F2.side=rwSDF2(S.side,B.x0-.1,B.x1+.1,B.y0-.1,B.y1+.1,r2);if(has("top"))F2.top=rwSDF2(S.top,B.x0-.1,B.x1+.1,B.z0-.1,B.z1+.1,r2);if(has("front"))F2.front=rwSDF2(S.front,B.z0-.1,B.z1+.1,B.y0-.1,B.y1+.1,r2);
+  const hw=opt.halfWidth||.42;
   const field=(x,y,z)=>{let d=Math.max(x-B.x1,B.x0-x,y-B.y1,B.y0-y,z-B.z1,B.z0-z);
-    if(F.side)d=rwSmax(d,F.side.at(x,y),round);else d=rwSmax(d,Math.max(Math.abs(x)-1,y-.6,-y),round);
-    if(F.top)d=rwSmax(d,F.top.at(x,z),round);else if(!F.front)d=rwSmax(d,Math.abs(z)-hw,round);
-    if(F.front)d=rwSmax(d,F.front.at(z,y),round);return d};
+    if(F2.side)d=rwSmax(d,F2.side.at(x,y),round);else d=rwSmax(d,Math.max(Math.abs(x)-1,y-.6,-y),round);
+    if(F2.top)d=rwSmax(d,F2.top.at(x,z),round);else if(!F2.front)d=rwSmax(d,Math.abs(z)-hw,round);
+    if(F2.front)d=rwSmax(d,F2.front.at(z,y),round);return d};
   const x0=B.x0-.12,y0=B.y0-.12,z0=B.z0-.12,nx=Math.ceil((B.x1-B.x0+.24)/res)+1,ny=Math.ceil((B.y1-B.y0+.24)/res)+1,nz=Math.ceil((B.z1-B.z0+.24)/res)+1;
-  const V=new Float32Array(nx*ny*nz),id=(i,j,k)=>(k*ny+j)*nx+i;let inside=0;
-  for(let k=0;k<nz;k++)for(let j=0;j<ny;j++)for(let i=0;i<nx;i++){const f=field(x0+i*res,y0+j*res,z0+k*res);V[id(i,j,k)]=f;if(f<0)inside++}
-  if(!inside)return null;
-  /* one vertex per cell the surface passes through, at the average of where it crosses the cell's edges */
+  const F=new Float32Array(nx*ny*nz);let n=0;for(let k=0;k<nz;k++)for(let j=0;j<ny;j++)for(let i=0;i<nx;i++)F[n++]=field(x0+i*res,y0+j*res,z0+k*res);
+  return{F,nx,ny,nz,x0,y0,z0,res}}
+const rwFieldCopy=f=>f&&{...f,F:new Float32Array(f.F)};
+const rwSmin=(a,b,k)=>{const h=Math.max(k-Math.abs(a-b),0)/k;return Math.min(a,b)-h*h*k*.25};
+/* one touch of a clay tool at (px,py,pz). t: "a" add/pull out, "p" push in, "s" smooth */
+function rwBrush(f,t,px,py,pz,r){const{F,nx,ny,nz,x0,y0,z0,res}=f,B=RW_B,R=r+2*res;
+  const i0=Math.max(1,Math.floor((px-R-x0)/res)),i1=Math.min(nx-2,Math.ceil((px+R-x0)/res)),j0=Math.max(1,Math.floor((py-R-y0)/res)),j1=Math.min(ny-2,Math.ceil((py+R-y0)/res)),k0=Math.max(1,Math.floor((pz-R-z0)/res)),k1=Math.min(nz-2,Math.ceil((pz+R-z0)/res));
+  if(i0>i1||j0>j1||k0>k1)return;const sx=nx,sxy=nx*ny;
+  if(t==="s"){const tmp=[];for(let k=k0;k<=k1;k++)for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++){const x=x0+i*res,y=y0+j*res,z=z0+k*res,d=Math.hypot(x-px,y-py,z-pz);if(d>r)continue;const q=i+j*sx+k*sxy;
+      const av=(F[q-1]+F[q+1]+F[q-sx]+F[q+sx]+F[q-sxy]+F[q+sxy])/6;tmp.push(q,F[q]+(av-F[q])*.7*(1-d/r))}for(let n=0;n<tmp.length;n+=2)F[tmp[n]]=tmp[n+1];return}
+  const k=Math.max(.03,r*.4);
+  for(let kk=k0;kk<=k1;kk++)for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++){const x=x0+i*res,y=y0+j*res,z=z0+kk*res,d=Math.hypot(x-px,y-py,z-pz)-r;if(d>2*res+k)continue;const q=i+j*sx+kk*sxy;
+    let v=t==="a"?rwSmin(F[q],d,k):rwSmax(F[q],-d,k);
+    /* clay can't leave the workbench box */v=Math.max(v,x-B.x1,B.x0-x,y-B.y1,B.y0-y,z-B.z1,B.z0-z);F[q]=v}}
+/* a whole stroke: {t, r, m (mirror), p:[[x,y,z],...]} */
+function rwOp(f,op){if(!f||!op||!op.p)return;for(const q of op.p){rwBrush(f,op.t,q[0],q[1],q[2],op.r);if(op.m&&Math.abs(q[2])>op.r*.25)rwBrush(f,op.t,q[0],q[1],-q[2],op.r)}}
+function rwEncOps(L){return(L||[]).map(o=>o.t+(o.m?"m":"")+Math.round(o.r*100)+":"+o.p.map(q=>q.map(v=>Math.round(v*100)).join(",")).join(" "))}
+function rwDecOps(L){if(!Array.isArray(L))return[];return L.map(s=>{if(typeof s!=="string")return null;const m=/^([aps])(m?)(\d+):(.*)$/.exec(s);if(!m)return null;
+  const p=m[4].split(" ").map(q=>q.split(",").map(n=>+n/100)).filter(q=>q.length===3&&q.every(isFinite));return p.length?{t:m[1],m:!!m[2],r:Math.max(.04,Math.min(.4,+m[3]/100)),p}:null}).filter(Boolean)}
+/* clay -> a smooth surface ("surface nets", then smoothing) */
+function rwMesh(f,opt={}){if(!f)return null;const{F:V,nx,ny,nz,x0,y0,z0,res}=f,id=(i,j,k)=>(k*ny+j)*nx+i;let any=0;for(let q=0;q<V.length;q++)if(V[q]<0){any=1;break}if(!any)return null;
   const cv=new Int32Array((nx-1)*(ny-1)*(nz-1)).fill(-1),cid=(i,j,k)=>(k*(ny-1)+j)*(nx-1)+i,P=[];
   const E=[[0,0,0,1,0,0],[0,1,0,1,1,0],[0,0,1,1,0,1],[0,1,1,1,1,1],[0,0,0,0,1,0],[1,0,0,1,1,0],[0,0,1,0,1,1],[1,0,1,1,1,1],[0,0,0,0,0,1],[1,0,0,1,0,1],[0,1,0,0,1,1],[1,1,0,1,1,1]];
-  for(let k=0;k<nz-1;k++)for(let j=0;j<ny-1;j++)for(let i=0;i<nx-1;i++){let sx=0,sy=0,sz=0,n=0;
-    for(const e of E){const a=V[id(i+e[0],j+e[1],k+e[2])],b=V[id(i+e[3],j+e[4],k+e[5])];if((a<0)===(b<0))continue;const t=a/(a-b);sx+=e[0]+(e[3]-e[0])*t;sy+=e[1]+(e[4]-e[1])*t;sz+=e[2]+(e[5]-e[2])*t;n++}
-    if(n){cv[cid(i,j,k)]=P.length/3;P.push(x0+(i+sx/n)*res,y0+(j+sy/n)*res,z0+(k+sz/n)*res)}}
+  for(let k=0;k<nz-1;k++)for(let j=0;j<ny-1;j++)for(let i=0;i<nx-1;i++){const q=id(i,j,k);let neg=0;const c=[V[q],V[q+1],V[q+nx],V[q+nx+1],V[q+nx*ny],V[q+nx*ny+1],V[q+nx*ny+nx],V[q+nx*ny+nx+1]];for(const v of c)if(v<0)neg++;if(neg===0||neg===8)continue;
+    let sx=0,sy=0,sz=0,n=0;for(const e of E){const a=V[id(i+e[0],j+e[1],k+e[2])],b=V[id(i+e[3],j+e[4],k+e[5])];if((a<0)===(b<0))continue;const t=a/(a-b);sx+=e[0]+(e[3]-e[0])*t;sy+=e[1]+(e[4]-e[1])*t;sz+=e[2]+(e[5]-e[2])*t;n++}
+    cv[cid(i,j,k)]=P.length/3;P.push(x0+(i+sx/n)*res,y0+(j+sy/n)*res,z0+(k+sz/n)*res)}
   const I=[],quad=(a,b,c,d,flip)=>{if(a<0||b<0||c<0||d<0)return;if(flip)I.push(a,c,b,a,d,c);else I.push(a,b,c,a,c,d)};
-  for(let k=1;k<nz-1;k++)for(let j=1;j<ny-1;j++)for(let i=0;i<nx-1;i++){const a=V[id(i,j,k)],b=V[id(i+1,j,k)];if((a<0)===(b<0))continue;
-    quad(cv[cid(i,j-1,k-1)],cv[cid(i,j,k-1)],cv[cid(i,j,k)],cv[cid(i,j-1,k)],a<0)}
-  for(let k=1;k<nz-1;k++)for(let j=0;j<ny-1;j++)for(let i=1;i<nx-1;i++){const a=V[id(i,j,k)],b=V[id(i,j+1,k)];if((a<0)===(b<0))continue;
-    quad(cv[cid(i-1,j,k-1)],cv[cid(i-1,j,k)],cv[cid(i,j,k)],cv[cid(i,j,k-1)],a<0)}
-  for(let k=0;k<nz-1;k++)for(let j=1;j<ny-1;j++)for(let i=1;i<nx-1;i++){const a=V[id(i,j,k)],b=V[id(i,j,k+1)];if((a<0)===(b<0))continue;
-    quad(cv[cid(i-1,j-1,k)],cv[cid(i,j-1,k)],cv[cid(i,j,k)],cv[cid(i-1,j,k)],a<0)}
-  /* smooth it (Taubin: shrink-free smoothing) */
-  const n=P.length/3,nb=Array.from({length:n},()=>new Set());for(let t=0;t<I.length;t+=3){const a=I[t],b=I[t+1],c=I[t+2];nb[a].add(b).add(c);nb[b].add(a).add(c);nb[c].add(a).add(b)}
-  const pass=lam=>{const Q=P.slice();for(let v=0;v<n;v++){const s=nb[v];if(!s.size)continue;let ax=0,ay=0,az=0;for(const w of s){ax+=P[3*w];ay+=P[3*w+1];az+=P[3*w+2]}ax/=s.size;ay/=s.size;az/=s.size;
-    Q[3*v]+=lam*(ax-P[3*v]);Q[3*v+1]+=lam*(ay-P[3*v+1]);Q[3*v+2]+=lam*(az-P[3*v+2])}for(let q=0;q<P.length;q++)P[q]=Q[q]};
-  for(let it=0;it<(opt.smooth||6);it++){pass(.5);pass(-.53)}
-  /* make sure the faces point outwards */
-  {let sv=0;for(let t=0;t<I.length;t+=3){const a=3*I[t],c=3*I[t+1],d=3*I[t+2];sv+=P[a]*(P[c+1]*P[d+2]-P[c+2]*P[d+1])-P[a+1]*(P[c]*P[d+2]-P[c+2]*P[d])+P[a+2]*(P[c]*P[d+1]-P[c+1]*P[d])}
+  for(let k=1;k<nz-1;k++)for(let j=1;j<ny-1;j++)for(let i=0;i<nx-1;i++){const a=V[id(i,j,k)],b=V[id(i+1,j,k)];if((a<0)===(b<0))continue;quad(cv[cid(i,j-1,k-1)],cv[cid(i,j,k-1)],cv[cid(i,j,k)],cv[cid(i,j-1,k)],a<0)}
+  for(let k=1;k<nz-1;k++)for(let j=0;j<ny-1;j++)for(let i=1;i<nx-1;i++){const a=V[id(i,j,k)],b=V[id(i,j+1,k)];if((a<0)===(b<0))continue;quad(cv[cid(i-1,j,k-1)],cv[cid(i-1,j,k)],cv[cid(i,j,k)],cv[cid(i,j,k-1)],a<0)}
+  for(let k=0;k<nz-1;k++)for(let j=1;j<ny-1;j++)for(let i=1;i<nx-1;i++){const a=V[id(i,j,k)],b=V[id(i,j,k+1)];if((a<0)===(b<0))continue;quad(cv[cid(i-1,j-1,k)],cv[cid(i,j-1,k)],cv[cid(i,j,k)],cv[cid(i-1,j,k)],a<0)}
+  const n=P.length/3;if(!n)return null;
+  /* smooth it (Taubin: smoothing that doesn't shrink) using a fast neighbour list */
+  const deg=new Int32Array(n);for(let t=0;t<I.length;t+=3){deg[I[t]]+=2;deg[I[t+1]]+=2;deg[I[t+2]]+=2}const st=new Int32Array(n+1);for(let v=0;v<n;v++)st[v+1]=st[v]+deg[v];const nb=new Int32Array(st[n]),fill=st.slice(0,n);
+  for(let t=0;t<I.length;t+=3){const a=I[t],b=I[t+1],c=I[t+2];nb[fill[a]++]=b;nb[fill[a]++]=c;nb[fill[b]++]=a;nb[fill[b]++]=c;nb[fill[c]++]=a;nb[fill[c]++]=b}
+  const Pa=new Float32Array(P),Q=new Float32Array(Pa.length);
+  const pass=lam=>{for(let v=0;v<n;v++){const s0=st[v],s1=st[v+1];if(s1===s0){Q[3*v]=Pa[3*v];Q[3*v+1]=Pa[3*v+1];Q[3*v+2]=Pa[3*v+2];continue}let ax=0,ay=0,az=0;for(let e=s0;e<s1;e++){const w=nb[e];ax+=Pa[3*w];ay+=Pa[3*w+1];az+=Pa[3*w+2]}const c=s1-s0;
+    Q[3*v]=Pa[3*v]+lam*(ax/c-Pa[3*v]);Q[3*v+1]=Pa[3*v+1]+lam*(ay/c-Pa[3*v+1]);Q[3*v+2]=Pa[3*v+2]+lam*(az/c-Pa[3*v+2])}Pa.set(Q)};
+  for(let it=0;it<(opt.smooth==null?6:opt.smooth);it++){pass(.5);pass(-.53)}
+  /* faces point outwards */
+  {let sv=0;for(let t=0;t<I.length;t+=3){const a=3*I[t],c=3*I[t+1],d=3*I[t+2];sv+=Pa[a]*(Pa[c+1]*Pa[d+2]-Pa[c+2]*Pa[d+1])-Pa[a+1]*(Pa[c]*Pa[d+2]-Pa[c+2]*Pa[d])+Pa[a+2]*(Pa[c]*Pa[d+1]-Pa[c+1]*Pa[d])}
     if(sv<0)for(let t=0;t<I.length;t+=3){const q=I[t+1];I[t+1]=I[t+2];I[t+2]=q}}
-  /* size facts */
-  let area=0,bx0=1e9,bx1=-1e9,by0=1e9,by1=-1e9,bz0=1e9,bz1=-1e9;for(let t=0;t<I.length;t+=3){const a=3*I[t],b=3*I[t+1],c=3*I[t+2],ux=P[b]-P[a],uy=P[b+1]-P[a+1],uz=P[b+2]-P[a+2],vx=P[c]-P[a],vy=P[c+1]-P[a+1],vz=P[c+2]-P[a+2];
+  let area=0,bx0=1e9,bx1=-1e9,by0=1e9,by1=-1e9,bz0=1e9,bz1=-1e9;for(let t=0;t<I.length;t+=3){const a=3*I[t],b=3*I[t+1],c=3*I[t+2],ux=Pa[b]-Pa[a],uy=Pa[b+1]-Pa[a+1],uz=Pa[b+2]-Pa[a+2],vx=Pa[c]-Pa[a],vy=Pa[c+1]-Pa[a+1],vz=Pa[c+2]-Pa[a+2];
     area+=Math.hypot(uy*vz-uz*vy,uz*vx-ux*vz,ux*vy-uy*vx)/2}
-  for(let v=0;v<n;v++){bx0=Math.min(bx0,P[3*v]);bx1=Math.max(bx1,P[3*v]);by0=Math.min(by0,P[3*v+1]);by1=Math.max(by1,P[3*v+1]);bz0=Math.min(bz0,P[3*v+2]);bz1=Math.max(bz1,P[3*v+2])}
-  /* the front face: where the weapon goes */
-  let fx=-1e9,fy=0,fz=0,fc=0;const midY=(by0+by1)/2;for(let v=0;v<n;v++)if(Math.abs(P[3*v+2])<.15&&P[3*v]>fx-.02){if(P[3*v]>fx+.02){fx=P[3*v];fy=0;fz=0;fc=0}fy+=P[3*v+1];fc++}if(fc)fy/=fc;
-  return{pos:new Float32Array(P),idx:I.length>65535?new Uint32Array(I):new Uint16Array(I),area,vol:inside*res*res*res,box:{x0:bx0,x1:bx1,y0:by0,y1:by1,z0:bz0,z1:bz1},front:{x:fx,y:fc?fy:midY}}}
+  for(let v=0;v<n;v++){bx0=Math.min(bx0,Pa[3*v]);bx1=Math.max(bx1,Pa[3*v]);by0=Math.min(by0,Pa[3*v+1]);by1=Math.max(by1,Pa[3*v+1]);bz0=Math.min(bz0,Pa[3*v+2]);bz1=Math.max(bz1,Pa[3*v+2])}
+  /* the front face, where the weapon goes: the furthest-forward clay near the middle */
+  let fx=-1e9,fy=0,fc=0;for(let v=0;v<n;v++)if(Math.abs(Pa[3*v+2])<.15&&Pa[3*v+1]<by0+(by1-by0)*.6){const x=Pa[3*v];if(x>fx+.02){fx=x;fy=0;fc=0}if(x>fx-.02){fy+=Pa[3*v+1];fc++}}
+  if(!fc){fx=bx1;fy=(by0+by1)/2;fc=1}
+  return{pos:Pa,idx:I.length>65535?new Uint32Array(I):new Uint16Array(I),area,box:{x0:bx0,x1:bx1,y0:by0,y1:by1,z0:bz0,z1:bz1},front:{x:fx,y:fy/fc}}}
+/* a saved robot -> its body: start from the drawing, then replay every clay stroke */
+function rwBody(R,opt){const f=rwField(R.shapes);if(!f)return null;for(const o of R.ops||[])rwOp(f,o);return rwMesh(f,opt)}
+function rwBuildBody(S,opt){return rwMesh(rwField(S),opt)}
+/* ready-made starting shapes (side outlines) */
+const RW_STARTS={box:[[-.95,.08],[.95,.08],[.95,.55],[-.95,.55]],wedge:[[-.95,.08],[1.05,.08],[-.1,.6],[-.95,.6]],round:Array.from({length:24},(_,i)=>[Math.cos(i/24*6.283)*.95,.34+Math.sin(i/24*6.283)*.28])};
+function rwStartShape(k){const P=RW_STARTS[k]||RW_STARTS.box;return rwSmoothShape(P.flatMap((a,i)=>{const b=P[(i+1)%P.length];return[0,.25,.5,.75].map(t=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t])}))}
 /* ---------- weight and stars ---------- */
 function rwStats(R,body,cass){const m=rwFind(RW_MAT,R.mat),w=rwFind(RW_WEP,R.wep),d=rwFind(RW_DRIVE,R.drive),mo=rwFind(RW_MOT,R.mot);
   const skin=body?body.area*m.kg:0,kg=Math.round(skin+w.kg+d.kg+mo.kg+6),lim=RW_LIMIT+(cass?10:0);
   const cl=v=>Math.max(1,Math.min(5,Math.round(v*2)/2));
   return{kg,lim,over:kg>lim,parts:{body:Math.round(skin),weapon:w.kg,drive:d.kg,motors:mo.kg,battery:6},
     arm:m.arm,spd:cl(mo.spd+d.spd-Math.max(0,(kg-60)/25)),push:cl(mo.push+d.push+(kg-60)/30),pow:w.pow}}
-function rwNew(){return{id:"b"+Date.now().toString(36),nm:"",shapes:{side:[],top:[],front:[]},mat:"alu",wep:"flip",drive:"w4",mot:"mid",col:"#e53935",col2:"#fdd835",t:Date.now()}}
+function rwNew(){return{id:"b"+Date.now().toString(36),nm:"",shapes:{side:[],top:[],front:[]},ops:[],mat:"alu",wep:"flip",drive:"w4",mot:"mid",col:"#e53935",col2:"#fdd835",t:Date.now()}}
 const RW_N1=["Mega","Turbo","Iron","Thunder","Steel","Rapid","Crusher","Atomic","Rusty","Dynamo","Hyper","Nitro","Spike","Volt","Big","Little"],RW_N2=["Bob","Smasher","Wedge","Basher","Bulldog","Tornado","Destroyer","Beetle","Biter","Thumper","Ripper","Rocket","Bruiser","Hammer","Chomper","Dozer"];
 const rwFun=()=>RW_N1[Math.random()*RW_N1.length|0]+" "+RW_N2[Math.random()*RW_N2.length|0];
-if(typeof module!=="undefined")module.exports={RW_B,RW_VIEWS,RW_MAT,RW_WEP,RW_DRIVE,RW_MOT,RW_LIMIT,rwFind,rwSmoothShape,rwEncShapes,rwDecShapes,rwSDF2,rwBuildBody,rwStats,rwNew,rwFun};
+if(typeof module!=="undefined")module.exports={RW_B,RW_VIEWS,RW_MAT,RW_WEP,RW_DRIVE,RW_MOT,RW_LIMIT,rwFind,rwSmoothShape,rwEncShapes,rwDecShapes,rwSDF2,rwBuildBody,rwStats,rwNew,rwFun,rwField,rwFieldCopy,rwBrush,rwOp,rwEncOps,rwDecOps,rwMesh,rwBody,rwStartShape};
 
 /* ================= ROBOT RUMBLE: the workshop and the test arena =================
    garage (your robots) · build (5 easy steps: shape, material, weapon, wheels, paint) · drive (test it on practice dummies)
@@ -2944,8 +2975,8 @@ let RWG=null,RWS=null,RWR=null;const RW_ARENA=11;const RWD={g:{}};
 const rwNm=k=>k==="X"?"Dad":"Cass",rwThem=()=>me()==="X"?"O":"X",rwCass=()=>role==="child";
 const rwEsc=t=>String(t||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const rwStars=v=>{let s="";for(let i=1;i<=5;i++)s+=v>=i?"★":v>=i-.5?"⯪":"☆";return s};
-function rwPack(r){return{nm:r.nm,sh:rwEncShapes(r.shapes),mat:r.mat,wep:r.wep,drive:r.drive,mot:r.mot,col:r.col,col2:r.col2,t:r.t||0}}
-function rwUnpack(id,o){return{id,nm:o.nm||"Robot",shapes:rwDecShapes(o.sh),mat:o.mat,wep:o.wep,drive:o.drive,mot:o.mot,col:o.col||"#e53935",col2:o.col2||"#fdd835",t:o.t||0}}
+function rwPack(r){return{nm:r.nm,sh:rwEncShapes(r.shapes),ops:rwEncOps(r.ops),mat:r.mat,wep:r.wep,drive:r.drive,mot:r.mot,col:r.col,col2:r.col2,t:r.t||0}}
+function rwUnpack(id,o){return{id,nm:o.nm||"Robot",shapes:rwDecShapes(o.sh),ops:rwDecOps(o.ops),mat:o.mat,wep:o.wep,drive:o.drive,mot:o.mot,col:o.col||"#e53935",col2:o.col2||"#fdd835",t:o.t||0}}
 function rwLoad(){if(RWS&&RWS.who===me())return RWS;let s=null;try{s=JSON.parse(localStorage.getItem("rw_"+me())||"null")}catch(e){}
   RWS={bots:[],sel:null,note:{},who:me()};if(s&&Array.isArray(s.bots)){RWS.bots=s.bots.map(b=>rwUnpack(b.id,b));RWS.sel=s.sel;RWS.note=s.note||{}}return RWS}
 function rwSave(remote){if(!RWS)return;try{localStorage.setItem("rw_"+me(),JSON.stringify({bots:RWS.bots.map(b=>({id:b.id,...rwPack(b)})),sel:RWS.sel,note:RWS.note}))}catch(e){}
@@ -3012,11 +3043,11 @@ function rwMat(R){const T=THREE,m=R.mat,c=new T.Color(R.col);
   if(m==="steel")return new T.MeshStandardMaterial({color:new T.Color(0x5d636c).lerp(c,.3),roughness:.42,metalness:.9});
   return new T.MeshStandardMaterial({color:new T.Color(0x9fb0c6).lerp(c,.4),roughness:.25,metalness:.9})}
 function rwTrim(R){return new THREE.MeshStandardMaterial({color:new THREE.Color(R.col2),roughness:.35,metalness:.7})}
-function rwModel(R,body){const T=THREE,g=new T.Group(),M={g,anim:{},wheels:[],R,body};if(!body)return M;
+function rwModel(R,body,o={}){const T=THREE,g=new T.Group(),M={g,anim:{},wheels:[],R,body};if(!body)return M;
   const bx=body.box,L=bx.x1-bx.x0,H=bx.y1-bx.y0,Wd=bx.z1-bx.z0,cx=(bx.x0+bx.x1)/2,cz=(bx.z0+bx.z1)/2;
-  const wr=Math.max(.16,Math.min(.3,H*.42)),dy=.06-bx.y0;M.dy=dy;M.r=Math.max(L,Wd)/2;M.box=bx;
+  const wr=Math.max(.16,Math.min(.3,H*.42)),dy=o.dy!=null?o.dy:.06-bx.y0;M.dy=dy;M.r=Math.max(L,Wd)/2;M.box=bx;
   const geo=new T.BufferGeometry();geo.setAttribute("position",new T.BufferAttribute(body.pos,3));geo.setIndex(new T.BufferAttribute(body.idx,1));geo.computeVertexNormals();
-  const bm=new T.Mesh(geo,rwMat(R));bm.position.y=dy;bm.castShadow=R.mat!=="poly";bm.receiveShadow=true;bm.renderOrder=2;g.add(bm);M.bodyMesh=bm;
+  const bm=new T.Mesh(geo,o.clay?rwClayMat():rwMat(R));bm.position.y=dy;bm.castShadow=o.clay||R.mat!=="poly";bm.receiveShadow=true;bm.renderOrder=2;g.add(bm);M.bodyMesh=bm;if(o.clay)return M;
   /* the insides: battery and motors (you can see them through clear plastic) */
   const inn=new T.Group();inn.position.set(cx,dy+bx.y0+.04,cz);g.add(inn);const bat=new T.Mesh(new T.BoxGeometry(Math.min(.5,L*.3),Math.min(.16,H*.35),Math.min(.3,Wd*.35)),new T.MeshStandardMaterial({color:0x222222,roughness:.6}));bat.position.y=Math.min(.16,H*.35)/2;inn.add(bat);
   const lab=new T.Mesh(new T.BoxGeometry(Math.min(.5,L*.3)*1.01,Math.min(.05,H*.1),Math.min(.3,Wd*.35)*1.01),new T.MeshStandardMaterial({color:0xffc400}));lab.position.y=bat.position.y;inn.add(lab);
@@ -3047,8 +3078,14 @@ function rwModel(R,body){const T=THREE,g=new T.Group(),M={g,anim:{},wheels:[],R,
   else{const low=new T.Mesh(new T.BoxGeometry(.4,.04,ww*.6),tm);low.position.set(fx+.17,.05,cz);g.add(low);const pv=new T.Group();pv.position.set(fx-.02,Math.max(fy+.12,.3),cz);
     const jaw=new T.Mesh(new T.BoxGeometry(.5,.05,ww*.6),tm);jaw.position.set(.25,0,0);pv.add(jaw);const tooth=new T.Mesh(new T.ConeGeometry(.05,.14,4),new T.MeshStandardMaterial({color:0xdde3ea,metalness:.95,roughness:.15}));tooth.rotation.z=Math.PI;tooth.position.set(.48,-.08,0);pv.add(tooth);pv.rotation.z=.55;g.add(pv);M.anim.crush=pv}
   g.traverse(o=>{if(o.isMesh&&o!==bm)o.castShadow=true});return M}
-function rwShow(R,keepBody){const G=RWG;if(!G)return;if(!keepBody||!G.body||G.bodyFor!==R)G.body=R?rwBuildBody(R.shapes):null;G.bodyFor=R;
-  RWR.bot.clear();G.M=R?rwModel(R,G.body):null;if(G.M)RWR.bot.add(G.M.g);rwStatsShow()}
+function rwClayMat(){if(!RWR.clay)RWR.clay=new THREE.MeshStandardMaterial({color:0xb0683c,roughness:.8,metalness:0,envMapIntensity:.5});return RWR.clay}
+const RW_CLAY_DY=.06;
+function rwShow(R,keepBody){const G=RWG;if(!G)return;const sculpt=G.mode==="build"&&G.step==="shape";
+  if(sculpt&&G.clay)G.body=rwMesh(G.clay);else if(!keepBody||!G.body||G.bodyFor!==R)G.body=R?rwBody(R):null;G.bodyFor=R;
+  RWR.bot.clear();G.M=R?rwModel(R,G.body,sculpt?{clay:1,dy:RW_CLAY_DY}:{}):null;if(G.M)RWR.bot.add(G.M.g);rwStatsShow()}
+/* while moulding, only the clay's surface changes */
+function rwRemesh(){const G=RWG;if(!G||!G.clay||!G.M)return;const b=rwMesh(G.clay);G.body=b;if(!b)return;const T=THREE,m=G.M.bodyMesh;
+  if(!m){rwShow(G.R);return}const geo=new T.BufferGeometry();geo.setAttribute("position",new T.BufferAttribute(b.pos,3));geo.setIndex(new T.BufferAttribute(b.idx,1));geo.computeVertexNormals();m.geometry.dispose();m.geometry=geo;G.M.body=b;G.remeshT=G.t}
 
 /* ---------- the garage ---------- */
 function rwGarage(){const G=RWG;if(!G)return;G.mode="garage";G.view=null;G.auto=1;G.dirty=0;rwArena(0);const S=rwLoad(),th=rwNm(rwThem());
@@ -3078,12 +3115,17 @@ function rwStatsShow(){const G=RWG,el=$("#rwtop");if(!el)return;if(G.mode!=="bui
 /* ---------- building a robot: 5 easy steps ---------- */
 const RW_STEPS=[["shape","✏️","SHAPE"],["mat","🔩","MADE OF"],["wep","💥","WEAPON"],["drive","⚙️","WHEELS"],["paint","🎨","PAINT"]];
 function rwBuild(R){const G=RWG;G.mode="build";G.viewing=null;rwArena(0);$("#rwpanel").className="rwpanel";$("#rwpanel").innerHTML="";rwControls(0);
-  G.R=R?JSON.parse(JSON.stringify(R)):rwNew();if(!R)G.R.nm=rwFun();G.isNew=!R;G.dirty=!R?0:0;G.undo=[];G.step="shape";rwShow(G.R);rwStep("shape")}
+  G.R=R?JSON.parse(JSON.stringify(R)):rwNew();if(!R)G.R.nm=rwFun();G.R.ops=G.R.ops||[];G.isNew=!R;G.dirty=0;G.step="shape";G.tool=G.tool||"a";G.size=G.size||"m";if(G.mirror==null)G.mirror=true;G.zoom=1;G.view=null;
+  G.base=rwField(G.R.shapes);G.clay=rwFieldCopy(G.base);if(G.clay)for(const o of G.R.ops)rwOp(G.clay,o);G.wasShape=1;rwShow(G.R);rwStep("shape")}
+function rwClayStart(sh){const G=RWG,R=G.R;R.shapes={side:[sh],top:[],front:[]};R.ops=[];G.base=rwField(R.shapes);G.clay=rwFieldCopy(G.base);G.dirty=1;G.view=null;G.camK.az=.75;G.camK.el=.38;rwCam("show");G.auto=0;
+  rwShow(R);sfx("win");rwMsg("🧱 NOW MOULD IT!");rwStep("shape")}
 function rwStep(k){const G=RWG,R=G.R;G.step=k;const el=$("#rwbot");el.className="rwbot on";const i=RW_STEPS.findIndex(s=>s[0]===k);
   const tabs=`<div class="rwtabs">${RW_STEPS.map(([s,ic,nm],j)=>`<button data-st="${s}" class="${s===k?"on":""}${j<i?" done":""}"><span>${j+1}</span>${nm}</button>`).join("")}</div>`;
   let body="";const cards=(L,cur,attr)=>`<div class="rwcards">${L.map(o=>`<button class="rwc${o.k===cur?" on":""}" data-${attr}="${o.k}"><span class="ic">${o.ic}</span><b>${o.nm}</b>${attr==="mat"?`<small>🛡️${rwStars(o.arm)}<br>⚖️ ${o.kg<4?"light":o.kg<7?"medium":"HEAVY"}</small>`:attr==="wep"?`<small>💥${rwStars(o.pow)}<br>⚖️ ${o.kg} kg</small>`:`<small>⚖️ ${o.kg} kg</small>`}</button>`).join("")}</div>`;
-  if(k==="shape"){body=`<div class="rwviews">${Object.entries(RW_VIEWS).map(([v,o])=>`<button data-v="${v}" class="${G.view===v?"on":""}">${{side:"➡️",top:"⬇️",front:"🤖"}[v]} ${o.nm}<small>${(R.shapes[v]||[]).length?"✔":""}</small></button>`).join("")}</div>
-    <div class="rwrow"><button id="rwund">↶ UNDO</button><button id="rwclr">🗑️ CLEAR THIS SIDE</button></div>`}
+  if(k==="shape"){if(!G.clay)body=`<div class="rwlab">START WITH A SHAPE — OR DRAW YOUR OWN ABOVE ✏️</div><div class="rwstarts">${[["box","⬛","BOX"],["wedge","◢","WEDGE"],["round","⬭","ROUND"]].map(([k2,i2,n2])=>`<button data-start="${k2}"><span>${i2}</span>${n2}</button>`).join("")}</div>`;
+    else body=`<div class="rwtools">${[["a","👆","PULL OUT"],["p","👊","PUSH IN"],["s","✋","SMOOTH"]].map(([t,i2,n2])=>`<button data-tool="${t}" class="${G.tool===t?"on":""}"><span>${i2}</span>${n2}</button>`).join("")}
+        <button id="rwmir" class="${G.mirror?"on":""}"><span>🪞</span>MIRROR ${G.mirror?"ON":"OFF"}</button></div>
+      <div class="rwrow"><span class="rwsz">${[["s","S"],["m","M"],["l","L"]].map(([z,n2])=>`<button data-size="${z}" class="${G.size===z?"on":""}">${n2}</button>`).join("")}</span><button id="rwund">↶ UNDO</button><button id="rwclr">🔄 START AGAIN</button></div>`}
   else if(k==="mat")body=cards(RW_MAT,R.mat,"mat")+`<p class="rwsay">${rwFind(RW_MAT,R.mat).say}</p>`;
   else if(k==="wep")body=cards(RW_WEP,R.wep,"wep")+`<p class="rwsay">${rwFind(RW_WEP,R.wep).say}</p>`;
   else if(k==="drive")body=cards(RW_DRIVE,R.drive,"drive")+`<p class="rwsay">${rwFind(RW_DRIVE,R.drive).say}</p><div class="rwlab">MOTORS</div>`+cards(RW_MOT,R.mot,"mot")+`<p class="rwsay">${rwFind(RW_MOT,R.mot).say}</p>`;
@@ -3092,21 +3134,24 @@ function rwStep(k){const G=RWG,R=G.R;G.step=k;const el=$("#rwbot");el.className=
     <div class="rwlab">NAME</div><div class="rwrow"><input id="rwname" maxlength="20" value="${rwEsc(R.nm)}"><button id="rwdice">🎲</button></div>`;
   const last=k==="paint";el.innerHTML=tabs+`<div class="rwstep">${body}</div><div class="rwnav">${i>0?`<button id="rwprev">◀ BACK</button>`:"<span></span>"}<button class="go" id="rwnext">${last?"SAVE ROBOT ✔":"NEXT ▶"}</button></div>`;
   el.querySelectorAll("[data-st]").forEach(b=>b.onclick=()=>{if(b.dataset.st!=="shape"&&!G.body){rwNeedShape();return}sfx("tap");rwStep(b.dataset.st)});
-  el.querySelectorAll("[data-v]").forEach(b=>b.onclick=()=>{sfx("tap");rwSetView(b.dataset.v)});
+  el.querySelectorAll("[data-start]").forEach(b=>b.onclick=()=>{sfx("tap");rwClayStart(rwStartShape(b.dataset.start))});
+  el.querySelectorAll("[data-tool]").forEach(b=>b.onclick=()=>{G.tool=b.dataset.tool;sfx("tap");rwStep("shape")});
+  el.querySelectorAll("[data-size]").forEach(b=>b.onclick=()=>{G.size=b.dataset.size;sfx("tap");rwStep("shape")});
+  const mi=$("#rwmir");if(mi)mi.onclick=()=>{G.mirror=!G.mirror;sfx("tap");rwStep("shape")};
   for(const[a,f]of[["mat","mat"],["wep","wep"],["drive","drive"],["mot","mot"]])el.querySelectorAll(`[data-${a}]`).forEach(b=>b.onclick=()=>{R[f]=b.dataset[a];G.dirty=1;sfx("tap");rwShow(R,1);if(f==="wep")rwDemo();rwStep(k)});
   el.querySelectorAll("[data-c1]").forEach(b=>b.onclick=()=>{R.col=b.dataset.c1;G.dirty=1;sfx("tap");rwShow(R,1);rwStep(k)});
   el.querySelectorAll("[data-c2]").forEach(b=>b.onclick=()=>{R.col2=b.dataset.c2;G.dirty=1;sfx("tap");rwShow(R,1);rwStep(k)});
   const nm=$("#rwname");if(nm)nm.oninput=e=>{R.nm=e.target.value;G.dirty=1};const dc=$("#rwdice");if(dc)dc.onclick=()=>{R.nm=rwFun();$("#rwname").value=R.nm;G.dirty=1;sfx("tap")};
-  const un=$("#rwund");if(un)un.onclick=()=>{const u=G.undo.pop();if(!u)return;R.shapes[u].pop();G.dirty=1;sfx("tap");rwShow(R);rwStep("shape")};
-  const cl=$("#rwclr");if(cl)cl.onclick=()=>{const v=G.view||"side";if(!R.shapes[v].length)return;if(!confirm("Rub out the "+RW_VIEWS[v].nm.toLowerCase()+" drawing?"))return;R.shapes[v]=[];G.undo=G.undo.filter(x=>x!==v);G.dirty=1;rwShow(R);rwStep("shape")};
+  const un=$("#rwund");if(un)un.onclick=()=>{if(!R.ops.length){toast("Nothing to undo");return}R.ops.pop();G.clay=rwFieldCopy(G.base);for(const o of R.ops)rwOp(G.clay,o);G.dirty=1;sfx("tap");rwShow(R)};
+  const cl=$("#rwclr");if(cl)cl.onclick=()=>{if(!confirm("Squash it and start again?"))return;R.shapes={side:[],top:[],front:[]};R.ops=[];G.clay=G.base=null;G.dirty=1;rwShow(R);rwSetView("side");rwStep("shape")};
   const pv=$("#rwprev");if(pv)pv.onclick=()=>{sfx("tap");rwStep(RW_STEPS[i-1][0])};
   $("#rwnext").onclick=()=>{if(!G.body){rwNeedShape();return}if(last)return rwSaveBot();sfx("tap");rwStep(RW_STEPS[i+1][0])};
-  if(k==="shape"){if(!G.view)rwSetView("side",1)}else{G.view=null;rwCam("show")}
+  if(k==="shape"){if(!G.clay&&G.view!=="side")rwSetView("side",1);else if(G.clay&&G.view){G.view=null;rwCam("show")}}else{G.view=null;rwCam("show")}
+  if(k==="shape"||G.wasShape){G.wasShape=k==="shape";rwShow(R,k!=="shape"&&G.bodyFor===R&&!G.clayChanged);G.clayChanged=0}
   rwHint();rwStatsShow()}
-function rwNeedShape(){toast("Draw your robot first! ✏️");sfx("lose")}
-function rwHint(){const G=RWG,R=G.R,h=$("#rwhint");if(!h)return;if(G.mode!=="build"||G.step!=="shape"){h.textContent="";return}
-  const n=v=>(R.shapes[v]||[]).length;h.textContent=!G.view?"Tap SIDE, TOP or FRONT to draw on that side":G.view==="side"?(n("side")?"Looking good! Now tap TOP to draw it from above ⬇️":"Draw your robot from the SIDE — go all the way round the outline. The front faces this way ➡️")
-    :G.view==="top"?(n("top")?"Now try FRONT — or press NEXT":"Draw it from ABOVE — the front faces right ➡️"):(n("front")?"Great! Spin it with two fingers to see it all round":"Draw it from the FRONT")}
+function rwNeedShape(){toast("Draw your robot first, or pick a starting shape! ✏️");sfx("lose")}
+function rwHint(){const G=RWG,h=$("#rwhint");if(!h)return;if(G.mode!=="build"||G.step!=="shape"){h.textContent="";return}
+  h.textContent=!G.clay?"Draw your robot from the SIDE — go all the way round. The front faces this way ➡️":G.tool==="a"?"👆 Touch the clay and drag OUT to pull it · drag the background to spin · pinch to zoom":G.tool==="p"?"👊 Rub the clay to push it in":"✋ Rub the clay to smooth it"}
 function rwSaveBot(){const G=RWG,R=G.R,S=rwLoad();if(G.st&&G.st.over){toast("Too heavy to fight! Pick lighter parts or make it smaller ⚖️");sfx("lose");return}
   R.nm=(R.nm||"").trim()||rwFun();R.t=Date.now();const i=S.bots.findIndex(b=>b.id===R.id);if(i>=0)S.bots[i]=R;else S.bots.push(R);S.sel=R.id;if(S.bots.length>20)S.bots.shift();rwSave(1);sfx("win");rwMsg("🤖 SAVED!");G.dirty=0;
   setTimeout(()=>{if(RWG&&RWG.mode==="build")rwGarage()},900)}
@@ -3124,7 +3169,7 @@ function rwCamUpdate(dt){const G=RWG,T=THREE,c=G.cam;if(!G.camGoal)rwCam("show")
   n.dir=rwNorm(rwLerp3(n.dir,go.dir,k));if(Math.hypot(...n.dir)<.5)n.dir=go.dir.slice();n.up=rwNorm(rwLerp3(n.up,go.up,k));n.tgt=rwLerp3(n.tgt,go.tgt,k);
   /* fit the robot's drawing box in the space between the top bar and the bottom panel */
   const W=G.W,H=G.H,bp=$("#rwbot"),top=G.mode==="garage"?60:$("#rwtop").offsetHeight+14,bot=G.mode==="garage"?Math.min(H*.55,($("#rwpanel .rwcard")||{}).offsetHeight||300)+20:(bp&&bp.offsetHeight||0)+10;
-  const avH=Math.max(120,H-top-bot),span=G.mode==="garage"?3.4:3.0,kpx=Math.max(span/W,(G.view==="top"?2.2:1.5)/avH),cyPx=top+avH/2;
+  const avH=Math.max(120,H-top-bot),span=G.mode==="garage"?3.4:3.0,kpx=Math.max(span/W,1.5/avH)/((G.mode==="build"&&G.step==="shape"&&G.zoom)||1),cyPx=top+avH/2;
   c.left=-W/2*kpx;c.right=W/2*kpx;c.top=cyPx*kpx;c.bottom=-(H-cyPx)*kpx;c.near=.1;c.far=60;c.position.set(n.tgt[0]+n.dir[0]*20,n.tgt[1]+n.dir[1]*20,n.tgt[2]+n.dir[2]*20);c.up.set(...n.up);c.lookAt(n.tgt[0],n.tgt[1],n.tgt[2]);c.updateProjectionMatrix();c.updateMatrixWorld()}
 
 /* ---------- drawing on the robot ---------- */
@@ -3132,16 +3177,42 @@ function rwToWorld(px,py){const G=RWG,T=THREE,v=G.view;if(!v)return null;const n
   const nrm=new T.Vector3(...RW_VIEWDIR[v]),pl=new T.Plane(nrm,0),p=new T.Vector3();if(!rc.ray.intersectPlane(pl,p))return null;const B=RW_B;
   if(v==="side")return[Math.max(B.x0,Math.min(B.x1,p.x)),Math.max(B.y0,Math.min(B.y1,p.y))];if(v==="top")return[Math.max(B.x0,Math.min(B.x1,p.x)),Math.max(B.z0,Math.min(B.z1,p.z))];return[Math.max(B.z0,Math.min(B.z1,p.z)),Math.max(B.y0,Math.min(B.y1,p.y))]}
 function rwToScreen(v,u,w){const G=RWG,T=THREE,p=v==="side"?new T.Vector3(u,w,0):v==="top"?new T.Vector3(u,0,w):new T.Vector3(0,w,u);p.project(G.cam);return[(p.x+1)/2*G.W,(1-p.y)/2*G.H]}
-function rwDrawDown(e){const G=RWG;if(G.mode!=="build"||G.step!=="shape")return;if(G.ptr.size>=2){G.cur=null;G.twist=1;return}if(!G.view||G.twist)return;G.cur={pid:e.id,pts:[[e.x,e.y]]}}
-function rwDrawMove(e,o){const G=RWG;if(G.mode==="build"&&G.step==="shape"&&G.ptr.size>=2){/* two fingers: spin round the robot */G.cur=null;rwOrbit((e.x-o.x)/G.ptr.size,(e.y-o.y)/G.ptr.size);return}
+function rwDrawDown(e){const G=RWG;if(G.mode!=="build"||G.step!=="shape")return;
+  if(G.ptr.size>=2){/* two fingers: zoom and spin */if(G.sc)rwSculptEnd();G.cur=null;G.twist=1;const[a,b]=[...G.ptr.values()];G.pinch={d0:Math.hypot(a.x-b.x,a.y-b.y)||1,z0:G.zoom||1};return}
+  if(G.twist)return;if(!G.clay){if(G.view==="side")G.cur={pid:e.id,pts:[[e.x,e.y]]};return}
+  const hit=rwHit(e.x,e.y);if(!hit){G.spinDrag=e.id;return}rwSculptStart(e,hit)}
+function rwDrawMove(e,o){const G=RWG;
+  if(G.mode==="build"&&G.step==="shape"&&G.ptr.size>=2){G.cur=null;if(G.pinch){const[a,b]=[...G.ptr.values()];G.zoom=Math.max(.6,Math.min(3,G.pinch.z0*Math.hypot(a.x-b.x,a.y-b.y)/G.pinch.d0))}
+    if(G.clay)rwOrbit((e.x-o.x)/G.ptr.size,(e.y-o.y)/G.ptr.size);return}
   if(G.mode!=="build"||G.step!=="shape"){if(G.mode!=="drive")rwOrbit(e.x-o.x,e.y-o.y);return}
+  if(G.spinDrag===e.id){rwOrbit(e.x-o.x,e.y-o.y);return}
+  if(G.sc&&G.sc.pid===e.id){rwSculptMove(e);return}
   if(!G.cur||G.cur.pid!==e.id)return;const l=G.cur.pts[G.cur.pts.length-1];if(Math.hypot(e.x-l[0],e.y-l[1])>=3)G.cur.pts.push([e.x,e.y])}
-function rwDrawUp(e){const G=RWG;if(G.ptr.size===0)G.twist=0;if(!G.cur||G.cur.pid!==e.id)return;const c=G.cur;G.cur=null;const v=G.view;if(!v)return;
+function rwDrawUp(e){const G=RWG;if(G.ptr.size<2)G.pinch=null;if(G.ptr.size===0)G.twist=0;if(G.spinDrag===e.id)G.spinDrag=null;if(G.sc&&G.sc.pid===e.id){rwSculptEnd();return}
+  if(!G.cur||G.cur.pid!==e.id)return;const c=G.cur;G.cur=null;
   const raw=c.pts.map(p=>rwToWorld(p[0],p[1])).filter(Boolean),sh=rwSmoothShape(raw);if(!sh){toast("Draw all the way round the shape ✏️");return}
-  G.R.shapes[v].push(sh.map(q=>[+q[0].toFixed(2),+q[1].toFixed(2)]));G.undo.push(v);G.dirty=1;sfx("tap");rwShow(G.R);rwStep("shape")}
-function rwOrbit(dx,dy){const G=RWG;if(G.mode==="build"&&G.step==="shape"){G.view=null;document.querySelectorAll("#rwbot [data-v]").forEach(b=>b.classList.remove("on"));rwHint()}
+  rwClayStart(sh.map(q=>[+q[0].toFixed(2),+q[1].toFixed(2)]))}
+/* ---------- moulding the clay ---------- */
+const RW_SIZE={s:.1,m:.17,l:.27};
+function rwRay(px,py){const G=RWG,T=THREE,rc=new T.Raycaster();rc.setFromCamera(new T.Vector2(px/G.W*2-1,-(py/G.H)*2+1),G.cam);return rc}
+function rwHit(px,py){const G=RWG;if(!G.M||!G.M.bodyMesh)return null;const h=rwRay(px,py).intersectObject(G.M.bodyMesh,false)[0];if(!h)return null;
+  const n=h.face?h.face.normal.clone():new THREE.Vector3(0,1,0);return{p:[h.point.x,h.point.y-RW_CLAY_DY,h.point.z],n:[n.x,n.y,n.z]}}
+function rwSculptStart(e,hit){const G=RWG,r=RW_SIZE[G.size]||.17,t=G.tool;G.sc={pid:e.id,op:{t,r,m:!!G.mirror,p:[]},last:null,moved:0,hit};
+  if(t==="a"){const T=THREE,dir=new T.Vector3();G.cam.getWorldDirection(dir);G.sc.plane=new T.Plane().setFromNormalAndCoplanarPoint(dir,new T.Vector3(hit.p[0],hit.p[1]+RW_CLAY_DY,hit.p[2]));G.sc.last=hit.p.slice()}
+  else rwSculptAt(hit.p,hit.n);G.auto=0}
+function rwSculptAt(p,n){const G=RWG,sc=G.sc,o=sc.op,r=o.r;let q=p;if(o.t==="p")q=[p[0]-n[0]*r*.35,p[1]-n[1]*r*.35,p[2]-n[2]*r*.35];
+  q=q.map(v=>+v.toFixed(2));o.p.push(q);rwOp(G.clay,{t:o.t,r,m:o.m,p:[q]});G.clayChanged=1;if(!G.remeshT||G.t-G.remeshT>.05)rwRemesh();else G.needMesh=1}
+function rwSculptMove(e){const G=RWG,sc=G.sc,o=sc.op,r=o.r;
+  if(o.t==="a"){const p=new THREE.Vector3();if(!rwRay(e.x,e.y).ray.intersectPlane(sc.plane,p))return;const to=[p.x,p.y-RW_CLAY_DY,p.z],l=sc.last,d=Math.hypot(to[0]-l[0],to[1]-l[1],to[2]-l[2]),step=r*.35;
+    if(d<step)return;const n=Math.min(12,Math.floor(d/step));for(let i=1;i<=n;i++){const t=i/n,q=[l[0]+(to[0]-l[0])*t,l[1]+(to[1]-l[1])*t,l[2]+(to[2]-l[2])*t];if(o.p.length<80)rwSculptAt(q)}sc.last=to;sc.moved=1;return}
+  const hit=rwHit(e.x,e.y);if(!hit)return;const l=o.p[o.p.length-1];if(l&&Math.hypot(hit.p[0]-l[0],hit.p[1]-l[1],hit.p[2]-l[2])<r*.3)return;if(o.p.length<80)rwSculptAt(hit.p,hit.n)}
+function rwSculptEnd(){const G=RWG,sc=G.sc;G.sc=null;if(!sc)return;const o=sc.op;
+  if(o.t==="a"&&!sc.moved){/* a tap with PULL: add a lump */const h=sc.hit,q=[h.p[0]+h.n[0]*o.r*.3,h.p[1]+h.n[1]*o.r*.3,h.p[2]+h.n[2]*o.r*.3];G.sc=sc;rwSculptAt(q);G.sc=null}
+  if(o.p.length){G.R.ops.push(o);if(G.R.ops.length>400)G.R.ops.shift();G.dirty=1;sfx("tap")}rwRemesh();rwStatsShow()}
+
+function rwOrbit(dx,dy){const G=RWG;if(G.mode==="build"&&G.step==="shape"){if(!G.clay)return;G.view=null}
   G.auto=0;G.camK.az-=dx*.012;G.camK.el=Math.max(-.2,Math.min(1.45,G.camK.el+dy*.01));rwCam("show");G.auto=0;G.idle=0}
-function rwOverlay(){const G=RWG,x=G.ctx;x.setTransform(G.dpr,0,0,G.dpr,0,0);x.clearRect(0,0,G.W,G.H);if(G.mode!=="build"||G.step!=="shape"||!G.view)return;
+function rwOverlay(){const G=RWG,x=G.ctx;x.setTransform(G.dpr,0,0,G.dpr,0,0);x.clearRect(0,0,G.W,G.H);if(G.mode!=="build"||G.step!=="shape"||!G.view||G.clay)return;
   const v=G.view,B=RW_B,[u0,u1,w0,w1]=v==="side"?[B.x0,B.x1,B.y0,B.y1]:v==="top"?[B.x0,B.x1,B.z0,B.z1]:[B.z0,B.z1,B.y0,B.y1];
   /* the space you can draw in */
   const c=[rwToScreen(v,u0,w0),rwToScreen(v,u1,w0),rwToScreen(v,u1,w1),rwToScreen(v,u0,w1)];x.setLineDash([8,6]);x.strokeStyle="rgba(255,255,255,.35)";x.lineWidth=1.5;x.beginPath();c.forEach((p,i)=>i?x.lineTo(...p):x.moveTo(...p));x.closePath();x.stroke();x.setLineDash([]);
@@ -3195,7 +3266,7 @@ const rwSettle=(a,dt)=>{const q=Math.PI/2,t=Math.round(a/q)*q;return a+(t-a)*Mat
 function rwSparks(x,y,z,n){const T=THREE;for(let i=0;i<n;i++){const m=new T.Mesh(new T.BoxGeometry(.04,.04,.04),new T.MeshBasicMaterial({color:i%3?0xffd23f:0xff7a00}));m.position.set(x,y,z);m.userData={vx:(Math.random()-.5)*6,vy:Math.random()*5+1,vz:(Math.random()-.5)*6,l:.5+Math.random()*.4};RWR.fx.add(m)}}
 
 /* ---------- every frame ---------- */
-function rwFrame(dt){const G=RWG;if(!G||G.dead||!RWR)return;G.t+=dt;rwSize();const M=G.M;
+function rwFrame(dt){const G=RWG;if(!G||G.dead||!RWR)return;G.t+=dt;rwSize();if(G.needMesh&&G.t-(G.remeshT||0)>.05){G.needMesh=0;rwRemesh()}const M=G.M;
   if(G.mode==="drive"&&M&&G.car){rwDriveStep(dt);const c=G.car,pc=G.pcam,port=G.H>G.W,hgt=port?11:8.5,back=port?9:8;
     const want=new THREE.Vector3(c.x*.6,hgt,c.z*.6+back);if(!G.camSet){pc.position.copy(want);G.camSet=1}else pc.position.lerp(want,1-Math.exp(-dt*3));pc.lookAt(c.x*.85,0,c.z*.85-.8)}
   else{rwCamUpdate(dt);if(!G.auto&&!(G.mode==="build"&&G.step==="shape")&&!G.ptr.size){G.idle+=dt;if(G.idle>4){G.auto=1;G.idle=0}}if(M&&G.auto&&(G.mode==="garage"||G.step!=="shape")){G.camK.az+=dt*.35;rwCam("show")}if(M)M.g.position.set(0,0,0)}
