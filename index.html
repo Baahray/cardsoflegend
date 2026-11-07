@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8">
+<html lang="en"><head><meta name="app-build" content="07 Nov 14:09 PT"><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Legends"><meta name="theme-color" content="#14102e">
@@ -825,7 +825,9 @@ body.dfon{overflow:hidden}
 .rwcols button{width:28px;height:28px}
 .rwszl{font:900 11px Outfit,sans-serif;color:#9fb0c6;align-self:center;letter-spacing:.06em}
 .rwrow{align-items:center}.rwrow button{white-space:nowrap}.rwsz{flex:0 0 auto}
+.rwver{text-align:center;font:700 10px Outfit,sans-serif;color:#7d8aa0;margin-top:6px}
 
+#appupd{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:9999;border:0;border-radius:99px;padding:12px 18px;font:800 14px Outfit,sans-serif;color:#2a1d00;background:linear-gradient(135deg,#ffe066,#ffb300);box-shadow:0 8px 24px -6px rgba(0,0,0,.6);white-space:nowrap}
 /*RW-END*/
 </style></head><body><main>
 <div class="top"><div><h1 class="px" style="font-size:15px;line-height:1.2">CASS &amp; DAD&#39;S<br>CARDS OF LEGENDS</h1><div id="onl" class="onl"></div></div><div class="row" style="flex-wrap:nowrap"><button class="b d" id="snd" style="min-height:44px;padding:0 12px"><span class="ico ico-horn" style="width:28px;height:28px"></span></button><div class="b y" id="pt" style="cursor:default"><span class="pot" id="pot"></span><b id="ptn">0</b></div></div></div>
@@ -2851,6 +2853,12 @@ function drLiveRes(){const R=DRG.race;if(!R||!R.live)return;const L=DRD.live||R.
 
 </script>
 <script>/*RW-START*/
+
+const APP_BUILD=(document.querySelector('meta[name="app-build"]')||{}).content||"";
+function appUpdCheck(){const now=Date.now();if(appUpdCheck.busy||now-(appUpdCheck.t||0)<60000||!/^https?:/.test(location.protocol))return;appUpdCheck.busy=1;appUpdCheck.t=now;
+  fetch(location.pathname+"?chk="+now,{cache:"no-store",headers:{Range:"bytes=0-4095"}}).then(r=>r.text()).then(t=>{const m=/name="app-build" content="([^"]+)"/.exec(t.slice(0,6000));if(m&&APP_BUILD&&m[1]!==APP_BUILD)appUpdShow()}).catch(()=>{}).finally(()=>{appUpdCheck.busy=0})}
+function appUpdShow(){if(document.getElementById("appupd"))return;const b=document.createElement("button");b.id="appupd";b.innerHTML="✨ A new update is ready — <b>tap to get it</b>";b.onclick=()=>location.replace(location.pathname+"?v="+Date.now());document.body.appendChild(b)}
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)appUpdCheck()});setTimeout(appUpdCheck,5000);
 /* ================= ROBOT RUMBLE: the rules (parts, weights, the drawn shape -> 3D) =================
    A robot's body is drawn from the side, from above and from the front. The body is the block "cut out" to match all three
    drawings (like cutting a robot out of a block of foam), then smoothed. Units: X = forward (front is +X), Y = up, Z = across. */
@@ -3248,7 +3256,7 @@ function rwGarage(){const G=RWG;if(!G)return;G.mode="garage";G.view=null;G.auto=
       ${theirs.length?`<div class="rwchips"><b>${th.toUpperCase()}'S ROBOTS</b>${chips(theirs,0)}</div>`:""}
       <div class="rwbtns"><button class="b y rwbig" id="rwnew">＋ BUILD A ROBOT</button>${R&&!G.viewing?`<button class="b rwfix" id="rwfix">🔧 CHANGE IT</button>`:""}</div>
       ${R&&st?`<button class="b o rwbig" id="rwdrive" style="width:100%;margin-top:8px">🎮 TEST DRIVE${G.viewing?" "+th.toUpperCase()+"'S":""}</button>`:""}
-      <div class="rwsoon">⚔️ Battles in the arena are coming next!</div></div>`;
+      <div class="rwsoon">⚔️ Battles in the arena are coming next!</div><div class="rwver">${typeof APP_BUILD!=="undefined"&&APP_BUILD?"app version "+rwEsc(APP_BUILD):""}</div></div>`;
   $("#rwpanel").querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{S.sel=b.dataset.m;G.viewing=null;rwSave(1);sfx("tap");rwGarage()});
   $("#rwpanel").querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{G.viewing=b.dataset.t;sfx("tap");rwGarage()});
   $("#rwnew").onclick=()=>rwBuild(null);const fx=$("#rwfix");if(fx)fx.onclick=()=>rwBuild(rwSel());const dv=$("#rwdrive");if(dv)dv.onclick=()=>rwDrive(R)}
