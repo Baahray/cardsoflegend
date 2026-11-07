@@ -124,12 +124,13 @@ function rwBuildBody(S,opt){return rwMesh(rwField(S),opt)}
 const RW_STARTS={box:[[-.95,.08],[.95,.08],[.95,.55],[-.95,.55]],wedge:[[-.95,.08],[1.05,.08],[-.1,.6],[-.95,.6]],round:Array.from({length:24},(_,i)=>[Math.cos(i/24*6.283)*.95,.34+Math.sin(i/24*6.283)*.28])};
 function rwStartShape(k){const P=RW_STARTS[k]||RW_STARTS.box;return rwSmoothShape(P.flatMap((a,i)=>{const b=P[(i+1)%P.length];return[0,.25,.5,.75].map(t=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t])}))}
 /* ---------- weight and stars ---------- */
+/* no weight limit: heavy is just heavy — slower to get going, but harder to push around */
 function rwStats(R,body,cass){const m=rwFind(RW_MAT,R.mat),mo=rwFind(RW_MOT,R.mot),W=R.weps||[],H=R.wheels||[];
-  const skin=body?body.area*m.kg:0,wkg=W.reduce((a,w)=>a+rwFind(RW_WEP,w.k).kg,0),hkg=H.reduce((a,w)=>a+rwFind(RW_WHEEL,w.k).kg,0),kg=Math.round(skin+wkg+hkg+mo.kg+6),lim=RW_LIMIT+(cass?10:0);
+  const skin=body?body.area*m.kg:0,wkg=W.reduce((a,w)=>a+rwFind(RW_WEP,w.k).kg,0),hkg=H.reduce((a,w)=>a+rwFind(RW_WHEEL,w.k).kg,0),kg=Math.round(skin+wkg+hkg+mo.kg+6);
   const cl=v=>Math.max(0,Math.min(5,Math.round(v*2)/2)),tr=H.filter(w=>w.k==="t").length,nW=H.length+tr,avgR=H.length?H.reduce((a,w)=>a+rwFind(RW_WHEEL,w.k).r,0)/H.length:0;
-  const pw=W.length?Math.max(...W.map(w=>rwFind(RW_WEP,w.k).pow))+.5*(W.length-1):0;
-  return{kg,lim,over:kg>lim,parts:{body:Math.round(skin),weapons:wkg,wheels:hkg,motors:mo.kg,battery:6},noWheels:!H.length,
-    arm:m.arm,spd:H.length?Math.max(1,cl(mo.spd+(avgR-.2)*6-tr*.4-Math.max(0,(kg-60)/25))):0,push:H.length?Math.max(1,cl(mo.push+tr*.6+Math.min(1,(nW-2)*.25)+(kg-60)/30)):0,pow:Math.min(5,cl(pw))}}
+  const pw=W.length?Math.max(...W.map(w=>rwFind(RW_WEP,w.k).pow))+.5*(W.length-1):0,slow=Math.max(0,(kg-60)/(cass?40:28));
+  return{kg,over:false,cls:kg<60?"Light":kg<90?"Medium":kg<120?"Heavy":"SUPER HEAVY 🐘",parts:{body:Math.round(skin),weapons:wkg,wheels:hkg,motors:mo.kg,battery:6},noWheels:!H.length,
+    arm:m.arm,spd:H.length?Math.max(1,cl(mo.spd+(avgR-.2)*6-tr*.4-slow+(cass?.5:0))):0,push:H.length?Math.max(1,cl(mo.push+tr*.6+Math.min(1,(nW-2)*.25)+(kg-60)/30)):0,pow:Math.min(5,cl(pw))}}
 function rwNew(){return{id:"b"+Date.now().toString(36),nm:"",shapes:{side:[],top:[],front:[]},ops:[],mat:"alu",weps:[],wheels:[],mot:"mid",col:"#e53935",col2:"#fdd835",pat:"",paint:[],stk:[],t:Date.now()}}
 /* ---------- placed parts and paint, as short strings for saving ---------- */
 const r2=v=>Math.round(v*100);
