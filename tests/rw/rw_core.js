@@ -13,12 +13,18 @@ const RW_MAT=[
   {k:"steel",nm:"Steel",ic:"🔩",kg:11,arm:5,say:"Super strong metal — but very heavy!"},
   {k:"ti",nm:"Titanium",ic:"💠",kg:6.5,arm:5,say:"Strong AND light. The best metal there is!"}];
 const RW_WEP=[
-  {k:"wedge",nm:"Wedge",ic:"📐",kg:6,pow:2,say:"A ramp on the front. Get under them and shove them around."},
-  {k:"flip",nm:"Flipper",ic:"🦘",kg:16,pow:4,say:"Flicks robots into the air and onto their backs!"},
-  {k:"spin",nm:"Spinner",ic:"🌀",kg:20,pow:5,say:"A heavy spinning bar that smashes bits off."},
-  {k:"drum",nm:"Drum",ic:"🥁",kg:18,pow:4.5,say:"A spinning drum that bounces robots up in the air."},
-  {k:"axe",nm:"Axe",ic:"🪓",kg:14,pow:4,say:"Swings down hard from the top."},
-  {k:"crush",nm:"Crusher",ic:"🦀",kg:18,pow:3.5,say:"Big jaws that grab and squeeze."}];
+  {k:"wedge",nm:"Wedge",ic:"📐",kg:5,pow:2,say:"A ramp. Get under them and shove them around."},
+  {k:"flip",nm:"Flipper",ic:"🦘",kg:13,pow:4,say:"Flicks robots into the air and onto their backs!"},
+  {k:"spin",nm:"Spinner",ic:"🌀",kg:15,pow:5,say:"A heavy spinning bar that smashes bits off."},
+  {k:"drum",nm:"Drum",ic:"🥁",kg:14,pow:4.5,say:"A spinning drum that bounces robots up in the air."},
+  {k:"axe",nm:"Axe",ic:"🪓",kg:11,pow:4,say:"Swings down hard."},
+  {k:"crush",nm:"Crusher",ic:"🦀",kg:14,pow:3.5,say:"Big jaws that grab and squeeze."},
+  {k:"spike",nm:"Spike",ic:"📌",kg:3,pow:1.5,say:"A sharp spike. Light, so you can stick on lots!"}];
+const RW_WHEEL=[{k:"s",nm:"Small wheel",ic:"⚫",r:.13,kg:2,say:"Small and light."},{k:"m",nm:"Wheel",ic:"⚫",r:.19,kg:3,say:"A normal wheel."},{k:"l",nm:"Big wheel",ic:"⚫",r:.27,kg:4.5,say:"Big wheels go faster and climb over things."},
+  {k:"t",nm:"Tank track",ic:"🛞",r:.17,kg:7,say:"Really hard to push around — but slower."}];
+const RW_PAT=[{k:"",nm:"Plain",ic:"⬜"},{k:"two",nm:"Two-tone",ic:"🌗"},{k:"stripe",nm:"Racing stripes",ic:"🏁"},{k:"flame",nm:"Flames",ic:"🔥"},{k:"camo",nm:"Camo",ic:"🪖"},{k:"tiger",nm:"Tiger",ic:"🐯"},
+  {k:"check",nm:"Checks",ic:"🔲"},{k:"spots",nm:"Spots",ic:"🔴"},{k:"bolt",nm:"Lightning",ic:"⚡"}];
+const RW_STK=["💀","🔥","⚡","⭐","👀","😈","🦈","🐲","☠️","💥","🎯","🏁","☢️","👑","❤️","7"];
 const RW_DRIVE=[
   {k:"w2",nm:"2 big wheels",ic:"⚫⚫",kg:8,spd:.5,push:0,say:"Fast, and turns on the spot."},
   {k:"w4",nm:"4 wheels",ic:"⚫⚫⚫⚫",kg:12,spd:0,push:.5,say:"Grippy and steady."},
@@ -27,7 +33,7 @@ const RW_MOT=[
   {k:"fast",nm:"Fast",ic:"⚡",kg:8,spd:5,push:2.5,say:"Zooms around."},
   {k:"mid",nm:"Balanced",ic:"⚖️",kg:10,spd:4,push:3.5,say:"A bit of both."},
   {k:"push",nm:"Pushy",ic:"💪",kg:14,spd:3,push:5,say:"Slower, but a strong shover."}];
-const RW_COLS=["#e53935","#fb8c00","#fdd835","#43a047","#1e88e5","#8e24aa","#ec407a","#263238","#eceff1","#795548"];
+const RW_COLS=["#e53935","#ff7043","#fb8c00","#fdd835","#c0ca33","#43a047","#00897b","#00bcd4","#1e88e5","#3949ab","#8e24aa","#ec407a","#795548","#263238","#9e9e9e","#ffffff"];
 const rwFind=(L,k)=>L.find(x=>x.k===k)||L[0];
 /* ---------- the drawings: closed shapes, smoothed ---------- */
 function rwChaikin(p,n=2){let a=p;for(let it=0;it<n;it++){const o=[];for(let i=0;i<a.length;i++){const P=a[i],Q=a[(i+1)%a.length];o.push([P[0]*.75+Q[0]*.25,P[1]*.75+Q[1]*.25],[P[0]*.25+Q[0]*.75,P[1]*.25+Q[1]*.75])}a=o}return a}
@@ -118,12 +124,51 @@ function rwBuildBody(S,opt){return rwMesh(rwField(S),opt)}
 const RW_STARTS={box:[[-.95,.08],[.95,.08],[.95,.55],[-.95,.55]],wedge:[[-.95,.08],[1.05,.08],[-.1,.6],[-.95,.6]],round:Array.from({length:24},(_,i)=>[Math.cos(i/24*6.283)*.95,.34+Math.sin(i/24*6.283)*.28])};
 function rwStartShape(k){const P=RW_STARTS[k]||RW_STARTS.box;return rwSmoothShape(P.flatMap((a,i)=>{const b=P[(i+1)%P.length];return[0,.25,.5,.75].map(t=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t])}))}
 /* ---------- weight and stars ---------- */
-function rwStats(R,body,cass){const m=rwFind(RW_MAT,R.mat),w=rwFind(RW_WEP,R.wep),d=rwFind(RW_DRIVE,R.drive),mo=rwFind(RW_MOT,R.mot);
-  const skin=body?body.area*m.kg:0,kg=Math.round(skin+w.kg+d.kg+mo.kg+6),lim=RW_LIMIT+(cass?10:0);
-  const cl=v=>Math.max(1,Math.min(5,Math.round(v*2)/2));
-  return{kg,lim,over:kg>lim,parts:{body:Math.round(skin),weapon:w.kg,drive:d.kg,motors:mo.kg,battery:6},
-    arm:m.arm,spd:cl(mo.spd+d.spd-Math.max(0,(kg-60)/25)),push:cl(mo.push+d.push+(kg-60)/30),pow:w.pow}}
-function rwNew(){return{id:"b"+Date.now().toString(36),nm:"",shapes:{side:[],top:[],front:[]},ops:[],mat:"alu",wep:"flip",drive:"w4",mot:"mid",col:"#e53935",col2:"#fdd835",t:Date.now()}}
+function rwStats(R,body,cass){const m=rwFind(RW_MAT,R.mat),mo=rwFind(RW_MOT,R.mot),W=R.weps||[],H=R.wheels||[];
+  const skin=body?body.area*m.kg:0,wkg=W.reduce((a,w)=>a+rwFind(RW_WEP,w.k).kg,0),hkg=H.reduce((a,w)=>a+rwFind(RW_WHEEL,w.k).kg,0),kg=Math.round(skin+wkg+hkg+mo.kg+6),lim=RW_LIMIT+(cass?10:0);
+  const cl=v=>Math.max(0,Math.min(5,Math.round(v*2)/2)),tr=H.filter(w=>w.k==="t").length,nW=H.length+tr,avgR=H.length?H.reduce((a,w)=>a+rwFind(RW_WHEEL,w.k).r,0)/H.length:0;
+  const pw=W.length?Math.max(...W.map(w=>rwFind(RW_WEP,w.k).pow))+.5*(W.length-1):0;
+  return{kg,lim,over:kg>lim,parts:{body:Math.round(skin),weapons:wkg,wheels:hkg,motors:mo.kg,battery:6},noWheels:!H.length,
+    arm:m.arm,spd:H.length?Math.max(1,cl(mo.spd+(avgR-.2)*6-tr*.4-Math.max(0,(kg-60)/25))):0,push:H.length?Math.max(1,cl(mo.push+tr*.6+Math.min(1,(nW-2)*.25)+(kg-60)/30)):0,pow:Math.min(5,cl(pw))}}
+function rwNew(){return{id:"b"+Date.now().toString(36),nm:"",shapes:{side:[],top:[],front:[]},ops:[],mat:"alu",weps:[],wheels:[],mot:"mid",col:"#e53935",col2:"#fdd835",pat:"",paint:[],stk:[],t:Date.now()}}
+/* ---------- placed parts and paint, as short strings for saving ---------- */
+const r2=v=>Math.round(v*100);
+function rwEncParts(L){return(L||[]).map(o=>o.k+":"+o.p.map(r2).join(",")+(o.n?":"+o.n.map(r2).join(","):""))}
+function rwDecParts(L,kinds){if(!Array.isArray(L))return[];return L.map(s=>{if(typeof s!=="string")return null;const a=s.split(":");if(!kinds.includes(a[0]))return null;const p=(a[1]||"").split(",").map(n=>+n/100),n=a[2]?a[2].split(",").map(n=>+n/100):null;
+  if(p.length!==3||!p.every(isFinite))return null;return n&&n.length===3&&n.every(isFinite)?{k:a[0],p,n}:{k:a[0],p}}).filter(Boolean)}
+function rwEncPaint(L){return(L||[]).map(o=>o.c+"|"+r2(o.r)+"|"+(o.m?1:0)+"|"+o.p.map(q=>q.map(r2).join(",")).join(" "))}
+function rwDecPaint(L){if(!Array.isArray(L))return[];return L.map(s=>{if(typeof s!=="string")return null;const a=s.split("|");if(a.length<4||!/^#[0-9a-f]{6}$/i.test(a[0]))return null;
+  const p=a[3].split(" ").map(q=>q.split(",").map(n=>+n/100)).filter(q=>q.length===3&&q.every(isFinite));return p.length?{c:a[0],r:Math.max(.03,Math.min(.4,+a[1]/100||.1)),m:a[2]==="1",p}:null}).filter(Boolean)}
+function rwEncStk(L){return(L||[]).map(o=>o.e+"|"+r2(o.s)+"|"+o.p.map(r2).join(",")+"|"+o.n.map(r2).join(","))}
+function rwDecStk(L){if(!Array.isArray(L))return[];return L.map(s=>{if(typeof s!=="string")return null;const a=s.split("|");if(a.length<4||!RW_STK.includes(a[0]))return null;const p=a[2].split(",").map(n=>+n/100),n=a[3].split(",").map(n=>+n/100);
+  if(p.length!==3||n.length!==3||!p.concat(n).every(isFinite))return null;return{e:a[0],s:Math.max(.08,Math.min(.6,+a[1]/100||.2)),p,n}}).filter(Boolean)}
+/* ---------- the robot's colours, worked out for every point on its skin ---------- */
+const rwHex=h=>{const n=parseInt(h.slice(1),16);return[(n>>16&255)/255,(n>>8&255)/255,(n&255)/255]};
+function rwPattern(k,x,y,z,b){const L=b.x1-b.x0,Hh=b.y1-b.y0,mid=b.y0+Hh*.5;
+  if(k==="two")return y>mid?1:0;
+  if(k==="stripe")return(Math.abs(Math.abs(z)-.13)<.055&&y>b.y0+Hh*.35)?1:0;
+  if(k==="flame"){const t=(b.x1-x)/L,w=.35+.18*Math.sin((y-b.y0)*22+Math.abs(z)*9)+.1*Math.sin((y-b.y0)*51);if(t<w*.55)return 3;if(t<w*.8)return 2;if(t<w)return 1;return 0}
+  if(k==="camo"){const v=Math.sin(x*7.3+Math.sin(z*5.1)*1.7)*Math.sin(y*8.7+Math.cos(x*4.3)*1.3)+Math.sin(z*6.1+y*3.7)*.6;return v>.45?1:v<-.55?2:0}
+  if(k==="tiger")return Math.sin(x*17+Math.sin(y*7+z*3)*2.2)>.55?1:0;
+  if(k==="check")return((Math.floor(x/.16)+Math.floor(y/.16)+Math.floor(z/.16))&1)?1:0;
+  if(k==="spots"){for(let i=0;i<26;i++){const px=Math.sin(i*12.9898)*.9,py=.15+((Math.sin(i*78.233)+1)/2)*.8,pz=Math.sin(i*39.425)*.6;if(Math.hypot(x-px,(y-py)*.9,Math.abs(z)-Math.abs(pz))<.09)return 1}return 0}
+  if(k==="bolt"){const zz=mid+.12*((((x*6)%2)+2)%2<1?(((x*6)%1)+1)%1:1-((((x*6)%1)+1)%1))-.06;return Math.abs(y-zz)<.035&&Math.abs(z)>.1?1:0}
+  return 0}
+function rwColors(body,R,dy=0){const P=body.pos,n=P.length/3,C=new Float32Array(n*3),base=rwHex(R.col||"#e53935"),c2=rwHex(R.col2||"#fdd835"),b=body.box;
+  const fl=[c2,rwHex("#ff6a00"),rwHex("#ffd23f")],camo2=c2.map(v=>v*.55);
+  for(let v=0;v<n;v++){const x=P[3*v],y=P[3*v+1],z=P[3*v+2];let c=base;const q=rwPattern(R.pat,x,y,z,b);
+    if(q){c=R.pat==="flame"?fl[q-1]:R.pat==="camo"&&q===2?camo2:R.pat==="bolt"?rwHex("#ffd23f"):c2}C[3*v]=c[0];C[3*v+1]=c[1];C[3*v+2]=c[2]}
+  for(const o of R.paint||[])rwPaintInto(C,P,o);return C}
+/* finger paint as its own layer: colour + how much paint (0..1) for every point on the skin */
+function rwPaintLayer(P,L){const n=P.length/3,A=new Float32Array(n*4);for(const o of L||[])rwPaintAdd(A,P,o);return A}
+function rwPaintAdd(A,P,o,from=0){const c=rwHex(o.c).map(v=>Math.pow(v,2.2)),n=P.length/3,r=o.r;
+  for(let i=from;i<o.p.length;i++){const q=o.p[i],pts=o.m&&Math.abs(q[2])>.02?[q,[q[0],q[1],-q[2]]]:[q];
+    for(const s of pts)for(let v=0;v<n;v++){const dx=P[3*v]-s[0],dy=P[3*v+1]-s[1],dz=P[3*v+2]-s[2],d2=dx*dx+dy*dy+dz*dz;if(d2>r*r)continue;const w=Math.min(1,(1-Math.sqrt(d2)/r)*2.5),a=A[4*v+3];
+      for(let k=0;k<3;k++)A[4*v+k]=a>0?A[4*v+k]+(c[k]-A[4*v+k])*w:c[k];A[4*v+3]=a+(1-a)*w}}}
+function rwPaintInto(C,P,o,from=0){const c=rwHex(o.c),n=P.length/3,r=o.r;
+  for(let i=from;i<o.p.length;i++){const q=o.p[i],pts=o.m&&Math.abs(q[2])>.02?[q,[q[0],q[1],-q[2]]]:[q];
+    for(const s of pts)for(let v=0;v<n;v++){const dx=P[3*v]-s[0],dy=P[3*v+1]-s[1],dz=P[3*v+2]-s[2],d2=dx*dx+dy*dy+dz*dz;if(d2>r*r)continue;const w=Math.min(1,(1-Math.sqrt(d2)/r)*2.5);
+      C[3*v]+=(c[0]-C[3*v])*w;C[3*v+1]+=(c[1]-C[3*v+1])*w;C[3*v+2]+=(c[2]-C[3*v+2])*w}}}
 const RW_N1=["Mega","Turbo","Iron","Thunder","Steel","Rapid","Crusher","Atomic","Rusty","Dynamo","Hyper","Nitro","Spike","Volt","Big","Little"],RW_N2=["Bob","Smasher","Wedge","Basher","Bulldog","Tornado","Destroyer","Beetle","Biter","Thumper","Ripper","Rocket","Bruiser","Hammer","Chomper","Dozer"];
 const rwFun=()=>RW_N1[Math.random()*RW_N1.length|0]+" "+RW_N2[Math.random()*RW_N2.length|0];
-if(typeof module!=="undefined")module.exports={RW_B,RW_VIEWS,RW_MAT,RW_WEP,RW_DRIVE,RW_MOT,RW_LIMIT,rwFind,rwSmoothShape,rwEncShapes,rwDecShapes,rwSDF2,rwBuildBody,rwStats,rwNew,rwFun,rwField,rwFieldCopy,rwBrush,rwOp,rwEncOps,rwDecOps,rwMesh,rwBody,rwStartShape};
+if(typeof module!=="undefined")module.exports={RW_B,RW_VIEWS,RW_MAT,RW_WEP,RW_DRIVE,RW_MOT,RW_LIMIT,rwFind,rwSmoothShape,rwEncShapes,rwDecShapes,RW_WHEEL,RW_PAT,RW_STK,rwPaintLayer,rwPaintAdd,rwHex,rwEncParts,rwDecParts,rwEncPaint,rwDecPaint,rwEncStk,rwDecStk,rwColors,rwPaintInto,rwSDF2,rwBuildBody,rwStats,rwNew,rwFun,rwField,rwFieldCopy,rwBrush,rwOp,rwEncOps,rwDecOps,rwMesh,rwBody,rwStartShape};

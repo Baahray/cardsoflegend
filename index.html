@@ -790,7 +790,7 @@ body.dfon{overflow:hidden}
 .rwrow{display:flex;gap:6px;margin-top:8px;justify-content:center}
 .rwrow button{border:0;border-radius:99px;padding:9px 14px;background:rgba(255,255,255,.88);color:#222;font:900 13px 'Outfit',sans-serif}
 .rwrow input{flex:1;min-width:0;border:0;border-radius:99px;padding:10px 14px;font:900 16px 'Outfit',sans-serif;text-align:center}
-.rwcards{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.rwcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(82px,1fr));gap:5px}
 .rwc{border:2px solid transparent;border-radius:14px;padding:7px 4px;background:rgba(255,255,255,.1);color:#fff;font:800 12px/1.15 'Outfit',sans-serif;display:flex;flex-direction:column;align-items:center;gap:2px}
 .rwc .ic{font-size:24px;line-height:1.1}.rwc small{font-size:10px;color:#cfd8e6;font-weight:700;line-height:1.3}.rwc small{letter-spacing:.02em}
 .rwc.on{border-color:#ffc400;background:rgba(255,196,0,.18);transform:translateY(-2px)}
@@ -812,6 +812,17 @@ body.dfon{overflow:hidden}
 #rwmir.on{border-color:#43c94f;background:rgba(67,201,79,.22)}
 .rwsz{display:flex;gap:4px;background:rgba(255,255,255,.12);border-radius:99px;padding:3px}
 .rwsz button{width:36px;height:34px;border-radius:99px!important;padding:0!important;background:transparent!important;color:#fff!important}.rwsz button.on{background:#ffc400!important;color:#2a1d00!important}
+.rwmir{background:rgba(255,255,255,.88)!important}.rwmir.on{background:#43c94f!important;color:#fff!important}
+.rwptabs{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:4px}
+.rwptabs button{border:2px solid transparent;border-radius:12px;padding:4px 2px;background:rgba(255,255,255,.12);color:#fff;font:900 10px 'Outfit',sans-serif;display:flex;flex-direction:column;align-items:center}
+.rwptabs button span{font-size:20px;line-height:1.2}.rwptabs button.on{border-color:#ffc400;background:rgba(255,196,0,.22)}
+.rwpats{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+.rwpats button{border:2px solid transparent;border-radius:12px;padding:5px 2px;background:rgba(255,255,255,.1);color:#fff;font:800 11px 'Outfit',sans-serif;display:flex;align-items:center;justify-content:center;gap:5px}
+.rwpats button span{font-size:18px}.rwpats button.on{border-color:#ffc400;background:rgba(255,196,0,.2)}
+.rwstk{display:grid;grid-template-columns:repeat(8,1fr);gap:4px}
+.rwstk button{border:2px solid transparent;border-radius:10px;background:rgba(255,255,255,.12);font:900 22px/1 'Outfit',sans-serif;color:#fff;padding:5px 0}
+.rwstk button.on{border-color:#ffc400;background:rgba(255,196,0,.25)}
+.rwcols button{width:28px;height:28px}
 
 /*RW-END*/
 </style></head><body><main>
@@ -2853,12 +2864,18 @@ const RW_MAT=[
   {k:"steel",nm:"Steel",ic:"🔩",kg:11,arm:5,say:"Super strong metal — but very heavy!"},
   {k:"ti",nm:"Titanium",ic:"💠",kg:6.5,arm:5,say:"Strong AND light. The best metal there is!"}];
 const RW_WEP=[
-  {k:"wedge",nm:"Wedge",ic:"📐",kg:6,pow:2,say:"A ramp on the front. Get under them and shove them around."},
-  {k:"flip",nm:"Flipper",ic:"🦘",kg:16,pow:4,say:"Flicks robots into the air and onto their backs!"},
-  {k:"spin",nm:"Spinner",ic:"🌀",kg:20,pow:5,say:"A heavy spinning bar that smashes bits off."},
-  {k:"drum",nm:"Drum",ic:"🥁",kg:18,pow:4.5,say:"A spinning drum that bounces robots up in the air."},
-  {k:"axe",nm:"Axe",ic:"🪓",kg:14,pow:4,say:"Swings down hard from the top."},
-  {k:"crush",nm:"Crusher",ic:"🦀",kg:18,pow:3.5,say:"Big jaws that grab and squeeze."}];
+  {k:"wedge",nm:"Wedge",ic:"📐",kg:5,pow:2,say:"A ramp. Get under them and shove them around."},
+  {k:"flip",nm:"Flipper",ic:"🦘",kg:13,pow:4,say:"Flicks robots into the air and onto their backs!"},
+  {k:"spin",nm:"Spinner",ic:"🌀",kg:15,pow:5,say:"A heavy spinning bar that smashes bits off."},
+  {k:"drum",nm:"Drum",ic:"🥁",kg:14,pow:4.5,say:"A spinning drum that bounces robots up in the air."},
+  {k:"axe",nm:"Axe",ic:"🪓",kg:11,pow:4,say:"Swings down hard."},
+  {k:"crush",nm:"Crusher",ic:"🦀",kg:14,pow:3.5,say:"Big jaws that grab and squeeze."},
+  {k:"spike",nm:"Spike",ic:"📌",kg:3,pow:1.5,say:"A sharp spike. Light, so you can stick on lots!"}];
+const RW_WHEEL=[{k:"s",nm:"Small wheel",ic:"⚫",r:.13,kg:2,say:"Small and light."},{k:"m",nm:"Wheel",ic:"⚫",r:.19,kg:3,say:"A normal wheel."},{k:"l",nm:"Big wheel",ic:"⚫",r:.27,kg:4.5,say:"Big wheels go faster and climb over things."},
+  {k:"t",nm:"Tank track",ic:"🛞",r:.17,kg:7,say:"Really hard to push around — but slower."}];
+const RW_PAT=[{k:"",nm:"Plain",ic:"⬜"},{k:"two",nm:"Two-tone",ic:"🌗"},{k:"stripe",nm:"Racing stripes",ic:"🏁"},{k:"flame",nm:"Flames",ic:"🔥"},{k:"camo",nm:"Camo",ic:"🪖"},{k:"tiger",nm:"Tiger",ic:"🐯"},
+  {k:"check",nm:"Checks",ic:"🔲"},{k:"spots",nm:"Spots",ic:"🔴"},{k:"bolt",nm:"Lightning",ic:"⚡"}];
+const RW_STK=["💀","🔥","⚡","⭐","👀","😈","🦈","🐲","☠️","💥","🎯","🏁","☢️","👑","❤️","7"];
 const RW_DRIVE=[
   {k:"w2",nm:"2 big wheels",ic:"⚫⚫",kg:8,spd:.5,push:0,say:"Fast, and turns on the spot."},
   {k:"w4",nm:"4 wheels",ic:"⚫⚫⚫⚫",kg:12,spd:0,push:.5,say:"Grippy and steady."},
@@ -2867,7 +2884,7 @@ const RW_MOT=[
   {k:"fast",nm:"Fast",ic:"⚡",kg:8,spd:5,push:2.5,say:"Zooms around."},
   {k:"mid",nm:"Balanced",ic:"⚖️",kg:10,spd:4,push:3.5,say:"A bit of both."},
   {k:"push",nm:"Pushy",ic:"💪",kg:14,spd:3,push:5,say:"Slower, but a strong shover."}];
-const RW_COLS=["#e53935","#fb8c00","#fdd835","#43a047","#1e88e5","#8e24aa","#ec407a","#263238","#eceff1","#795548"];
+const RW_COLS=["#e53935","#ff7043","#fb8c00","#fdd835","#c0ca33","#43a047","#00897b","#00bcd4","#1e88e5","#3949ab","#8e24aa","#ec407a","#795548","#263238","#9e9e9e","#ffffff"];
 const rwFind=(L,k)=>L.find(x=>x.k===k)||L[0];
 /* ---------- the drawings: closed shapes, smoothed ---------- */
 function rwChaikin(p,n=2){let a=p;for(let it=0;it<n;it++){const o=[];for(let i=0;i<a.length;i++){const P=a[i],Q=a[(i+1)%a.length];o.push([P[0]*.75+Q[0]*.25,P[1]*.75+Q[1]*.25],[P[0]*.25+Q[0]*.75,P[1]*.25+Q[1]*.75])}a=o}return a}
@@ -2958,15 +2975,54 @@ function rwBuildBody(S,opt){return rwMesh(rwField(S),opt)}
 const RW_STARTS={box:[[-.95,.08],[.95,.08],[.95,.55],[-.95,.55]],wedge:[[-.95,.08],[1.05,.08],[-.1,.6],[-.95,.6]],round:Array.from({length:24},(_,i)=>[Math.cos(i/24*6.283)*.95,.34+Math.sin(i/24*6.283)*.28])};
 function rwStartShape(k){const P=RW_STARTS[k]||RW_STARTS.box;return rwSmoothShape(P.flatMap((a,i)=>{const b=P[(i+1)%P.length];return[0,.25,.5,.75].map(t=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t])}))}
 /* ---------- weight and stars ---------- */
-function rwStats(R,body,cass){const m=rwFind(RW_MAT,R.mat),w=rwFind(RW_WEP,R.wep),d=rwFind(RW_DRIVE,R.drive),mo=rwFind(RW_MOT,R.mot);
-  const skin=body?body.area*m.kg:0,kg=Math.round(skin+w.kg+d.kg+mo.kg+6),lim=RW_LIMIT+(cass?10:0);
-  const cl=v=>Math.max(1,Math.min(5,Math.round(v*2)/2));
-  return{kg,lim,over:kg>lim,parts:{body:Math.round(skin),weapon:w.kg,drive:d.kg,motors:mo.kg,battery:6},
-    arm:m.arm,spd:cl(mo.spd+d.spd-Math.max(0,(kg-60)/25)),push:cl(mo.push+d.push+(kg-60)/30),pow:w.pow}}
-function rwNew(){return{id:"b"+Date.now().toString(36),nm:"",shapes:{side:[],top:[],front:[]},ops:[],mat:"alu",wep:"flip",drive:"w4",mot:"mid",col:"#e53935",col2:"#fdd835",t:Date.now()}}
+function rwStats(R,body,cass){const m=rwFind(RW_MAT,R.mat),mo=rwFind(RW_MOT,R.mot),W=R.weps||[],H=R.wheels||[];
+  const skin=body?body.area*m.kg:0,wkg=W.reduce((a,w)=>a+rwFind(RW_WEP,w.k).kg,0),hkg=H.reduce((a,w)=>a+rwFind(RW_WHEEL,w.k).kg,0),kg=Math.round(skin+wkg+hkg+mo.kg+6),lim=RW_LIMIT+(cass?10:0);
+  const cl=v=>Math.max(0,Math.min(5,Math.round(v*2)/2)),tr=H.filter(w=>w.k==="t").length,nW=H.length+tr,avgR=H.length?H.reduce((a,w)=>a+rwFind(RW_WHEEL,w.k).r,0)/H.length:0;
+  const pw=W.length?Math.max(...W.map(w=>rwFind(RW_WEP,w.k).pow))+.5*(W.length-1):0;
+  return{kg,lim,over:kg>lim,parts:{body:Math.round(skin),weapons:wkg,wheels:hkg,motors:mo.kg,battery:6},noWheels:!H.length,
+    arm:m.arm,spd:H.length?Math.max(1,cl(mo.spd+(avgR-.2)*6-tr*.4-Math.max(0,(kg-60)/25))):0,push:H.length?Math.max(1,cl(mo.push+tr*.6+Math.min(1,(nW-2)*.25)+(kg-60)/30)):0,pow:Math.min(5,cl(pw))}}
+function rwNew(){return{id:"b"+Date.now().toString(36),nm:"",shapes:{side:[],top:[],front:[]},ops:[],mat:"alu",weps:[],wheels:[],mot:"mid",col:"#e53935",col2:"#fdd835",pat:"",paint:[],stk:[],t:Date.now()}}
+/* ---------- placed parts and paint, as short strings for saving ---------- */
+const r2=v=>Math.round(v*100);
+function rwEncParts(L){return(L||[]).map(o=>o.k+":"+o.p.map(r2).join(",")+(o.n?":"+o.n.map(r2).join(","):""))}
+function rwDecParts(L,kinds){if(!Array.isArray(L))return[];return L.map(s=>{if(typeof s!=="string")return null;const a=s.split(":");if(!kinds.includes(a[0]))return null;const p=(a[1]||"").split(",").map(n=>+n/100),n=a[2]?a[2].split(",").map(n=>+n/100):null;
+  if(p.length!==3||!p.every(isFinite))return null;return n&&n.length===3&&n.every(isFinite)?{k:a[0],p,n}:{k:a[0],p}}).filter(Boolean)}
+function rwEncPaint(L){return(L||[]).map(o=>o.c+"|"+r2(o.r)+"|"+(o.m?1:0)+"|"+o.p.map(q=>q.map(r2).join(",")).join(" "))}
+function rwDecPaint(L){if(!Array.isArray(L))return[];return L.map(s=>{if(typeof s!=="string")return null;const a=s.split("|");if(a.length<4||!/^#[0-9a-f]{6}$/i.test(a[0]))return null;
+  const p=a[3].split(" ").map(q=>q.split(",").map(n=>+n/100)).filter(q=>q.length===3&&q.every(isFinite));return p.length?{c:a[0],r:Math.max(.03,Math.min(.4,+a[1]/100||.1)),m:a[2]==="1",p}:null}).filter(Boolean)}
+function rwEncStk(L){return(L||[]).map(o=>o.e+"|"+r2(o.s)+"|"+o.p.map(r2).join(",")+"|"+o.n.map(r2).join(","))}
+function rwDecStk(L){if(!Array.isArray(L))return[];return L.map(s=>{if(typeof s!=="string")return null;const a=s.split("|");if(a.length<4||!RW_STK.includes(a[0]))return null;const p=a[2].split(",").map(n=>+n/100),n=a[3].split(",").map(n=>+n/100);
+  if(p.length!==3||n.length!==3||!p.concat(n).every(isFinite))return null;return{e:a[0],s:Math.max(.08,Math.min(.6,+a[1]/100||.2)),p,n}}).filter(Boolean)}
+/* ---------- the robot's colours, worked out for every point on its skin ---------- */
+const rwHex=h=>{const n=parseInt(h.slice(1),16);return[(n>>16&255)/255,(n>>8&255)/255,(n&255)/255]};
+function rwPattern(k,x,y,z,b){const L=b.x1-b.x0,Hh=b.y1-b.y0,mid=b.y0+Hh*.5;
+  if(k==="two")return y>mid?1:0;
+  if(k==="stripe")return(Math.abs(Math.abs(z)-.13)<.055&&y>b.y0+Hh*.35)?1:0;
+  if(k==="flame"){const t=(b.x1-x)/L,w=.35+.18*Math.sin((y-b.y0)*22+Math.abs(z)*9)+.1*Math.sin((y-b.y0)*51);if(t<w*.55)return 3;if(t<w*.8)return 2;if(t<w)return 1;return 0}
+  if(k==="camo"){const v=Math.sin(x*7.3+Math.sin(z*5.1)*1.7)*Math.sin(y*8.7+Math.cos(x*4.3)*1.3)+Math.sin(z*6.1+y*3.7)*.6;return v>.45?1:v<-.55?2:0}
+  if(k==="tiger")return Math.sin(x*17+Math.sin(y*7+z*3)*2.2)>.55?1:0;
+  if(k==="check")return((Math.floor(x/.16)+Math.floor(y/.16)+Math.floor(z/.16))&1)?1:0;
+  if(k==="spots"){for(let i=0;i<26;i++){const px=Math.sin(i*12.9898)*.9,py=.15+((Math.sin(i*78.233)+1)/2)*.8,pz=Math.sin(i*39.425)*.6;if(Math.hypot(x-px,(y-py)*.9,Math.abs(z)-Math.abs(pz))<.09)return 1}return 0}
+  if(k==="bolt"){const zz=mid+.12*((((x*6)%2)+2)%2<1?(((x*6)%1)+1)%1:1-((((x*6)%1)+1)%1))-.06;return Math.abs(y-zz)<.035&&Math.abs(z)>.1?1:0}
+  return 0}
+function rwColors(body,R,dy=0){const P=body.pos,n=P.length/3,C=new Float32Array(n*3),base=rwHex(R.col||"#e53935"),c2=rwHex(R.col2||"#fdd835"),b=body.box;
+  const fl=[c2,rwHex("#ff6a00"),rwHex("#ffd23f")],camo2=c2.map(v=>v*.55);
+  for(let v=0;v<n;v++){const x=P[3*v],y=P[3*v+1],z=P[3*v+2];let c=base;const q=rwPattern(R.pat,x,y,z,b);
+    if(q){c=R.pat==="flame"?fl[q-1]:R.pat==="camo"&&q===2?camo2:R.pat==="bolt"?rwHex("#ffd23f"):c2}C[3*v]=c[0];C[3*v+1]=c[1];C[3*v+2]=c[2]}
+  for(const o of R.paint||[])rwPaintInto(C,P,o);return C}
+/* finger paint as its own layer: colour + how much paint (0..1) for every point on the skin */
+function rwPaintLayer(P,L){const n=P.length/3,A=new Float32Array(n*4);for(const o of L||[])rwPaintAdd(A,P,o);return A}
+function rwPaintAdd(A,P,o,from=0){const c=rwHex(o.c).map(v=>Math.pow(v,2.2)),n=P.length/3,r=o.r;
+  for(let i=from;i<o.p.length;i++){const q=o.p[i],pts=o.m&&Math.abs(q[2])>.02?[q,[q[0],q[1],-q[2]]]:[q];
+    for(const s of pts)for(let v=0;v<n;v++){const dx=P[3*v]-s[0],dy=P[3*v+1]-s[1],dz=P[3*v+2]-s[2],d2=dx*dx+dy*dy+dz*dz;if(d2>r*r)continue;const w=Math.min(1,(1-Math.sqrt(d2)/r)*2.5),a=A[4*v+3];
+      for(let k=0;k<3;k++)A[4*v+k]=a>0?A[4*v+k]+(c[k]-A[4*v+k])*w:c[k];A[4*v+3]=a+(1-a)*w}}}
+function rwPaintInto(C,P,o,from=0){const c=rwHex(o.c),n=P.length/3,r=o.r;
+  for(let i=from;i<o.p.length;i++){const q=o.p[i],pts=o.m&&Math.abs(q[2])>.02?[q,[q[0],q[1],-q[2]]]:[q];
+    for(const s of pts)for(let v=0;v<n;v++){const dx=P[3*v]-s[0],dy=P[3*v+1]-s[1],dz=P[3*v+2]-s[2],d2=dx*dx+dy*dy+dz*dz;if(d2>r*r)continue;const w=Math.min(1,(1-Math.sqrt(d2)/r)*2.5);
+      C[3*v]+=(c[0]-C[3*v])*w;C[3*v+1]+=(c[1]-C[3*v+1])*w;C[3*v+2]+=(c[2]-C[3*v+2])*w}}}
 const RW_N1=["Mega","Turbo","Iron","Thunder","Steel","Rapid","Crusher","Atomic","Rusty","Dynamo","Hyper","Nitro","Spike","Volt","Big","Little"],RW_N2=["Bob","Smasher","Wedge","Basher","Bulldog","Tornado","Destroyer","Beetle","Biter","Thumper","Ripper","Rocket","Bruiser","Hammer","Chomper","Dozer"];
 const rwFun=()=>RW_N1[Math.random()*RW_N1.length|0]+" "+RW_N2[Math.random()*RW_N2.length|0];
-if(typeof module!=="undefined")module.exports={RW_B,RW_VIEWS,RW_MAT,RW_WEP,RW_DRIVE,RW_MOT,RW_LIMIT,rwFind,rwSmoothShape,rwEncShapes,rwDecShapes,rwSDF2,rwBuildBody,rwStats,rwNew,rwFun,rwField,rwFieldCopy,rwBrush,rwOp,rwEncOps,rwDecOps,rwMesh,rwBody,rwStartShape};
+if(typeof module!=="undefined")module.exports={RW_B,RW_VIEWS,RW_MAT,RW_WEP,RW_DRIVE,RW_MOT,RW_LIMIT,rwFind,rwSmoothShape,rwEncShapes,rwDecShapes,RW_WHEEL,RW_PAT,RW_STK,rwPaintLayer,rwPaintAdd,rwHex,rwEncParts,rwDecParts,rwEncPaint,rwDecPaint,rwEncStk,rwDecStk,rwColors,rwPaintInto,rwSDF2,rwBuildBody,rwStats,rwNew,rwFun,rwField,rwFieldCopy,rwBrush,rwOp,rwEncOps,rwDecOps,rwMesh,rwBody,rwStartShape};
 
 /* ================= ROBOT RUMBLE: the workshop and the test arena =================
    garage (your robots) · build (5 easy steps: shape, material, weapon, wheels, paint) · drive (test it on practice dummies)
@@ -2975,8 +3031,15 @@ let RWG=null,RWS=null,RWR=null;const RW_ARENA=11;const RWD={g:{}};
 const rwNm=k=>k==="X"?"Dad":"Cass",rwThem=()=>me()==="X"?"O":"X",rwCass=()=>role==="child";
 const rwEsc=t=>String(t||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const rwStars=v=>{let s="";for(let i=1;i<=5;i++)s+=v>=i?"★":v>=i-.5?"⯪":"☆";return s};
-function rwPack(r){return{nm:r.nm,sh:rwEncShapes(r.shapes),ops:rwEncOps(r.ops),mat:r.mat,wep:r.wep,drive:r.drive,mot:r.mot,col:r.col,col2:r.col2,t:r.t||0}}
-function rwUnpack(id,o){return{id,nm:o.nm||"Robot",shapes:rwDecShapes(o.sh),ops:rwDecOps(o.ops),mat:o.mat,wep:o.wep,drive:o.drive,mot:o.mot,col:o.col||"#e53935",col2:o.col2||"#fdd835",t:o.t||0}}
+function rwPack(r){return{nm:r.nm,sh:rwEncShapes(r.shapes),ops:rwEncOps(r.ops),mat:r.mat,weps:rwEncParts(r.weps),wheels:rwEncParts(r.wheels),mot:r.mot,col:r.col,col2:r.col2,pat:r.pat||"",paint:rwEncPaint(r.paint),stk:rwEncStk(r.stk),
+  ...(r.wep&&!r.weps?{wep:r.wep}:{}),...(r.drive&&!r.wheels?{drive:r.drive}:{}),t:r.t||0}}
+function rwUnpack(id,o){const R={id,nm:o.nm||"Robot",shapes:rwDecShapes(o.sh),ops:rwDecOps(o.ops),mat:o.mat,mot:o.mot,col:o.col||"#e53935",col2:o.col2||"#fdd835",pat:o.pat||"",paint:rwDecPaint(o.paint),stk:rwDecStk(o.stk),t:o.t||0};
+  if(Array.isArray(o.weps))R.weps=rwDecParts(o.weps,RW_WEP.map(w=>w.k));else R.wep=o.wep||"flip";if(Array.isArray(o.wheels))R.wheels=rwDecParts(o.wheels,RW_WHEEL.map(w=>w.k));else R.drive=o.drive||"w4";return R}
+/* robots made before parts could be placed: put their weapon on the front and wheels where they used to be */
+function rwLegacy(R,body){if(!body)return;const b=body.box,L=b.x1-b.x0,cx=(b.x0+b.x1)/2,z=Math.max(Math.abs(b.z0),Math.abs(b.z1));
+  if(!R.weps)R.weps=R.wep?[{k:R.wep,p:[body.front.x,body.front.y,0],n:[1,0,0]}]:[];
+  if(!R.wheels){const y=b.y0+.06,pr=(k,x)=>[{k,p:[x,y,z]},{k,p:[x,y,-z]}];R.wheels=R.drive==="w2"?pr("l",cx):R.drive==="trk"?pr("t",cx):[...pr("m",cx-L*.3),...pr("m",cx+L*.3)]}
+  if(R.pat==null)R.pat="";R.paint=R.paint||[];R.stk=R.stk||[]}
 function rwLoad(){if(RWS&&RWS.who===me())return RWS;let s=null;try{s=JSON.parse(localStorage.getItem("rw_"+me())||"null")}catch(e){}
   RWS={bots:[],sel:null,note:{},who:me()};if(s&&Array.isArray(s.bots)){RWS.bots=s.bots.map(b=>rwUnpack(b.id,b));RWS.sel=s.sel;RWS.note=s.note||{}}return RWS}
 function rwSave(remote){if(!RWS)return;try{localStorage.setItem("rw_"+me(),JSON.stringify({bots:RWS.bots.map(b=>({id:b.id,...rwPack(b)})),sel:RWS.sel,note:RWS.note}))}catch(e){}
@@ -3034,55 +3097,81 @@ function rwScene(){const T=THREE,S=new T.Scene();RWR.scene=S;S.background=new T.
   /* the robot holder */
   RWR.bot=new T.Group();S.add(RWR.bot);RWR.dummies=new T.Group();ar.add(RWR.dummies);RWR.fx=new T.Group();S.add(RWR.fx)}
 /* a robot -> 3D model. Returns {g, parts...} */
-function rwMat(R){const T=THREE,m=R.mat,c=new T.Color(R.col);
-  if(m==="ply"){if(!RWR.wood)RWR.wood=rwTex(256,256,(x,w,h)=>{x.fillStyle="#d6a86c";x.fillRect(0,0,w,h);for(let i=0;i<60;i++){x.strokeStyle=`rgba(120,70,30,${.08+Math.random()*.15})`;x.lineWidth=1+Math.random()*2;x.beginPath();const y=Math.random()*h;x.moveTo(0,y);for(let X=0;X<=w;X+=16)x.lineTo(X,y+Math.sin(X*.03+i)*4);x.stroke()}},2);
-    return new T.MeshStandardMaterial({map:RWR.wood,color:new T.Color(0xffffff).lerp(c,.3),roughness:.85})}
-  if(m==="hdpe")return new T.MeshStandardMaterial({color:c,roughness:.9,metalness:0});
-  if(m==="poly")return new T.MeshStandardMaterial({color:new T.Color(0xffffff).lerp(c,.35),roughness:.08,metalness:0,transparent:true,opacity:.32,depthWrite:false,envMapIntensity:1.6});
-  if(m==="alu")return new T.MeshStandardMaterial({color:new T.Color(0xc9ced6).lerp(c,.55),roughness:.32,metalness:.75});
-  if(m==="steel")return new T.MeshStandardMaterial({color:new T.Color(0x5d636c).lerp(c,.3),roughness:.42,metalness:.9});
-  return new T.MeshStandardMaterial({color:new T.Color(0x9fb0c6).lerp(c,.4),roughness:.25,metalness:.9})}
+const RW_PATGL=`
+float h1(float n){return fract(sin(n)*43758.5453);}
+vec4 rwPat(vec3 p){float x=p.x,y=p.y,z=p.z,L=uBox.y-uBox.x,Hh=uBox.w-uBox.z,mid=uBox.z+Hh*.5;
+  if(uPat==1)return vec4(uC2,smoothstep(mid-.012,mid+.012,y));
+  if(uPat==2){float d=abs(abs(z)-.13);return vec4(uC2,(1.-smoothstep(.045,.058,d))*smoothstep(uBox.z+Hh*.33,uBox.z+Hh*.36,y));}
+  if(uPat==3){float t=(uBox.y-x)/L,w=.35+.18*sin((y-uBox.z)*22.+abs(z)*9.)+.1*sin((y-uBox.z)*51.);float e=.012/L;
+    vec3 c=mix(vec3(1.,.82,.12),vec3(1.,.35,0.),smoothstep(w*.5-e,w*.55+e,t));c=mix(c,uC2,smoothstep(w*.75-e,w*.8+e,t));return vec4(c,1.-smoothstep(w-e,w+e,t));}
+  if(uPat==4){float v=sin(x*7.3+sin(z*5.1)*1.7)*sin(y*8.7+cos(x*4.3)*1.3)+sin(z*6.1+y*3.7)*.6;if(v<-.5)return vec4(uC2*.5,smoothstep(-.5,-.58,v));return vec4(uC2,smoothstep(.42,.5,v));}
+  if(uPat==5){float v=sin(x*17.+sin(y*7.+z*3.)*2.2);return vec4(uC2,smoothstep(.5,.6,v));}
+  if(uPat==6){float c=mod(floor(x/.16)+floor(y/.16)+floor(z/.16),2.);return vec4(uC2,c);}
+  if(uPat==7){float m=0.;for(int i=0;i<26;i++){float fi=float(i);vec3 q=vec3(sin(fi*12.9898)*.9,.15+(sin(fi*78.233)+1.)*.4,abs(sin(fi*39.425)*.6));float d=length(vec3(x-q.x,(y-q.y)*.9,abs(z)-q.z));m=max(m,1.-smoothstep(.08,.095,d));}return vec4(uC2,m);}
+  if(uPat==8){float u=fract(x*3.),tri=u<.5?u*2.:2.-u*2.;float zz=mid+.12*tri-.06;return vec4(vec3(1.,.82,.12),(1.-smoothstep(.028,.04,abs(y-zz)))*step(.1,abs(z)));}
+  return vec4(0.);}`;
+function rwPaintMat(base,R,body){const T=THREE,b=body.box,lin=h=>new T.Color(h).convertSRGBToLinear(),pat=Math.max(0,RW_PAT.findIndex(p=>p.k===(R.pat||"")));
+  const U={uBase:{value:lin(R.col||"#e53935")},uC2:{value:lin(R.col2||"#fdd835")},uPat:{value:pat},uBox:{value:new T.Vector4(b.x0,b.x1,b.y0,b.y1)}};
+  base.onBeforeCompile=sh=>{Object.assign(sh.uniforms,U);
+    sh.vertexShader=sh.vertexShader.replace("#include <common>","#include <common>\nattribute vec4 paint;varying vec4 vPaint;varying vec3 vOP;").replace("#include <begin_vertex>","#include <begin_vertex>\nvPaint=paint;vOP=position;");
+    sh.fragmentShader=sh.fragmentShader.replace("#include <common>","#include <common>\nuniform vec3 uBase;uniform vec3 uC2;uniform int uPat;uniform vec4 uBox;varying vec4 vPaint;varying vec3 vOP;"+RW_PATGL)
+      .replace("#include <color_fragment>","vec3 rc=uBase;vec4 pc=rwPat(vOP);rc=mix(rc,pc.rgb,pc.a);rc=mix(rc,vPaint.rgb,vPaint.a);diffuseColor.rgb*=rc;")};
+  base.customProgramCacheKey=()=>"rwpaint";return base}
+function rwMat(R){const T=THREE,m=R.mat,vc={};
+  if(m==="ply"){if(!RWR.wood)RWR.wood=rwTex(256,256,(x,w,h)=>{x.fillStyle="#e9d2b0";x.fillRect(0,0,w,h);for(let i=0;i<60;i++){x.strokeStyle=`rgba(120,70,30,${.06+Math.random()*.12})`;x.lineWidth=1+Math.random()*2;x.beginPath();const y=Math.random()*h;x.moveTo(0,y);for(let X=0;X<=w;X+=16)x.lineTo(X,y+Math.sin(X*.03+i)*4);x.stroke()}},2);
+    return new T.MeshStandardMaterial({...vc,map:RWR.wood,roughness:.85})}
+  if(m==="hdpe")return new T.MeshStandardMaterial({...vc,roughness:.9,metalness:0});
+  if(m==="poly")return new T.MeshStandardMaterial({...vc,roughness:.08,metalness:0,transparent:true,opacity:.38,depthWrite:false,envMapIntensity:1.6});
+  if(m==="alu")return new T.MeshStandardMaterial({...vc,color:0xeef1f5,roughness:.32,metalness:.6});
+  if(m==="steel")return new T.MeshStandardMaterial({...vc,color:0xaab0b8,roughness:.42,metalness:.75});
+  return new T.MeshStandardMaterial({...vc,color:0xd5deea,roughness:.25,metalness:.7})}
 function rwTrim(R){return new THREE.MeshStandardMaterial({color:new THREE.Color(R.col2),roughness:.35,metalness:.7})}
-function rwModel(R,body,o={}){const T=THREE,g=new T.Group(),M={g,anim:{},wheels:[],R,body};if(!body)return M;
-  const bx=body.box,L=bx.x1-bx.x0,H=bx.y1-bx.y0,Wd=bx.z1-bx.z0,cx=(bx.x0+bx.x1)/2,cz=(bx.z0+bx.z1)/2;
-  const wr=Math.max(.16,Math.min(.3,H*.42)),dy=o.dy!=null?o.dy:.06-bx.y0;M.dy=dy;M.r=Math.max(L,Wd)/2;M.box=bx;
-  const geo=new T.BufferGeometry();geo.setAttribute("position",new T.BufferAttribute(body.pos,3));geo.setIndex(new T.BufferAttribute(body.idx,1));geo.computeVertexNormals();
-  const bm=new T.Mesh(geo,o.clay?rwClayMat():rwMat(R));bm.position.y=dy;bm.castShadow=o.clay||R.mat!=="poly";bm.receiveShadow=true;bm.renderOrder=2;g.add(bm);M.bodyMesh=bm;if(o.clay)return M;
+const RW_REACH={wedge:.45,flip:.55,spin:.55,drum:.35,axe:.6,crush:.5,spike:.4};
+function rwWeapon(k,tm){const T=THREE,g=new T.Group(),A={k},sh=new T.MeshStandardMaterial({color:0xdde3ea,metalness:.95,roughness:.15});
+  if(k==="wedge"){const p=new T.Mesh(new T.BoxGeometry(.55,.04,.45),tm);p.rotation.z=-.45;p.position.set(.24,-.11,0);g.add(p)}
+  else if(k==="flip"){const pv=new T.Group();const p=new T.Mesh(new T.BoxGeometry(.55,.045,.42),tm);p.position.x=.28;pv.add(p);const lip=new T.Mesh(new T.BoxGeometry(.06,.06,.42),tm);lip.position.set(.53,.02,0);pv.add(lip);g.add(pv);A.flip=pv}
+  else if(k==="spin"){const post=new T.Mesh(new T.CylinderGeometry(.045,.045,.22,10),tm);post.rotation.z=Math.PI/2;post.position.x=.1;g.add(post);const pv=new T.Group();pv.position.x=.22;
+    const bar=new T.Mesh(new T.BoxGeometry(.08,.07,.9),tm);pv.add(bar);for(const s of[-1,1]){const tip=new T.Mesh(new T.BoxGeometry(.12,.09,.08),sh);tip.position.set(s*.03,0,s*.45);pv.add(tip)}g.add(pv);A.spinY=pv}
+  else if(k==="drum"){const pv=new T.Group();pv.position.x=.17;const d=new T.Mesh(new T.CylinderGeometry(.15,.15,.42,20),tm);d.rotation.x=Math.PI/2;pv.add(d);
+    for(let i=0;i<4;i++){const t=new T.Mesh(new T.BoxGeometry(.08,.08,.38),sh);const q=i*Math.PI/2;t.position.set(Math.cos(q)*.16,Math.sin(q)*.16,0);t.rotation.z=q+Math.PI/4;pv.add(t)}
+    for(const s of[-1,1]){const arm=new T.Mesh(new T.BoxGeometry(.2,.06,.04),tm);arm.position.set(.08,0,s*.23);g.add(arm)}g.add(pv);A.spinZ=pv}
+  else if(k==="axe"){const pv=new T.Group();const arm=new T.Mesh(new T.BoxGeometry(.55,.06,.07),tm);arm.position.x=.27;pv.add(arm);const head=new T.Mesh(new T.BoxGeometry(.06,.28,.22),sh);head.position.set(.54,-.1,0);pv.add(head);pv.rotation.z=1.1;g.add(pv);A.axe=pv}
+  else if(k==="crush"){const low=new T.Mesh(new T.BoxGeometry(.45,.04,.28),tm);low.position.set(.22,-.08,0);g.add(low);const pv=new T.Group();pv.position.set(0,.1,0);const jaw=new T.Mesh(new T.BoxGeometry(.5,.05,.28),tm);jaw.position.x=.25;pv.add(jaw);
+    const tooth=new T.Mesh(new T.ConeGeometry(.05,.14,4),sh);tooth.rotation.z=Math.PI;tooth.position.set(.47,-.08,0);pv.add(tooth);pv.rotation.z=.6;g.add(pv);A.crush=pv}
+  else{const c=new T.Mesh(new T.ConeGeometry(.07,.38,12),sh);c.rotation.z=-Math.PI/2;c.position.x=.19;g.add(c);const b=new T.Mesh(new T.CylinderGeometry(.09,.09,.04,12),tm);b.rotation.z=Math.PI/2;g.add(b)}
+  g.traverse(o=>{if(o.isMesh)o.castShadow=true});return{g,A}}
+function rwStkTex(e){RWR.stkT=RWR.stkT||{};if(!RWR.stkT[e])RWR.stkT[e]=rwTex(128,128,(x,w,h)=>{x.clearRect(0,0,w,h);x.font=`${e.length===1&&/[0-9]/.test(e)?"900 110px Outfit,sans-serif":"104px serif"}`;x.textAlign="center";x.textBaseline="middle";x.fillStyle="#fff";x.fillText(e,w/2,h/2+6)});return RWR.stkT[e]}
+function rwModel(R,body,o={}){const T=THREE,g=new T.Group(),M={g,anim:{flip:[],axe:[],crush:[],spinY:[],spinZ:[]},wheels:[],weps:[],R,body};if(!body)return M;
+  const bx=body.box,L=bx.x1-bx.x0,Wd=bx.z1-bx.z0;M.r=Math.max(L,Wd)/2;M.box=bx;
+  /* how high it sits: the lowest wheel touches the ground */
+  const H=o.clay?[]:R.wheels||[];let low=bx.y0;if(H.length)low=Math.min(...H.map(w=>w.p[1]-rwFind(RW_WHEEL,w.k).r));const dy=o.dy!=null?o.dy:(H.length?.01:.02)-low;M.dy=dy;
+  const geo=new T.BufferGeometry();geo.setAttribute("position",new T.BufferAttribute(body.pos,3));geo.setIndex(new T.BufferAttribute(body.idx,1));
+  if(!o.clay){M.paint=rwPaintLayer(body.pos,R.paint);geo.setAttribute("paint",new T.BufferAttribute(M.paint,4))}geo.computeVertexNormals();
+  const bm=new T.Mesh(geo,o.clay?rwClayMat():rwPaintMat(rwMat(R),R,body));bm.position.y=dy;bm.castShadow=o.clay||R.mat!=="poly";bm.receiveShadow=true;bm.renderOrder=2;g.add(bm);M.bodyMesh=bm;if(o.clay)return M;
+  const b=new T.Group();b.position.y=dy;g.add(b);M.parts=b;
   /* the insides: battery and motors (you can see them through clear plastic) */
-  const inn=new T.Group();inn.position.set(cx,dy+bx.y0+.04,cz);g.add(inn);const bat=new T.Mesh(new T.BoxGeometry(Math.min(.5,L*.3),Math.min(.16,H*.35),Math.min(.3,Wd*.35)),new T.MeshStandardMaterial({color:0x222222,roughness:.6}));bat.position.y=Math.min(.16,H*.35)/2;inn.add(bat);
-  const lab=new T.Mesh(new T.BoxGeometry(Math.min(.5,L*.3)*1.01,Math.min(.05,H*.1),Math.min(.3,Wd*.35)*1.01),new T.MeshStandardMaterial({color:0xffc400}));lab.position.y=bat.position.y;inn.add(lab);
-  for(const s of[-1,1]){const mo=new T.Mesh(new T.CylinderGeometry(.06,.06,.18,16),new T.MeshStandardMaterial({color:0x9aa3ad,metalness:.8,roughness:.3}));mo.rotation.x=Math.PI/2;mo.position.set(L*.18*s,.07,Wd*.25*s);inn.add(mo)}
-  /* wheels or tracks */
-  const tyre=new T.MeshStandardMaterial({color:0x1b1b1b,roughness:.9}),hub=rwTrim(R);
-  const wheel=(x,z)=>{const w=new T.Group();w.position.set(x,wr,z);const t=new T.Mesh(new T.CylinderGeometry(wr,wr,.13,24),tyre);t.rotation.x=Math.PI/2;t.castShadow=true;w.add(t);
-    const h=new T.Mesh(new T.CylinderGeometry(wr*.5,wr*.5,.14,6),hub);h.rotation.x=Math.PI/2;w.add(h);g.add(w);M.wheels.push(w)};
-  const sz=Wd/2+.07;
-  if(R.drive==="w2"){for(const s of[-1,1])wheel(cx,cz+s*sz);for(const s of[-1,1]){const k=new T.Mesh(new T.SphereGeometry(.05,10,8),hub);k.position.set(cx+s*L*.38,.05,cz);g.add(k)}}
-  else if(R.drive==="w4"){for(const sx of[-1,1])for(const s of[-1,1])wheel(cx+sx*L*.3,cz+s*sz)}
-  else{const tl=L*.82,tt=rwTex(64,16,(x,w,h)=>{x.fillStyle="#1d1d1d";x.fillRect(0,0,w,h);x.fillStyle="#3a3a3a";for(let i=0;i<w;i+=8)x.fillRect(i,0,4,h)});tt.wrapS=T.RepeatWrapping;tt.repeat.set(tl*6,1);M.trackTex=tt;
-    for(const s of[-1,1]){const tr=new T.Mesh(new T.BoxGeometry(tl,wr*1.8,.16),new T.MeshStandardMaterial({map:tt,roughness:.9}));tr.position.set(cx,wr*.9,cz+s*(Wd/2+.08));tr.castShadow=true;g.add(tr)}}
-  /* the weapon, on the front */
-  const tm=rwTrim(R),fx=body.front.x,fy=body.front.y+dy,W=R.wep,ww=Math.min(Wd*.9,1.2);
-  if(W==="wedge"){const p=new T.Mesh(new T.BoxGeometry(.6,.04,ww),tm);const a=.42;p.rotation.z=a;p.position.set(fx+.27*Math.cos(a)-.05,.04+.3*Math.sin(a)-.02,cz);p.castShadow=true;g.add(p)}
-  else if(W==="flip"){const pv=new T.Group();pv.position.set(fx-.08,.06,cz);const p=new T.Mesh(new T.BoxGeometry(.62,.045,ww),tm);p.position.x=.31;p.castShadow=true;pv.add(p);
-    const lip=new T.Mesh(new T.BoxGeometry(.06,.06,ww),tm);lip.position.set(.6,.02,0);pv.add(lip);pv.rotation.z=.1;g.add(pv);M.anim.flip=pv;
-    const ram=new T.Mesh(new T.CylinderGeometry(.04,.04,.3,10),new T.MeshStandardMaterial({color:0xcfd5dc,metalness:.9,roughness:.2}));ram.position.set(fx-.05,.18,cz);g.add(ram)}
-  else if(W==="spin"){const pv=new T.Group();pv.position.set(fx+.18,Math.max(.14,Math.min(fy,.3)),cz);const bar=new T.Mesh(new T.BoxGeometry(.16,.07,Math.max(ww*1.25,.9)),tm);bar.castShadow=true;pv.add(bar);
-    for(const s of[-1,1]){const tip=new T.Mesh(new T.BoxGeometry(.2,.09,.08),new T.MeshStandardMaterial({color:0xdde3ea,metalness:.95,roughness:.15}));tip.position.set(s*.06,0,s*Math.max(ww*1.25,.9)/2);pv.add(tip)}
-    const post=new T.Mesh(new T.CylinderGeometry(.05,.05,.2,10),tm);post.position.set(fx+.18,pv.position.y-.1,cz);g.add(post);g.add(pv);M.anim.spinY=pv}
-  else if(W==="drum"){const pv=new T.Group();pv.position.set(fx+.16,.17,cz);const d=new T.Mesh(new T.CylinderGeometry(.15,.15,ww*.85,20),tm);d.rotation.x=Math.PI/2;d.castShadow=true;pv.add(d);
-    for(let i=0;i<4;i++){const t=new T.Mesh(new T.BoxGeometry(.08,.08,ww*.85*.9),new T.MeshStandardMaterial({color:0xdde3ea,metalness:.95,roughness:.15}));const q=i*Math.PI/2;t.position.set(Math.cos(q)*.16,Math.sin(q)*.16,0);t.rotation.z=q+Math.PI/4;pv.add(t)}
-    for(const s of[-1,1]){const arm=new T.Mesh(new T.BoxGeometry(.3,.06,.05),tm);arm.position.set(fx+.03,.17,cz+s*(ww*.85/2+.03));g.add(arm)}g.add(pv);M.anim.spinZ=pv}
-  else if(W==="axe"){const pv=new T.Group();pv.position.set(cx-L*.15,dy+bx.y1+.02,cz);const arm=new T.Mesh(new T.BoxGeometry(L*.75,.06,.07),tm);arm.position.x=L*.37;pv.add(arm);
-    const head=new T.Mesh(new T.BoxGeometry(.06,.3,.22),new T.MeshStandardMaterial({color:0xdde3ea,metalness:.95,roughness:.15}));head.position.set(L*.74,-.12,0);pv.add(head);pv.rotation.z=.9;g.add(pv);M.anim.axe=pv}
-  else{const low=new T.Mesh(new T.BoxGeometry(.4,.04,ww*.6),tm);low.position.set(fx+.17,.05,cz);g.add(low);const pv=new T.Group();pv.position.set(fx-.02,Math.max(fy+.12,.3),cz);
-    const jaw=new T.Mesh(new T.BoxGeometry(.5,.05,ww*.6),tm);jaw.position.set(.25,0,0);pv.add(jaw);const tooth=new T.Mesh(new T.ConeGeometry(.05,.14,4),new T.MeshStandardMaterial({color:0xdde3ea,metalness:.95,roughness:.15}));tooth.rotation.z=Math.PI;tooth.position.set(.48,-.08,0);pv.add(tooth);pv.rotation.z=.55;g.add(pv);M.anim.crush=pv}
-  g.traverse(o=>{if(o.isMesh&&o!==bm)o.castShadow=true});return M}
+  const cx=(bx.x0+bx.x1)/2,inn=new T.Group();inn.position.set(cx,bx.y0+.04,0);b.add(inn);const bat=new T.Mesh(new T.BoxGeometry(Math.min(.5,L*.3),.14,.26),new T.MeshStandardMaterial({color:0x222222,roughness:.6}));bat.position.y=.07;inn.add(bat);
+  const lab=new T.Mesh(new T.BoxGeometry(Math.min(.5,L*.3)*1.01,.04,.262),new T.MeshStandardMaterial({color:0xffc400}));lab.position.y=.07;inn.add(lab);
+  /* weapons, wherever they were stuck on, pointing out from the skin */
+  const tm=rwTrim(R),X=new T.Vector3(1,0,0);
+  for(const w of R.weps||[]){const{g:wg,A}=rwWeapon(w.k,tm);wg.position.set(...w.p);const n=new T.Vector3(...(w.n||[1,0,0])).normalize();wg.quaternion.setFromUnitVectors(X,n);b.add(wg);
+    for(const a of ["flip","axe","crush","spinY","spinZ"])if(A[a])M.anim[a].push(A[a]);M.weps.push({k:w.k,p:w.p,n:[n.x,n.y,n.z]})}
+  /* wheels and tracks */
+  const tyre=new T.MeshStandardMaterial({color:0x1b1b1b,roughness:.9});
+  for(const w of H){const d=rwFind(RW_WHEEL,w.k),side=Math.abs(w.p[2])>.04?Math.sign(w.p[2]):0,wg=new T.Group();wg.position.set(w.p[0],w.p[1],w.p[2]+side*.07);
+    if(w.k==="t"){if(!M.trackTex){M.trackTex=rwTex(64,16,(x,W,h)=>{x.fillStyle="#1d1d1d";x.fillRect(0,0,W,h);x.fillStyle="#3a3a3a";for(let i=0;i<W;i+=8)x.fillRect(i,0,4,h)});M.trackTex.wrapS=T.RepeatWrapping;M.trackTex.repeat.set(5,1)}
+      const tr=new T.Mesh(new T.BoxGeometry(.8,d.r*2,.15),new T.MeshStandardMaterial({map:M.trackTex,roughness:.9}));tr.castShadow=true;wg.add(tr);for(const s of[-1,1]){const e=new T.Mesh(new T.CylinderGeometry(d.r,d.r,.15,16),new T.MeshStandardMaterial({map:M.trackTex,roughness:.9}));e.rotation.x=Math.PI/2;e.position.x=s*.4;wg.add(e)}}
+    else{const t=new T.Mesh(new T.CylinderGeometry(d.r,d.r,.13,24),tyre);t.rotation.x=Math.PI/2;t.castShadow=true;wg.add(t);const h=new T.Mesh(new T.CylinderGeometry(d.r*.5,d.r*.5,.14,6),tm);h.rotation.x=Math.PI/2;wg.add(h);M.wheels.push(wg)}
+    b.add(wg)}
+  /* stickers */
+  for(const k of R.stk||[]){const m=new T.Mesh(new T.PlaneGeometry(k.s,k.s),new T.MeshStandardMaterial({map:rwStkTex(k.e),transparent:true,alphaTest:.05,roughness:.6,polygonOffset:true,polygonOffsetFactor:-4}));
+    const n=new T.Vector3(...k.n).normalize();m.position.set(k.p[0]+n.x*.012,k.p[1]+n.y*.012,k.p[2]+n.z*.012);m.lookAt(m.position.clone().add(n));m.renderOrder=3;b.add(m)}
+  g.traverse(q=>{if(q.isMesh&&q!==bm&&!q.material.transparent)q.castShadow=true});return M}
 function rwClayMat(){if(!RWR.clay)RWR.clay=new THREE.MeshStandardMaterial({color:0xb0683c,roughness:.8,metalness:0,envMapIntensity:.5});return RWR.clay}
 const RW_CLAY_DY=.06;
 function rwShow(R,keepBody){const G=RWG;if(!G)return;const sculpt=G.mode==="build"&&G.step==="shape";
   if(sculpt&&G.clay)G.body=rwMesh(G.clay);else if(!keepBody||!G.body||G.bodyFor!==R)G.body=R?rwBody(R):null;G.bodyFor=R;
-  RWR.bot.clear();G.M=R?rwModel(R,G.body,sculpt?{clay:1,dy:RW_CLAY_DY}:{}):null;if(G.M)RWR.bot.add(G.M.g);rwStatsShow()}
+  if(R&&!sculpt)rwLegacy(R,G.body);RWR.bot.clear();G.M=R?rwModel(R,G.body,sculpt?{clay:1,dy:RW_CLAY_DY}:{}):null;if(G.M)RWR.bot.add(G.M.g);rwStatsShow()}
 /* while moulding, only the clay's surface changes */
 function rwRemesh(){const G=RWG;if(!G||!G.clay||!G.M)return;const b=rwMesh(G.clay);G.body=b;if(!b)return;const T=THREE,m=G.M.bodyMesh;
   if(!m){rwShow(G.R);return}const geo=new T.BufferGeometry();geo.setAttribute("position",new T.BufferAttribute(b.pos,3));geo.setIndex(new T.BufferAttribute(b.idx,1));geo.computeVertexNormals();m.geometry.dispose();m.geometry=geo;G.M.body=b;G.remeshT=G.t}
@@ -3096,7 +3185,7 @@ function rwGarage(){const G=RWG;if(!G)return;G.mode="garage";G.view=null;G.auto=
   const st=R&&G.body?rwStats(R,G.body,G.viewing?rwThem()==="O":rwCass()):null;
   $("#rwpanel").className="rwpanel on garage";$("#rwpanel").innerHTML=`<div class="rwlogo">ROBOT<br><span>RUMBLE</span></div>
     <div class="rwcard">${R?`<div class="rwname">${rwEsc(R.nm)}${G.viewing?` <small>${th}'s robot</small>`:""}</div>${st?rwStatRow(st):""}
-      <div class="rwparts">${rwFind(RW_MAT,R.mat).ic} ${rwFind(RW_MAT,R.mat).nm} · ${rwFind(RW_WEP,R.wep).ic} ${rwFind(RW_WEP,R.wep).nm} · ${rwFind(RW_DRIVE,R.drive).nm}</div>`
+      <div class="rwparts">${rwFind(RW_MAT,R.mat).ic} ${rwFind(RW_MAT,R.mat).nm} · ${(R.weps||[]).length?(R.weps||[]).map(w=>rwFind(RW_WEP,w.k).ic).join(""):"no weapons"} · ${(R.wheels||[]).length} wheels</div>`
       :`<div class="rwname">No robots yet!</div><p class="rwsay">Build your first robot — draw it, pick what it's made of, and give it a weapon.</p>`}
       ${S.bots.length?`<div class="rwchips"><b>YOUR ROBOTS</b>${chips(S.bots.slice().reverse(),1)}</div>`:""}
       ${theirs.length?`<div class="rwchips"><b>${th.toUpperCase()}'S ROBOTS</b>${chips(theirs,0)}</div>`:""}
@@ -3115,42 +3204,59 @@ function rwStatsShow(){const G=RWG,el=$("#rwtop");if(!el)return;if(G.mode!=="bui
 /* ---------- building a robot: 5 easy steps ---------- */
 const RW_STEPS=[["shape","✏️","SHAPE"],["mat","🔩","MADE OF"],["wep","💥","WEAPON"],["drive","⚙️","WHEELS"],["paint","🎨","PAINT"]];
 function rwBuild(R){const G=RWG;G.mode="build";G.viewing=null;rwArena(0);$("#rwpanel").className="rwpanel";$("#rwpanel").innerHTML="";rwControls(0);
-  G.R=R?JSON.parse(JSON.stringify(R)):rwNew();if(!R)G.R.nm=rwFun();G.R.ops=G.R.ops||[];G.isNew=!R;G.dirty=0;G.step="shape";G.tool=G.tool||"a";G.size=G.size||"m";if(G.mirror==null)G.mirror=true;G.zoom=1;G.view=null;
+  G.R=R?JSON.parse(JSON.stringify(R)):rwNew();if(!R)G.R.nm=rwFun();G.R.ops=G.R.ops||[];G.pickW=G.pickW||"spin";G.pickH=G.pickH||"m";G.ptool="col";G.brushC=G.brushC||"#fdd835";G.bsize=G.bsize||"m";G.ssize=G.ssize||"m";G.stkE=G.stkE||"💀";G.pundo=[];G.isNew=!R;G.dirty=0;G.step="shape";G.tool=G.tool||"a";G.size=G.size||"m";if(G.mirror==null)G.mirror=true;G.zoom=1;G.view=null;
   G.base=rwField(G.R.shapes);G.clay=rwFieldCopy(G.base);if(G.clay)for(const o of G.R.ops)rwOp(G.clay,o);G.wasShape=1;rwShow(G.R);rwStep("shape")}
 function rwClayStart(sh){const G=RWG,R=G.R;R.shapes={side:[sh],top:[],front:[]};R.ops=[];G.base=rwField(R.shapes);G.clay=rwFieldCopy(G.base);G.dirty=1;G.view=null;G.camK.az=.75;G.camK.el=.38;rwCam("show");G.auto=0;
   rwShow(R);sfx("win");rwMsg("🧱 NOW MOULD IT!");rwStep("shape")}
 function rwStep(k){const G=RWG,R=G.R;G.step=k;const el=$("#rwbot");el.className="rwbot on";const i=RW_STEPS.findIndex(s=>s[0]===k);
   const tabs=`<div class="rwtabs">${RW_STEPS.map(([s,ic,nm],j)=>`<button data-st="${s}" class="${s===k?"on":""}${j<i?" done":""}"><span>${j+1}</span>${nm}</button>`).join("")}</div>`;
-  let body="";const cards=(L,cur,attr)=>`<div class="rwcards">${L.map(o=>`<button class="rwc${o.k===cur?" on":""}" data-${attr}="${o.k}"><span class="ic">${o.ic}</span><b>${o.nm}</b>${attr==="mat"?`<small>🛡️${rwStars(o.arm)}<br>⚖️ ${o.kg<4?"light":o.kg<7?"medium":"HEAVY"}</small>`:attr==="wep"?`<small>💥${rwStars(o.pow)}<br>⚖️ ${o.kg} kg</small>`:`<small>⚖️ ${o.kg} kg</small>`}</button>`).join("")}</div>`;
+  let body="";const cards=(L,cur,attr)=>`<div class="rwcards">${L.map(o=>`<button class="rwc${o.k===cur?" on":""}" data-${attr}="${o.k}"><span class="ic">${o.ic}</span><b>${o.nm}</b>${attr==="mat"?`<small>🛡️${rwStars(o.arm)}<br>⚖️ ${o.kg<4?"light":o.kg<7?"medium":"HEAVY"}</small>`:attr==="pw"?`<small>💥${rwStars(o.pow)}<br>⚖️ ${o.kg} kg</small>`:`<small>⚖️ ${o.kg} kg</small>`}</button>`).join("")}</div>`;
+  const mir=()=>`<button id="rwmir" class="rwmir${G.mirror?" on":""}">🪞 MIRROR ${G.mirror?"ON":"OFF"}</button>`,sz=(cur)=>`<span class="rwsz">${[["s","S"],["m","M"],["l","L"]].map(([z,n2])=>`<button data-size="${z}" class="${cur===z?"on":""}">${n2}</button>`).join("")}</span>`;
   if(k==="shape"){if(!G.clay)body=`<div class="rwlab">START WITH A SHAPE — OR DRAW YOUR OWN ABOVE ✏️</div><div class="rwstarts">${[["box","⬛","BOX"],["wedge","◢","WEDGE"],["round","⬭","ROUND"]].map(([k2,i2,n2])=>`<button data-start="${k2}"><span>${i2}</span>${n2}</button>`).join("")}</div>`;
     else body=`<div class="rwtools">${[["a","👆","PULL OUT"],["p","👊","PUSH IN"],["s","✋","SMOOTH"]].map(([t,i2,n2])=>`<button data-tool="${t}" class="${G.tool===t?"on":""}"><span>${i2}</span>${n2}</button>`).join("")}
         <button id="rwmir" class="${G.mirror?"on":""}"><span>🪞</span>MIRROR ${G.mirror?"ON":"OFF"}</button></div>
       <div class="rwrow"><span class="rwsz">${[["s","S"],["m","M"],["l","L"]].map(([z,n2])=>`<button data-size="${z}" class="${G.size===z?"on":""}">${n2}</button>`).join("")}</span><button id="rwund">↶ UNDO</button><button id="rwclr">🔄 START AGAIN</button></div>`}
   else if(k==="mat")body=cards(RW_MAT,R.mat,"mat")+`<p class="rwsay">${rwFind(RW_MAT,R.mat).say}</p>`;
-  else if(k==="wep")body=cards(RW_WEP,R.wep,"wep")+`<p class="rwsay">${rwFind(RW_WEP,R.wep).say}</p>`;
-  else if(k==="drive")body=cards(RW_DRIVE,R.drive,"drive")+`<p class="rwsay">${rwFind(RW_DRIVE,R.drive).say}</p><div class="rwlab">MOTORS</div>`+cards(RW_MOT,R.mot,"mot")+`<p class="rwsay">${rwFind(RW_MOT,R.mot).say}</p>`;
-  else body=`<div class="rwlab">BODY COLOUR</div><div class="rwcols">${RW_COLS.map(c=>`<button data-c1="${c}" style="background:${c}" class="${c===R.col?"on":""}"></button>`).join("")}</div>
-    <div class="rwlab">WEAPON &amp; WHEEL COLOUR</div><div class="rwcols">${RW_COLS.map(c=>`<button data-c2="${c}" style="background:${c}" class="${c===R.col2?"on":""}"></button>`).join("")}</div>
-    <div class="rwlab">NAME</div><div class="rwrow"><input id="rwname" maxlength="20" value="${rwEsc(R.nm)}"><button id="rwdice">🎲</button></div>`;
+  else if(k==="wep")body=`<div class="rwlab">PICK ONE, THEN TAP YOUR ROBOT TO STICK IT ON · ${(R.weps||[]).length} ON</div>`+cards(RW_WEP,G.pickW,"pw")+`<p class="rwsay">${rwFind(RW_WEP,G.pickW).say}</p><div class="rwrow">${mir()}<button id="rwpu">↶ UNDO</button><button id="rwpc">🗑️ CLEAR</button></div>`;
+  else if(k==="drive")body=`<div class="rwlab">PICK ONE, THEN TAP YOUR ROBOT · ${(R.wheels||[]).length} ON</div>`+cards(RW_WHEEL,G.pickH,"ph")+`<div class="rwrow">${mir()}<button id="rwpu">↶ UNDO</button><button id="rwpc">🗑️ CLEAR</button></div><div class="rwlab">MOTORS</div>`+cards(RW_MOT,R.mot,"mot")+`<p class="rwsay">${rwFind(RW_MOT,R.mot).say}</p>`;
+  else{const pt=G.ptool||"col",pal=(cur,attr)=>`<div class="rwcols">${RW_COLS.map(c=>`<button data-${attr}="${c}" style="background:${c}" class="${c===cur?"on":""}"></button>`).join("")}</div>`;
+    body=`<div class="rwptabs">${[["col","🎨","COLOUR"],["pat","✨","PATTERN"],["brush","🖌️","PAINT"],["stk","💀","STICKERS"]].map(([t,i2,n2])=>`<button data-pt="${t}" class="${pt===t?"on":""}"><span>${i2}</span>${n2}</button>`).join("")}</div>`;
+    if(pt==="col")body+=`<div class="rwlab">MAIN COLOUR</div>`+pal(R.col,"c1")+`<div class="rwlab">WEAPON &amp; WHEEL COLOUR</div>`+pal(R.col2,"c2");
+    else if(pt==="pat")body+=`<div class="rwpats">${RW_PAT.map(o=>`<button data-pat="${o.k}" class="${(R.pat||"")===o.k?"on":""}"><span>${o.ic}</span>${o.nm}</button>`).join("")}</div><div class="rwlab">PATTERN COLOUR</div>`+pal(R.col2,"c2");
+    else if(pt==="brush")body+=pal(G.brushC,"bc")+`<div class="rwrow">${sz(G.bsize)}${mir()}<button id="rwpu">↶ UNDO</button></div>`;
+    else body+=`<div class="rwstk">${RW_STK.map(e=>`<button data-stk="${e}" class="${G.stkE===e?"on":""}">${e}</button>`).join("")}</div><div class="rwrow">${sz(G.ssize)}${mir()}<button id="rwpu">↶ UNDO</button></div>`;
+    body+=`<div class="rwrow"><input id="rwname" maxlength="20" value="${rwEsc(R.nm)}" aria-label="Name"><button id="rwdice">🎲</button></div>`}
   const last=k==="paint";el.innerHTML=tabs+`<div class="rwstep">${body}</div><div class="rwnav">${i>0?`<button id="rwprev">◀ BACK</button>`:"<span></span>"}<button class="go" id="rwnext">${last?"SAVE ROBOT ✔":"NEXT ▶"}</button></div>`;
   el.querySelectorAll("[data-st]").forEach(b=>b.onclick=()=>{if(b.dataset.st!=="shape"&&!G.body){rwNeedShape();return}sfx("tap");rwStep(b.dataset.st)});
+  if(k==="paint"){const nm=$("#rwname");if(nm)nm.onfocus=()=>{G.typing=1};}
   el.querySelectorAll("[data-start]").forEach(b=>b.onclick=()=>{sfx("tap");rwClayStart(rwStartShape(b.dataset.start))});
   el.querySelectorAll("[data-tool]").forEach(b=>b.onclick=()=>{G.tool=b.dataset.tool;sfx("tap");rwStep("shape")});
-  el.querySelectorAll("[data-size]").forEach(b=>b.onclick=()=>{G.size=b.dataset.size;sfx("tap");rwStep("shape")});
-  const mi=$("#rwmir");if(mi)mi.onclick=()=>{G.mirror=!G.mirror;sfx("tap");rwStep("shape")};
-  for(const[a,f]of[["mat","mat"],["wep","wep"],["drive","drive"],["mot","mot"]])el.querySelectorAll(`[data-${a}]`).forEach(b=>b.onclick=()=>{R[f]=b.dataset[a];G.dirty=1;sfx("tap");rwShow(R,1);if(f==="wep")rwDemo();rwStep(k)});
+  el.querySelectorAll("[data-size]").forEach(b=>{if(k!=="shape")return;b.onclick=()=>{G.size=b.dataset.size;sfx("tap");rwStep("shape")}});
+  const mi=$("#rwmir");if(mi)mi.onclick=()=>{G.mirror=!G.mirror;sfx("tap");rwStep(k)};
+  for(const[a,f]of[["mat","mat"],["mot","mot"]])el.querySelectorAll(`[data-${a}]`).forEach(b=>b.onclick=()=>{R[f]=b.dataset[a];G.dirty=1;sfx("tap");rwShow(R,1);rwStep(k)});
+  el.querySelectorAll("[data-pw]").forEach(b=>b.onclick=()=>{G.pickW=b.dataset.pw;sfx("tap");rwStep(k)});el.querySelectorAll("[data-ph]").forEach(b=>b.onclick=()=>{G.pickH=b.dataset.ph;sfx("tap");rwStep(k)});
+  el.querySelectorAll("[data-pt]").forEach(b=>b.onclick=()=>{G.ptool=b.dataset.pt;sfx("tap");rwStep(k)});
+  el.querySelectorAll("[data-pat]").forEach(b=>b.onclick=()=>{R.pat=b.dataset.pat;G.dirty=1;sfx("tap");rwShow(R,1);rwStep(k)});
+  el.querySelectorAll("[data-bc]").forEach(b=>b.onclick=()=>{G.brushC=b.dataset.bc;sfx("tap");rwStep(k)});el.querySelectorAll("[data-stk]").forEach(b=>b.onclick=()=>{G.stkE=b.dataset.stk;sfx("tap");rwStep(k)});
+  el.querySelectorAll("[data-size]").forEach(b=>{if(k!=="paint")return;b.onclick=()=>{if(G.ptool==="brush")G.bsize=b.dataset.size;else G.ssize=b.dataset.size;sfx("tap");rwStep(k)}});
+  const pu=$("#rwpu");if(pu)pu.onclick=()=>{const u=(G.pundo||[]).pop();if(!u){toast("Nothing to undo");return}for(let q=0;q<u.n;q++)R[u.a].pop();G.dirty=1;sfx("tap");rwShow(R,1);rwStep(k)};
+  const pc=$("#rwpc");if(pc)pc.onclick=()=>{const a=k==="wep"?"weps":"wheels";if(!(R[a]||[]).length)return;if(!confirm(k==="wep"?"Take off all the weapons?":"Take off all the wheels?"))return;R[a]=[];G.pundo=(G.pundo||[]).filter(u=>u.a!==a);G.dirty=1;rwShow(R,1);rwStep(k)};
   el.querySelectorAll("[data-c1]").forEach(b=>b.onclick=()=>{R.col=b.dataset.c1;G.dirty=1;sfx("tap");rwShow(R,1);rwStep(k)});
   el.querySelectorAll("[data-c2]").forEach(b=>b.onclick=()=>{R.col2=b.dataset.c2;G.dirty=1;sfx("tap");rwShow(R,1);rwStep(k)});
   const nm=$("#rwname");if(nm)nm.oninput=e=>{R.nm=e.target.value;G.dirty=1};const dc=$("#rwdice");if(dc)dc.onclick=()=>{R.nm=rwFun();$("#rwname").value=R.nm;G.dirty=1;sfx("tap")};
   const un=$("#rwund");if(un)un.onclick=()=>{if(!R.ops.length){toast("Nothing to undo");return}R.ops.pop();G.clay=rwFieldCopy(G.base);for(const o of R.ops)rwOp(G.clay,o);G.dirty=1;sfx("tap");rwShow(R)};
   const cl=$("#rwclr");if(cl)cl.onclick=()=>{if(!confirm("Squash it and start again?"))return;R.shapes={side:[],top:[],front:[]};R.ops=[];G.clay=G.base=null;G.dirty=1;rwShow(R);rwSetView("side");rwStep("shape")};
   const pv=$("#rwprev");if(pv)pv.onclick=()=>{sfx("tap");rwStep(RW_STEPS[i-1][0])};
-  $("#rwnext").onclick=()=>{if(!G.body){rwNeedShape();return}if(last)return rwSaveBot();sfx("tap");rwStep(RW_STEPS[i+1][0])};
+  $("#rwnext").onclick=()=>{if(!G.body){rwNeedShape();return}if(k==="drive"&&!(R.wheels||[]).length){toast("Stick on some wheels first — tap your robot! ⚫");sfx("lose");return}if(last)return rwSaveBot();sfx("tap");rwStep(RW_STEPS[i+1][0])};
   if(k==="shape"){if(!G.clay&&G.view!=="side")rwSetView("side",1);else if(G.clay&&G.view){G.view=null;rwCam("show")}}else{G.view=null;rwCam("show")}
   if(k==="shape"||G.wasShape){G.wasShape=k==="shape";rwShow(R,k!=="shape"&&G.bodyFor===R&&!G.clayChanged);G.clayChanged=0}
   rwHint();rwStatsShow()}
 function rwNeedShape(){toast("Draw your robot first, or pick a starting shape! ✏️");sfx("lose")}
-function rwHint(){const G=RWG,h=$("#rwhint");if(!h)return;if(G.mode!=="build"||G.step!=="shape"){h.textContent="";return}
+function rwHint(){const G=RWG,h=$("#rwhint");if(!h)return;if(G.mode!=="build"){h.textContent="";return}
+  if(G.step==="wep"){h.textContent=`Tap your robot to stick on a ${rwFind(RW_WEP,G.pickW).nm.toUpperCase()} ${rwFind(RW_WEP,G.pickW).ic} · drag the background to spin`;return}
+  if(G.step==="drive"){h.textContent="Tap your robot to put on wheels — the lowest ones touch the ground · drag the background to spin";return}
+  if(G.step==="paint"){h.textContent=G.ptool==="brush"?"🖌️ Paint on your robot with your finger · drag the background to spin":G.ptool==="stk"?"Tap your robot to stick on a sticker":G.ptool==="pat"?"Pick a pattern ✨":"Pick your colours 🎨";return}
+  if(G.step!=="shape"){h.textContent="";return}
   h.textContent=!G.clay?"Draw your robot from the SIDE — go all the way round. The front faces this way ➡️":G.tool==="a"?"👆 Touch the clay and drag OUT to pull it · drag the background to spin · pinch to zoom":G.tool==="p"?"👊 Rub the clay to push it in":"✋ Rub the clay to smooth it"}
 function rwSaveBot(){const G=RWG,R=G.R,S=rwLoad();if(G.st&&G.st.over){toast("Too heavy to fight! Pick lighter parts or make it smaller ⚖️");sfx("lose");return}
   R.nm=(R.nm||"").trim()||rwFun();R.t=Date.now();const i=S.bots.findIndex(b=>b.id===R.id);if(i>=0)S.bots[i]=R;else S.bots.push(R);S.sel=R.id;if(S.bots.length>20)S.bots.shift();rwSave(1);sfx("win");rwMsg("🤖 SAVED!");G.dirty=0;
@@ -3177,21 +3283,40 @@ function rwToWorld(px,py){const G=RWG,T=THREE,v=G.view;if(!v)return null;const n
   const nrm=new T.Vector3(...RW_VIEWDIR[v]),pl=new T.Plane(nrm,0),p=new T.Vector3();if(!rc.ray.intersectPlane(pl,p))return null;const B=RW_B;
   if(v==="side")return[Math.max(B.x0,Math.min(B.x1,p.x)),Math.max(B.y0,Math.min(B.y1,p.y))];if(v==="top")return[Math.max(B.x0,Math.min(B.x1,p.x)),Math.max(B.z0,Math.min(B.z1,p.z))];return[Math.max(B.z0,Math.min(B.z1,p.z)),Math.max(B.y0,Math.min(B.y1,p.y))]}
 function rwToScreen(v,u,w){const G=RWG,T=THREE,p=v==="side"?new T.Vector3(u,w,0):v==="top"?new T.Vector3(u,0,w):new T.Vector3(0,w,u);p.project(G.cam);return[(p.x+1)/2*G.W,(1-p.y)/2*G.H]}
-function rwDrawDown(e){const G=RWG;if(G.mode!=="build"||G.step!=="shape")return;
+function rwDrawDown(e){const G=RWG;if(G.mode==="build"&&G.step!=="shape"){if(G.ptr.size>=2){G.tap=null;if(G.brush)rwBrushEnd();return}
+    const want=G.step==="wep"||G.step==="drive"||G.step==="paint"&&(G.ptool==="brush"||G.ptool==="stk"),hit=want?rwHitBody(e.x,e.y):null;if(!hit){G.spinDrag=e.id;return}
+    if(G.step==="paint"&&G.ptool==="brush"){rwBrushStart(e,hit);return}G.tap={id:e.id,x:e.x,y:e.y,hit};return}
+  if(G.mode!=="build"||G.step!=="shape")return;
   if(G.ptr.size>=2){/* two fingers: zoom and spin */if(G.sc)rwSculptEnd();G.cur=null;G.twist=1;const[a,b]=[...G.ptr.values()];G.pinch={d0:Math.hypot(a.x-b.x,a.y-b.y)||1,z0:G.zoom||1};return}
   if(G.twist)return;if(!G.clay){if(G.view==="side")G.cur={pid:e.id,pts:[[e.x,e.y]]};return}
   const hit=rwHit(e.x,e.y);if(!hit){G.spinDrag=e.id;return}rwSculptStart(e,hit)}
 function rwDrawMove(e,o){const G=RWG;
   if(G.mode==="build"&&G.step==="shape"&&G.ptr.size>=2){G.cur=null;if(G.pinch){const[a,b]=[...G.ptr.values()];G.zoom=Math.max(.6,Math.min(3,G.pinch.z0*Math.hypot(a.x-b.x,a.y-b.y)/G.pinch.d0))}
     if(G.clay)rwOrbit((e.x-o.x)/G.ptr.size,(e.y-o.y)/G.ptr.size);return}
-  if(G.mode!=="build"||G.step!=="shape"){if(G.mode!=="drive")rwOrbit(e.x-o.x,e.y-o.y);return}
+  if(G.mode!=="build"||G.step!=="shape"){if(G.mode==="drive")return;if(G.brush&&G.brush.id===e.id){rwBrushMove(e);return}
+    if(G.tap&&G.tap.id===e.id){if(Math.hypot(e.x-G.tap.x,e.y-G.tap.y)>10){G.tap=null;G.spinDrag=e.id}else return}rwOrbit(e.x-o.x,e.y-o.y);return}
   if(G.spinDrag===e.id){rwOrbit(e.x-o.x,e.y-o.y);return}
   if(G.sc&&G.sc.pid===e.id){rwSculptMove(e);return}
   if(!G.cur||G.cur.pid!==e.id)return;const l=G.cur.pts[G.cur.pts.length-1];if(Math.hypot(e.x-l[0],e.y-l[1])>=3)G.cur.pts.push([e.x,e.y])}
-function rwDrawUp(e){const G=RWG;if(G.ptr.size<2)G.pinch=null;if(G.ptr.size===0)G.twist=0;if(G.spinDrag===e.id)G.spinDrag=null;if(G.sc&&G.sc.pid===e.id){rwSculptEnd();return}
+function rwDrawUp(e){const G=RWG;if(G.brush&&G.brush.id===e.id){rwBrushEnd();return}if(G.tap&&G.tap.id===e.id){const t=G.tap;G.tap=null;rwPlace(t.hit);return}if(G.ptr.size<2)G.pinch=null;if(G.ptr.size===0)G.twist=0;if(G.spinDrag===e.id)G.spinDrag=null;if(G.sc&&G.sc.pid===e.id){rwSculptEnd();return}
   if(!G.cur||G.cur.pid!==e.id)return;const c=G.cur;G.cur=null;
   const raw=c.pts.map(p=>rwToWorld(p[0],p[1])).filter(Boolean),sh=rwSmoothShape(raw);if(!sh){toast("Draw all the way round the shape ✏️");return}
   rwClayStart(sh.map(q=>[+q[0].toFixed(2),+q[1].toFixed(2)]))}
+/* ---------- sticking parts on, and painting ---------- */
+function rwHitBody(px,py){const G=RWG;if(!G.M||!G.M.bodyMesh)return null;const h=rwRay(px,py).intersectObject(G.M.bodyMesh,false)[0];if(!h)return null;const n=h.face?h.face.normal:new THREE.Vector3(1,0,0);
+  return{p:[+h.point.x.toFixed(2),+(h.point.y-G.M.dy).toFixed(2),+h.point.z.toFixed(2)],n:[+n.x.toFixed(2),+n.y.toFixed(2),+n.z.toFixed(2)]}}
+const RW_STKSZ={s:.13,m:.22,l:.34},RW_BRSZ={s:.06,m:.11,l:.18};
+function rwPlace(h){const G=RWG,R=G.R,k=G.step,mir=G.mirror&&Math.abs(h.p[2])>.06,two=(o,f)=>{const L=[o];if(mir)L.push(f(o));return L};
+  const flip=o=>({...o,p:[o.p[0],o.p[1],-o.p[2]],...(o.n?{n:[o.n[0],o.n[1],-o.n[2]]}:{})});let a,add;
+  if(k==="wep"){a="weps";R.weps=R.weps||[];if(R.weps.length>=8){toast("That's lots of weapons! Try UNDO");return}add=two({k:G.pickW,p:h.p,n:h.n},flip);sfx("b_clang")}
+  else if(k==="drive"){a="wheels";R.wheels=R.wheels||[];if(R.wheels.length>=8){toast("8 wheels is the most!");return}add=two({k:G.pickH,p:h.p},flip);sfx("tap")}
+  else if(k==="paint"&&G.ptool==="stk"){a="stk";R.stk=R.stk||[];if(R.stk.length>=30){toast("That's loads of stickers! Try UNDO");return}add=two({e:G.stkE,s:RW_STKSZ[G.ssize]||.22,p:h.p,n:h.n},flip);sfx("flip")}
+  else return;R[a].push(...add);G.pundo.push({a,n:add.length});G.dirty=1;rwShow(R,1);if(k==="wep")rwDemo();rwStep(k)}
+function rwBrushStart(e,h){const G=RWG;G.brush={id:e.id,op:{c:G.brushC,r:RW_BRSZ[G.bsize]||.11,m:!!G.mirror,p:[]}};rwBrushAt(h.p)}
+function rwBrushAt(p){const G=RWG,b=G.brush,M=G.M;if(!b||!M||!M.paint)return;const o=b.op,l=o.p[o.p.length-1];if(l&&Math.hypot(p[0]-l[0],p[1]-l[1],p[2]-l[2])<o.r*.3)return;if(o.p.length>=120)return;
+  o.p.push(p);rwPaintAdd(M.paint,M.body.pos,o,o.p.length-1);M.bodyMesh.geometry.getAttribute("paint").needsUpdate=true}
+function rwBrushMove(e){const h=rwHitBody(e.x,e.y);if(h)rwBrushAt(h.p)}
+function rwBrushEnd(){const G=RWG,b=G.brush;G.brush=null;if(!b||!b.op.p.length)return;const R=G.R;R.paint=R.paint||[];R.paint.push(b.op);if(R.paint.length>200)R.paint.shift();G.pundo.push({a:"paint",n:1});G.dirty=1;sfx("tap")}
 /* ---------- moulding the clay ---------- */
 const RW_SIZE={s:.1,m:.17,l:.27};
 function rwRay(px,py){const G=RWG,T=THREE,rc=new T.Raycaster();rc.setFromCamera(new T.Vector2(px/G.W*2-1,-(py/G.H)*2+1),G.cam);return rc}
@@ -3229,13 +3354,13 @@ function rwArena(on){RWR.arena.visible=!!on;RWR.shop.visible=!on;rwControls(on)}
 function rwControls(on){for(const id of ["rwjoy","rwfire"])$("#"+id).classList.toggle("on",!!on)}
 function rwDrive(R){const G=RWG;G.mode="drive";G.view=null;$("#rwpanel").className="rwpanel";$("#rwpanel").innerHTML="";$("#rwbot").className="rwbot";$("#rwtop").className="rwtop";$("#rwhint").textContent="";
   rwShow(R,1);rwArena(1);const st=rwStats(R,G.body,G.viewing?rwThem()==="O":rwCass());
-  G.car={x:-3,z:3,yaw:-Math.PI/4,v:0,spd:2.4+st.spd*.85,turn:(R.drive==="w2"?4.2:R.drive==="trk"?2.6:3.3),push:st.push,pow:st.pow,r:Math.max(.5,G.M.r*.85)};
+  G.car={x:-3,z:3,yaw:-Math.PI/4,v:0,spd:2.4+st.spd*.85,turn:((R.wheels||[]).some(w=>w.k==="t")?2.6:(R.wheels||[]).length<=2?4.2:3.3),push:st.push,pow:st.pow,r:Math.max(.5,G.M.r*.85)};
   G.dum=[];RWR.dummies.clear();const T=THREE;
   for(const[x,z]of[[1,0],[4,3],[-3,-4],[0,-7],[7,5],[-6,5],[6,-2]]){const g=new T.Group(),b=new T.Mesh(new T.CylinderGeometry(.38,.42,.8,20),new T.MeshStandardMaterial({color:0xe3672b,roughness:.6}));b.position.y=.4;b.castShadow=true;g.add(b);
     const s=new T.Mesh(new T.CylinderGeometry(.385,.385,.12,20),new T.MeshStandardMaterial({color:0xffffff}));s.position.y=.55;g.add(s);g.position.set(x,0,z);RWR.dummies.add(g);G.dum.push({g,x,z,y:0,vx:0,vz:0,vy:0,rx:0,rz:0,wx:0,wz:0,r:.42})}
-  const w=R.wep;$("#rwfire").innerHTML={wedge:"💨<small>RAM</small>",flip:"🦘<small>FLIP</small>",spin:"🌀<small>SPIN UP</small>",drum:"🥁<small>SPIN UP</small>",axe:"🪓<small>AXE</small>",crush:"🦀<small>CRUSH</small>"}[w];
+  const ks=[...new Set((R.weps||[]).map(w=>w.k))];$("#rwfire").innerHTML=(ks.length?ks.slice(0,2).map(k=>rwFind(RW_WEP,k).ic).join(""):"💨")+`<small>${ks.length===1?{wedge:"RAM",flip:"FLIP",spin:"SPIN UP",drum:"SPIN UP",axe:"AXE",crush:"CRUSH",spike:"RAM"}[ks[0]]:"ATTACK"}</small>`;
   G.fireT=9;G.joy=null;G.dash=0;G.camSet=0;rwMsg("TEST DRIVE!");$("#rwhint").textContent="Smash the practice barrels! Left: steer · Right: weapon"}
-function rwFire(){const G=RWG;if(G.mode!=="drive"||G.fireT<.45)return;G.fireT=0;sfx("b_swish");if(G.M.R.wep==="wedge")G.dash=.35;G.hitDone=new Set()}
+function rwFire(){const G=RWG;if(G.mode!=="drive"||G.fireT<.45)return;G.fireT=0;sfx("b_swish");if(G.M.weps.some(w=>w.k==="wedge"||w.k==="spike"))G.dash=.35}
 function rwDriveStep(dt){const G=RWG,c=G.car,M=G.M,R=M.R;let jx=0,jy=0;
   if(G.joy){jx=G.joy.dx;jy=G.joy.dy}if(G.keys.ArrowUp||G.keys.w)jy=-1;if(G.keys.ArrowDown||G.keys.s)jy=1;if(G.keys.ArrowLeft||G.keys.a)jx=-1;if(G.keys.ArrowRight||G.keys.d)jx=1;
   const mag=Math.min(1,Math.hypot(jx,jy));
@@ -3245,16 +3370,18 @@ function rwDriveStep(dt){const G=RWG,c=G.car,M=G.M,R=M.R;let jx=0,jy=0;
   else c.v*=Math.pow(.02,dt);
   if(G.dash>0){G.dash-=dt;c.v=Math.max(c.v,c.spd*1.8)}
   const fx=Math.cos(c.yaw),fz=-Math.sin(c.yaw);c.x+=fx*c.v*dt;c.z+=fz*c.v*dt;const A=RW_ARENA-c.r*.8;if(Math.abs(c.x)>A){c.x=Math.sign(c.x)*A;c.v*=.3}if(Math.abs(c.z)>A){c.z=Math.sign(c.z)*A;c.v*=.3}
-  G.fireT+=dt;const f=G.fireT,W=R.wep,spinning=W==="spin"||W==="drum";
+  G.fireT+=dt;const f=G.fireT,W=(M.weps.find(w=>w.k==="wedge")||{}).k,cy=Math.cos(c.yaw),sy=Math.sin(c.yaw);
   /* the barrels */
   for(const d of G.dum){const dx=d.x-c.x,dz=d.z-c.z,dist=Math.hypot(dx,dz)||1e-3,nx=dx/dist,nz=dz/dist,front=nx*fx+nz*fz;
-    if(dist<c.r+d.r&&d.y<.6){const ov=c.r+d.r-dist;d.x+=nx*ov;d.z+=nz*ov;const pv=Math.max(0,c.v*front)*(.6+c.push*.12);d.vx+=nx*pv*.5+fx*pv*.4;d.vz+=nz*pv*.5+fz*pv*.4;if(W==="wedge"&&front>.6&&c.v>2&&d.y<.05)d.vy=Math.max(d.vy,1.5+c.v*.3)}
-    const inFront=front>.55&&dist<c.r+d.r+.45&&d.y<.8;
-    if(inFront&&!(G.hitDone&&G.hitDone.has(d))){let hit=null;
-      if(W==="flip"&&f<.25)hit=[2.5,5+G.car.pow*.8,9];else if(W==="axe"&&f>.12&&f<.3)hit=[1,2.5,4];else if(W==="crush"&&f>.1&&f<.3)hit=[.5,1.5,3];else if(W==="wedge"&&G.dash>0)hit=[5,1.5,3];
-      else if(spinning&&(!d.cool||G.t>d.cool)){const up=f<1.5?1.6:1;hit=W==="spin"?[4*up,2.2*up,12]:[2.5*up,4.5*up,10];d.cool=G.t+.6}
-      if(hit){if(!spinning)G.hitDone.add(d);const side=W==="spin"?[-nz,nx]:[fx,fz];d.vx+=side[0]*hit[0]+nx*1;d.vz+=side[1]*hit[0]+nz*1;d.vy+=hit[1];d.wx+=(Math.random()-.5)*hit[2];d.wz+=(Math.random()-.5)*hit[2];
-        sfx(W==="crush"?"hit":"b_clang");rwSparks(d.x,.5,d.z,14);if(hit[1]>4)rwMsg(["FLIPPED!","SMASH!","WHAM!","KER-RUNCH!"][Math.random()*4|0])}}
+    if(dist<c.r+d.r&&d.y<.6){const ov=c.r+d.r-dist;d.x+=nx*ov;d.z+=nz*ov;const pv=Math.max(0,c.v*front)*(.6+c.push*.12);d.vx+=nx*pv*.5+fx*pv*.4;d.vz+=nz*pv*.5+fz*pv*.4;if(W&&front>.6&&c.v>2&&d.y<.05)d.vy=Math.max(d.vy,1.5+c.v*.3)}
+    M.weps.forEach((wp,wi)=>{const k=wp.k,reach=RW_REACH[k]||.4,lx=wp.p[0]+wp.n[0]*reach,lz=wp.p[2]+wp.n[2]*reach,ly=wp.p[1]+M.dy+wp.n[1]*reach,
+        wx=c.x+lx*cy+lz*sy,wz=c.z-lx*sy+lz*cy,ux=wp.n[0]*cy+wp.n[2]*sy,uz=-wp.n[0]*sy+wp.n[2]*cy,hl=Math.hypot(ux,uz)||1,ex=d.x-wx,ez=d.z-wz,ed=Math.hypot(ex,ez)||1e-3;
+      if(ed>d.r+.32||ly>1.4||d.y>.9)return;d.cool=d.cool||{};const key=wi;if(d.cool[key]&&G.t<d.cool[key])return;let hit=null,dir=[ux/hl,uz/hl];
+      if(k==="flip"&&f<.25)hit=[2.5,5+c.pow*.8,9];else if(k==="axe"&&f>.12&&f<.3)hit=[1,2.5,4];else if(k==="crush"&&f>.1&&f<.3)hit=[.5,1.5,3];else if(k==="wedge"&&G.dash>0)hit=[5,1.5,3];
+      else if(k==="spin"||k==="drum"){const up=f<1.5?1.6:1;hit=k==="spin"?[4*up,2.2*up,12]:[2.5*up,4.5*up,10];if(k==="spin")dir=[-dir[1],dir[0]]}
+      else if(k==="spike"&&c.v>1.5)hit=[3,1,4];
+      if(!hit)return;d.cool[key]=G.t+(k==="spin"||k==="drum"||k==="spike"?.6:.5);d.vx+=dir[0]*hit[0]+ex/ed;d.vz+=dir[1]*hit[0]+ez/ed;d.vy+=hit[1];d.wx+=(Math.random()-.5)*hit[2];d.wz+=(Math.random()-.5)*hit[2];
+      sfx(k==="crush"?"hit":"b_clang");rwSparks(wx,Math.max(.3,ly),wz,14);if(hit[1]>4)rwMsg(["FLIPPED!","SMASH!","WHAM!","KER-RUNCH!"][Math.random()*4|0])});
     d.vy-=15*dt;d.x+=d.vx*dt;d.z+=d.vz*dt;d.y+=d.vy*dt;d.rx+=d.wx*dt;d.rz+=d.wz*dt;
     if(d.y<=0){d.y=0;if(d.vy<-3){d.vy=-d.vy*.3;sfx("hit")}else d.vy=0;d.vx*=Math.pow(.15,dt);d.vz*=Math.pow(.15,dt);d.wx*=Math.pow(.05,dt);d.wz*=Math.pow(.05,dt);
       /* settle: lying on its side or standing up */d.rx=rwSettle(d.rx,dt);d.rz=rwSettle(d.rz,dt)}
@@ -3271,10 +3398,10 @@ function rwFrame(dt){const G=RWG;if(!G||G.dead||!RWR)return;G.t+=dt;rwSize();if(
     const want=new THREE.Vector3(c.x*.6,hgt,c.z*.6+back);if(!G.camSet){pc.position.copy(want);G.camSet=1}else pc.position.lerp(want,1-Math.exp(-dt*3));pc.lookAt(c.x*.85,0,c.z*.85-.8)}
   else{rwCamUpdate(dt);if(!G.auto&&!(G.mode==="build"&&G.step==="shape")&&!G.ptr.size){G.idle+=dt;if(G.idle>4){G.auto=1;G.idle=0}}if(M&&G.auto&&(G.mode==="garage"||G.step!=="shape")){G.camK.az+=dt*.35;rwCam("show")}if(M)M.g.position.set(0,0,0)}
   /* weapons moving */
-  if(M){const W=M.R.wep,f=G.fireT==null?9:G.fireT;if(G.demo>0){G.demo-=dt;if(G.fireT>1.1)G.fireT=0}G.fireT=(G.fireT||0)+(G.mode==="drive"?0:dt);
+  if(M){const f=G.fireT==null?9:G.fireT;if(G.demo>0){G.demo-=dt;if(G.fireT>1.1)G.fireT=0}G.fireT=(G.fireT||0)+(G.mode==="drive"?0:dt);
     const pulse=f<.12?f/.12:f<.5?1-(f-.12)/.38:0;
-    if(M.anim.flip)M.anim.flip.rotation.z=.1+pulse*1.2;if(M.anim.axe)M.anim.axe.rotation.z=.9-pulse*1.35;if(M.anim.crush)M.anim.crush.rotation.z=.55-pulse*.5;
-    const sp=(G.mode==="drive"?(f<1.5?30:18):6);if(M.anim.spinY)M.anim.spinY.rotation.y+=dt*sp;if(M.anim.spinZ)M.anim.spinZ.rotation.z-=dt*sp;
+    for(const a of M.anim.flip)a.rotation.z=pulse*1.2;for(const a of M.anim.axe)a.rotation.z=1.1-pulse*1.5;for(const a of M.anim.crush)a.rotation.z=.6-pulse*.55;
+    const sp=(G.mode==="drive"?(f<1.5?30:18):6);for(const a of M.anim.spinY)a.rotation.y+=dt*sp;for(const a of M.anim.spinZ)a.rotation.z-=dt*sp;
     if(G.mode==="drive"&&G.car){const roll=G.car.v*dt/0.25;for(const w of M.wheels)w.rotation.z-=roll;if(M.trackTex)M.trackTex.offset.x-=G.car.v*dt*.8}}
   for(let i=RWR.fx.children.length-1;i>=0;i--){const m=RWR.fx.children[i],u=m.userData;u.l-=dt;if(u.l<=0){RWR.fx.remove(m);continue}u.vy-=12*dt;m.position.x+=u.vx*dt;m.position.y+=u.vy*dt;m.position.z+=u.vz*dt}
   RWR.r.render(RWR.scene,G.mode==="drive"?G.pcam:G.cam);rwOverlay()}
