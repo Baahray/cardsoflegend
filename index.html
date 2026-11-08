@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta name="app-build" content="07 Nov 14:09 PT"><meta charset="utf-8">
+<html lang="en"><head><meta name="app-build" content="07 Nov 22:38 PT"><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Legends"><meta name="theme-color" content="#14102e">
@@ -3142,69 +3142,71 @@ function rwMat(R){const T=THREE,m=R.mat,vc={};
   if(m==="steel")return new T.MeshStandardMaterial({...vc,color:0xaab0b8,roughness:.42,metalness:.75});
   return new T.MeshStandardMaterial({...vc,color:0xd5deea,roughness:.25,metalness:.7})}
 function rwTrim(R){return new THREE.MeshStandardMaterial({color:new THREE.Color(R.col2),roughness:.35,metalness:.7})}
-const RW_REACH={wedge:.45,flip:.55,spin:.6,drum:.38,axe:.65,crush:.55,spike:.5,flame:1.7,saw:.6};
-/* weapon metals, shared */
+const RW_REACH={wedge:.55,flip:.6,spin:.55,drum:.42,axe:.7,crush:.6,spike:.6,flame:1.7,saw:.65};
+/* weapon metals, shared: brushed dark steel, polished chrome, hazard stripes */
 function rwWM(){if(RWR.wm)return RWR.wm;const T=THREE;
-  const hz=rwTex(128,32,(x,w,h)=>{for(let i=-2;i<12;i++){x.fillStyle=i%2?"#141414":"#ffc400";x.beginPath();x.moveTo(i*16,0);x.lineTo(i*16+16,0);x.lineTo(i*16,h);x.lineTo(i*16-16,h);x.fill()}});hz.wrapS=T.RepeatWrapping;hz.repeat.set(2,1);
+  const hz=rwTex(128,64,(x,w,h)=>{x.fillStyle="#141414";x.fillRect(0,0,w,h);for(let i=-4;i<12;i++){x.fillStyle="#f2b705";x.beginPath();x.moveTo(i*24,0);x.lineTo(i*24+12,0);x.lineTo(i*24+12-32,h);x.lineTo(i*24-32,h);x.fill()}
+    for(let i=0;i<300;i++){x.fillStyle=`rgba(0,0,0,${Math.random()*.25})`;x.fillRect(Math.random()*w,Math.random()*h,Math.random()*6,1)}});hz.wrapS=hz.wrapT=T.RepeatWrapping;
+  const br=rwTex(256,256,(x,w,h)=>{x.fillStyle="#3c4148";x.fillRect(0,0,w,h);for(let i=0;i<900;i++){const y=Math.random()*h,l=20+Math.random()*120,v=Math.random()<.5?0:255;x.fillStyle=`rgba(${v},${v},${v},${.03+Math.random()*.06})`;x.fillRect(Math.random()*w,y,l,1)}
+    for(let i=0;i<40;i++){x.strokeStyle=`rgba(200,205,210,${.1+Math.random()*.15})`;x.lineWidth=.6;x.beginPath();const a=Math.random()*w,b=Math.random()*h;x.moveTo(a,b);x.lineTo(a+(Math.random()-.5)*40,b+(Math.random()-.5)*20);x.stroke()}});br.wrapS=br.wrapT=T.RepeatWrapping;
+  const ch=rwTex(128,128,(x,w,h)=>{const g=x.createLinearGradient(0,0,w,h);g.addColorStop(0,"#d9dee4");g.addColorStop(.5,"#f7f9fb");g.addColorStop(1,"#b9c0c8");x.fillStyle=g;x.fillRect(0,0,w,h);for(let i=0;i<200;i++){x.fillStyle=`rgba(90,100,110,${Math.random()*.08})`;x.fillRect(0,Math.random()*h,w,1)}});
+  const disc=rwTex(256,256,(x,w,h)=>{x.fillStyle="#b9c0c8";x.fillRect(0,0,w,h);for(let r=4;r<128;r+=2){x.strokeStyle=`rgba(${Math.random()<.5?255:60},${Math.random()<.5?255:60},${Math.random()<.5?255:60},.12)`;x.lineWidth=1;x.beginPath();x.arc(128,128,r,0,7);x.stroke()}});
   const glow=rwTex(64,64,(x,w,h)=>{const g=x.createRadialGradient(32,32,0,32,32,32);g.addColorStop(0,"rgba(255,255,255,1)");g.addColorStop(.4,"rgba(255,200,80,.8)");g.addColorStop(1,"rgba(255,80,0,0)");x.fillStyle=g;x.fillRect(0,0,w,h)});
-  RWR.wm={steel:new T.MeshStandardMaterial({color:0x4b5058,metalness:.95,roughness:.32}),edge:new T.MeshStandardMaterial({color:0xf4f7fa,metalness:1,roughness:.1}),
-    dark:new T.MeshStandardMaterial({color:0x1d2025,metalness:.7,roughness:.5}),chrome:new T.MeshStandardMaterial({color:0xe8edf2,metalness:1,roughness:.06}),
-    haz:new T.MeshStandardMaterial({map:hz,metalness:.4,roughness:.5}),red:new T.MeshStandardMaterial({color:0xc62828,metalness:.5,roughness:.35}),
-    blur:new T.MeshBasicMaterial({color:0xcfd6de,transparent:true,opacity:.22,depthWrite:false,side:T.DoubleSide}),glow};return RWR.wm}
+  RWR.wm={steel:new T.MeshStandardMaterial({map:br,color:0xffffff,metalness:.85,roughness:.42}),dark:new T.MeshStandardMaterial({color:0x1b1e22,metalness:.75,roughness:.5}),
+    edge:new T.MeshStandardMaterial({map:ch,metalness:1,roughness:.14}),chrome:new T.MeshStandardMaterial({color:0xeef2f6,metalness:1,roughness:.06}),
+    haz:new T.MeshStandardMaterial({map:hz,metalness:.35,roughness:.55}),red:new T.MeshStandardMaterial({color:0xb71c1c,metalness:.45,roughness:.32}),
+    disc:new T.MeshStandardMaterial({map:disc,metalness:1,roughness:.22,side:T.DoubleSide}),blur:new T.MeshBasicMaterial({color:0xcfd6de,transparent:true,opacity:.22,depthWrite:false,side:T.DoubleSide}),glow};return RWR.wm}
 function rwExt(pts,depth,bev=.006){const T=THREE,sh=new T.Shape();pts.forEach((p,i)=>i?sh.lineTo(p[0],p[1]):sh.moveTo(p[0],p[1]));sh.closePath();
   const g=new T.ExtrudeGeometry(sh,{depth,bevelEnabled:bev>0,bevelThickness:bev,bevelSize:bev,bevelSegments:1,curveSegments:6});g.translate(0,0,-depth/2);return g}
-function rwWeapon(k,tm,sz=1){const T=THREE,W=rwWM(),g=new T.Group(),A={k},M=(geo,m)=>{const o=new T.Mesh(geo,m);o.castShadow=true;return o},
-  bolts=(par,pts,r=.018)=>{for(const p of pts){const b=M(new T.CylinderGeometry(r,r,.012,6),W.chrome);b.position.set(...p);b.rotation.x=Math.PI/2;par.add(b)}};
-  const base=M(new T.CylinderGeometry(.11,.13,.06,8),W.dark);base.rotation.z=Math.PI/2;base.position.x=.03;g.add(base);
-  if(k==="wedge"){/* hardened wedge with a razor edge and forks */
-    const pl=M(rwExt([[0,0],[.62,-.2],[.62,-.215],[0,-.05]],.5),W.steel);g.add(pl);const ed=M(new T.BoxGeometry(.05,.02,.5),W.edge);ed.position.set(.6,-.205,0);ed.rotation.z=-.31;g.add(ed);
-    for(const z of[-.2,0,.2]){const f=M(rwExt([[.5,-.17],[.82,-.24],[.82,-.25],[.5,-.2]],.035,0),W.edge);f.position.z=z;g.add(f)}
-    for(const z of[-.24,.24]){const r=M(rwExt([[0,0],[.5,-.16],[.5,-.18],[0,-.02],[0,.1]],.03,0),tm);r.position.z=z;g.add(r)}}
-  else if(k==="flip"){/* flipper: serrated plate on chrome rams */
-    const hinge=M(new T.CylinderGeometry(.05,.05,.48,12),W.dark);hinge.rotation.x=Math.PI/2;g.add(hinge);const pv=new T.Group();
-    const pl=M(rwExt([[0,-.03],[.62,-.03],[.66,-.01],[.62,.02],[0,.02]],.46),W.steel);pv.add(pl);for(let i=0;i<7;i++){const t=M(new T.ConeGeometry(.025,.08,4),W.edge);t.rotation.z=-Math.PI/2;t.position.set(.69,0,-.21+i*.07);pv.add(t)}
-    const st=M(new T.BoxGeometry(.4,.012,.12),W.haz);st.position.set(.3,.027,0);pv.add(st);g.add(pv);A.flip=pv;
-    for(const z of[-.14,.14]){const ram=M(new T.CylinderGeometry(.035,.035,.22,12),W.chrome);ram.position.set(.18,-.08,z);ram.rotation.z=-.5;g.add(ram);const cyl=M(new T.CylinderGeometry(.05,.05,.14,12),W.red);cyl.position.set(.1,-.12,z);cyl.rotation.z=-.5;g.add(cyl)}}
-  else if(k==="spin"){/* bar spinner: thick blade with hardened impact teeth */
-    const post=M(new T.CylinderGeometry(.05,.06,.24,12),W.dark);post.rotation.z=Math.PI/2;post.position.x=.12;g.add(post);const pv=new T.Group();pv.position.x=.25;
-    const bar=M(rwExt([[-.55,-.04],[-.5,-.08],[.5,-.08],[.55,-.04],[.55,.04],[.5,.08],[-.5,.08],[-.55,.04]],.07),W.steel);bar.rotation.set(-Math.PI/2,0,Math.PI/2);pv.add(bar);
-    for(const s of[-1,1]){const t=M(rwExt([[0,0],[.12,.03],[.14,.09],[0,.07]],.09,.004),W.edge);t.rotation.set(-Math.PI/2,0,s>0?0:Math.PI);t.position.set(s*-.06,0,s*.5);pv.add(t)}
-    const hub=M(new T.CylinderGeometry(.09,.09,.1,16),tm);pv.add(hub);bolts(pv,[[.05,.055,0],[-.05,.055,0],[0,.055,.05],[0,.055,-.05]].map(p=>p),.016);
-    const blur=new T.Mesh(new T.CircleGeometry(.58,40),W.blur);blur.rotation.x=-Math.PI/2;blur.visible=false;pv.add(blur);A.blur=blur;g.add(pv);A.spinY=pv}
-  else if(k==="drum"){/* heavy drum with rows of teeth */
-    const pv=new T.Group();pv.position.x=.2;const d=M(new T.CylinderGeometry(.16,.16,.44,24),W.steel);d.rotation.x=Math.PI/2;pv.add(d);
-    for(let r=0;r<3;r++)for(let i=0;i<3;i++){const q=i*Math.PI*2/3+r*.6,t=M(rwExt([[0,0],[.1,.02],[.06,.07]],.07,.004),W.edge);t.position.set(Math.cos(q)*.15,Math.sin(q)*.15,-.15+r*.15);t.rotation.z=q;pv.add(t)}
-    const ax=M(new T.CylinderGeometry(.04,.04,.56,10),W.chrome);ax.rotation.x=Math.PI/2;pv.add(ax);
-    for(const s of[-1,1]){const arm=M(rwExt([[-.2,-.07],[.2,-.06],[.24,0],[.2,.06],[-.2,.07]],.035,0),tm);arm.position.set(0,0,s*.26);g.add(arm);arm.position.x=.08;bolts(arm,[[.2,0,s*.02],[-.1,0,s*.02]])}
+/* a box with a hazard-stripe texture scaled to its size */
+function rwHazBox(w,h,d){const T=THREE,W=rwWM(),m=W.haz.clone();m.map=W.haz.map.clone();m.map.needsUpdate=true;m.map.repeat.set(Math.max(1,w*5),1);return new T.Mesh(new T.BoxGeometry(w,h,d),[m,m,m,m,m,m])}
+function rwWeapon(k,tm,sz=1){const T=THREE,W=rwWM(),g=new T.Group(),A={k},M=(geo,m)=>{const o=new T.Mesh(geo,m);o.castShadow=true;return o};
+  const bolt=(par,x,y,z,ax="x",r=.017)=>{const b=M(new T.CylinderGeometry(r,r,.016,6),W.chrome);b.position.set(x,y,z);if(ax==="x")b.rotation.z=Math.PI/2;else if(ax==="z")b.rotation.x=Math.PI/2;par.add(b)};
+  /* the chunky bolted mounting block on the back of every weapon, with a hazard panel on each side */
+  const mount=(w=.2,h=.16,d=.14,y=0)=>{const b=M(new T.BoxGeometry(d,h,w),W.steel);b.position.set(d/2,y,0);g.add(b);const pl=M(new T.BoxGeometry(.03,h*1.25,w*1.15),tm);pl.position.set(.015,y,0);g.add(pl);
+    for(const s of[-1,1]){const hz=rwHazBox(d*.8,h*.55,.006);hz.position.set(d*.55,y,s*(w/2+.004));g.add(hz)}for(const a of[-1,1])for(const c of[-1,1])bolt(g,d+.008,y+a*h*.32,c*w*.32,"x");return d};
+  if(k==="wedge"){const d=mount(.42,.16,.14,0);
+    const pl=M(rwExt([[d,.08],[d+.42,-.06],[d+.42,-.075],[d,-.04]],.5,.005),W.steel);g.add(pl);for(let i=0;i<5;i++){const z=-.2+i*.1,f=M(new T.ConeGeometry(.035,.32,4),W.edge);f.rotation.z=-Math.PI/2-.33;f.position.set(d+.5,-.1,z);f.scale.set(1,1,.45);g.add(f)}
+    const sh=rwHazBox(.36,.05,.012);sh.position.set(d+.18,.025,.255);sh.rotation.z=-.32;g.add(sh);const sh2=sh.clone();sh2.position.z=-.255;g.add(sh2);for(let i=0;i<3;i++)bolt(g,d+.06+i*.13,.06-i*.045,0,"y",.014)}
+  else if(k==="flip"){const d=mount(.4,.16,.14,0);const hinge=M(new T.CylinderGeometry(.04,.04,.46,12),W.dark);hinge.rotation.x=Math.PI/2;hinge.position.set(d+.02,.06,0);g.add(hinge);
+    const pv=new T.Group();pv.position.set(d+.02,.06,0);const pl=M(rwExt([[0,-.025],[.48,-.025],[.5,0],[.48,.02],[0,.02]],.46,.005),W.steel);pv.add(pl);
+    for(let i=0;i<6;i++){const t=M(new T.ConeGeometry(.035,.13,4),W.edge);t.rotation.z=-Math.PI/2;t.position.set(.56,-.005,-.19+i*.076);t.scale.set(1,1,.55);pv.add(t)}
+    const st=rwHazBox(.12,.006,.44);st.position.set(.06,.025,0);pv.add(st);for(let i=0;i<4;i++)bolt(pv,.2+(i%2)*.15,.026,i<2?.14:-.14,"y",.013);g.add(pv);A.flip=pv;
+    for(const z of[-.13,.13]){const cyl=M(new T.CylinderGeometry(.04,.04,.2,12),W.dark);cyl.position.set(d+.05,-.04,z);cyl.rotation.z=-1.2;g.add(cyl);const ram=M(new T.CylinderGeometry(.022,.022,.2,10),W.chrome);ram.position.set(d+.2,-.0,z);ram.rotation.z=-1.2;g.add(ram)}}
+  else if(k==="spin"){const d=mount(.2,.16,.14,0);const sh=M(new T.CylinderGeometry(.04,.04,.14,12),W.chrome);sh.rotation.z=Math.PI/2;sh.position.x=d+.06;g.add(sh);
+    const pv=new T.Group();pv.position.x=d+.18;const bar=rwHazBox(.13,.085,.72);pv.add(bar);const hub=M(new T.CylinderGeometry(.1,.1,.12,16),W.steel);pv.add(hub);for(let i=0;i<4;i++){const a=i*Math.PI/2+.78;bolt(pv,Math.cos(a)*.055,.062,Math.sin(a)*.055,"y",.014)}
+    for(const s of[-1,1]){const tip=M(rwExt([[0,-.065],[.1,-.075],[.2,-.02],[.2,.02],[.1,.075],[0,.065]],.1,.005),W.edge);tip.rotation.set(0,-s*Math.PI/2,0);tip.position.set(0,0,s*.35);pv.add(tip)}
+    const blur=new T.Mesh(new T.CircleGeometry(.56,40),W.blur);blur.rotation.x=-Math.PI/2;blur.visible=false;pv.add(blur);A.blur=blur;g.add(pv);A.spinY=pv}
+  else if(k==="drum"){const d=mount(.46,.2,.12,0);for(const s of[-1,1]){const arm=M(new T.BoxGeometry(.3,.24,.04),W.steel);arm.position.set(d+.13,0,s*.25);g.add(arm);const hz=rwHazBox(.2,.12,.006);hz.position.set(d+.12,0,s*.272);g.add(hz);bolt(g,d+.22,0,s*.28,"z",.02)}
+    const pv=new T.Group();pv.position.set(d+.2,0,0);const dr=M(new T.CylinderGeometry(.13,.13,.42,20),W.dark);dr.rotation.x=Math.PI/2;pv.add(dr);
+    for(let r=0;r<4;r++)for(let i=0;i<6;i++){const q=i*Math.PI/3+(r%2)*Math.PI/6,t=M(new T.ConeGeometry(.035,.12,4),W.edge);t.position.set(Math.cos(q)*.18,Math.sin(q)*.18,-.16+r*.107);t.rotation.z=q-Math.PI/2;pv.add(t)}
     g.add(pv);A.spinZ=pv}
-  else if(k==="axe"){/* axe: striped arm, big curved blade, hydraulic ram */
-    const pv=new T.Group();const hinge=M(new T.CylinderGeometry(.06,.06,.16,12),W.dark);hinge.rotation.x=Math.PI/2;pv.add(hinge);
-    const arm=M(new T.BoxGeometry(.6,.07,.08),W.haz);arm.position.x=.3;pv.add(arm);
-    const head=M(rwExt([[0,.06],[.05,.04],[.13,.14],[.2,.1],[.24,-.02],[.2,-.16],[.13,-.24],[.05,-.12],[0,-.06]],.035),W.steel);head.position.set(.58,0,0);head.rotation.z=-Math.PI/2;pv.add(head);
-    const ed=M(rwExt([[.2,.1],[.24,-.02],[.2,-.16],[.215,-.17],[.26,-.02],[.215,.11]],.02,0),W.edge);ed.position.copy(head.position);ed.rotation.copy(head.rotation);pv.add(ed);
-    const sp=M(new T.ConeGeometry(.03,.12,6),W.edge);sp.position.set(.68,0,0);sp.rotation.z=-Math.PI/2;pv.add(sp);
-    pv.rotation.z=1.1;g.add(pv);A.axe=pv;const ram=M(new T.CylinderGeometry(.03,.03,.3,10),W.chrome);ram.position.set(.12,.12,0);ram.rotation.z=.9;g.add(ram);A.ram=ram}
-  else if(k==="crush"){/* crusher: big hooked beak with teeth over a fixed jaw */
-    const low=M(rwExt([[0,-.06],[.5,-.1],[.52,-.06],[0,-.02]],.3),W.steel);g.add(low);for(let i=0;i<3;i++){const t=M(new T.ConeGeometry(.03,.09,5),W.edge);t.position.set(.2+i*.12,-.03,0);low.add(t)}
-    const pv=new T.Group();pv.position.set(0,.12,0);const beak=M(rwExt([[0,-.03],[.4,-.04],[.56,-.12],[.6,-.24],[.52,-.2],[.42,-.1],[0,.05]],.26),W.steel);pv.add(beak);
-    for(let i=0;i<4;i++){const t=M(new T.ConeGeometry(.035,.12,5),W.edge);t.rotation.z=Math.PI;t.position.set(.12+i*.1,-.08,0);pv.add(t)}
-    pv.rotation.z=.6;g.add(pv);A.crush=pv;const ram=M(new T.CylinderGeometry(.04,.04,.28,10),W.chrome);ram.position.set(.05,.15,0);ram.rotation.z=1;g.add(ram);const cyl=M(new T.CylinderGeometry(.06,.06,.16,12),tm);cyl.position.set(-.02,.08,0);cyl.rotation.z=1;g.add(cyl)}
-  else if(k==="flame"){/* flamethrower: fuel tank, barrel, flared nozzle, pilot light */
-    const tank=M(new T.CylinderGeometry(.08,.08,.26,16),W.red);tank.rotation.z=Math.PI/2;tank.position.set(.1,.1,0);g.add(tank);const lab=M(new T.CylinderGeometry(.082,.082,.06,16),W.haz);lab.rotation.z=Math.PI/2;lab.position.set(.1,.1,0);g.add(lab);
-    const bar=M(new T.CylinderGeometry(.035,.04,.4,12),W.dark);bar.rotation.z=-Math.PI/2;bar.position.set(.25,0,0);g.add(bar);const noz=M(new T.CylinderGeometry(.065,.04,.1,14,1,true),W.chrome);noz.rotation.z=-Math.PI/2;noz.position.set(.48,0,0);g.add(noz);
-    for(let i=0;i<3;i++){const r=M(new T.TorusGeometry(.042,.008,6,14),W.chrome);r.rotation.y=Math.PI/2;r.position.set(.12+i*.1,0,0);g.add(r)}
-    const pil=new T.Sprite(new T.SpriteMaterial({map:W.glow,color:0xffa040,transparent:true,depthWrite:false,blending:T.AdditiveBlending}));pil.scale.set(.09,.09,.09);pil.position.set(.55,.04,0);g.add(pil);A.pilot=pil;
-    const tip=new T.Object3D();tip.position.set(.55,0,0);g.add(tip);A.nozzle=tip}
-  else if(k==="saw"){/* buzz saw: toothed blade on an arm */
-    const arm=M(new T.BoxGeometry(.32,.06,.05),W.haz);arm.position.set(.16,0,-.06);g.add(arm);const pv=new T.Group();pv.position.set(.36,0,0);
-    const n=24,pts=[];for(let i=0;i<n;i++){const a=i/n*Math.PI*2,b=(i+.5)/n*Math.PI*2;pts.push([Math.cos(a)*.27,Math.sin(a)*.27],[Math.cos(b)*.23,Math.sin(b)*.23])}
-    const blade=M(rwExt(pts,.012,0),W.edge);pv.add(blade);const hub=M(new T.CylinderGeometry(.06,.06,.04,14),tm);hub.rotation.x=Math.PI/2;pv.add(hub);
-    for(let i=0;i<5;i++){const h=M(new T.CylinderGeometry(.025,.025,.016,10),W.dark);h.rotation.x=Math.PI/2;const a=i/5*Math.PI*2;h.position.set(Math.cos(a)*.14,Math.sin(a)*.14,0);pv.add(h)}
-    const blur=new T.Mesh(new T.CircleGeometry(.27,36),W.blur);blur.visible=false;blur.position.z=.01;pv.add(blur);A.blur=blur;g.add(pv);A.spinZ=pv}
-  else{/* spike: long sharpened spike with a collar */
-    const sp=M(new T.LatheGeometry([[0,.48],[.012,.44],[.05,.2],[.07,.04],[.07,0]].map(p=>new T.Vector2(p[0],p[1])),12),W.edge);sp.rotation.z=-Math.PI/2;g.add(sp);
-    const col=M(new T.CylinderGeometry(.1,.1,.05,8),tm);col.rotation.z=Math.PI/2;col.position.x=.04;g.add(col);bolts(col,[[0,0,.06],[0,0,-.06]])}
-  g.scale.setScalar(sz*1.3);return{g,A}}
+  else if(k==="axe"){const d=mount(.18,.18,.14,0);const pv=new T.Group();pv.position.set(d+.03,.06,0);const hinge=M(new T.CylinderGeometry(.05,.05,.12,12),W.dark);hinge.rotation.x=Math.PI/2;pv.add(hinge);
+    const arm=rwHazBox(.5,.07,.07);arm.position.x=.25;pv.add(arm);const neck=M(new T.BoxGeometry(.08,.09,.08),W.steel);neck.position.x=.52;pv.add(neck);
+    const head=M(rwExt([[0,.05],[.06,.08],[.12,.2],[.2,.22],[.24,.1],[.24,-.1],[.2,-.22],[.12,-.2],[.06,-.08],[0,-.05]],.03,.004),W.edge);head.position.set(.52,0,0);head.rotation.z=-Math.PI/2;pv.add(head);
+    const cheek=M(rwExt([[0,.04],[.08,.07],[.12,.12],[.12,-.12],[.08,-.07],[0,-.04]],.04,.003),W.steel);cheek.position.set(.52,0,0);cheek.rotation.z=-Math.PI/2;pv.add(cheek);
+    const sp=M(new T.ConeGeometry(.035,.16,4),W.edge);sp.position.set(.64,0,0);sp.rotation.z=-Math.PI/2;pv.add(sp);pv.rotation.z=1.15;g.add(pv);A.axe=pv;
+    const cyl=M(new T.CylinderGeometry(.035,.035,.2,10),W.dark);cyl.position.set(d+.08,.13,.07);cyl.rotation.z=.4;g.add(cyl);const ram=M(new T.CylinderGeometry(.02,.02,.16,10),W.chrome);ram.position.set(d+.11,.24,.07);ram.rotation.z=.4;g.add(ram)}
+  else if(k==="crush"){const d=mount(.3,.22,.14,0);const low=M(rwExt([[d,-.11],[d+.42,-.11],[d+.46,-.07],[d,-.05]],.28,.004),W.steel);g.add(low);for(let i=0;i<4;i++){const t=M(new T.ConeGeometry(.032,.11,4),W.edge);t.position.set(d+.12+i*.09,-.02,0);low.add(t)}
+    const hz=rwHazBox(.3,.05,.006);hz.position.set(d+.15,-.08,.142);g.add(hz);const hz2=hz.clone();hz2.position.z=-.142;g.add(hz2);
+    const pv=new T.Group();pv.position.set(d,.1,0);const beak=M(rwExt([[0,-.04],[.3,-.03],[.46,-.08],[.52,-.2],[.44,-.17],[.36,-.1],[.2,-.07],[0,.06]],.26,.006),W.steel);pv.add(beak);
+    for(let i=0;i<5;i++){const t=M(new T.ConeGeometry(.032,.12,4),W.edge);t.rotation.z=Math.PI;t.position.set(.08+i*.075,-.08-(i>3?.04:0),0);pv.add(t)}const bk=M(new T.ConeGeometry(.04,.13,4),W.edge);bk.rotation.z=Math.PI+.5;bk.position.set(.5,-.24,0);pv.add(bk);
+    pv.rotation.z=.6;g.add(pv);A.crush=pv;const cyl=M(new T.CylinderGeometry(.04,.04,.16,12),W.dark);cyl.position.set(d*.55,.15,0);cyl.rotation.z=-.5;g.add(cyl);const ram=M(new T.CylinderGeometry(.022,.022,.12,10),W.chrome);ram.position.set(d*.55+.06,.25,0);ram.rotation.z=-.5;g.add(ram)}
+  else if(k==="flame"){const d=mount(.2,.16,.14,0);const tank=M(new T.CylinderGeometry(.075,.075,.28,18),W.red);tank.rotation.z=Math.PI/2;tank.position.set(d+.14,.1,0);g.add(tank);const band=rwHazBox(.06,.155,.155);band.position.set(d+.14,.1,0);g.add(band);
+    for(const s of[-1,1]){const cap=M(new T.SphereGeometry(.075,14,8,0,Math.PI*2,0,Math.PI/2),W.red);cap.rotation.z=-s*Math.PI/2;cap.position.set(d+.14+s*.14,.1,0);g.add(cap)}
+    const bar=M(new T.CylinderGeometry(.03,.035,.4,12),W.dark);bar.rotation.z=-Math.PI/2;bar.position.set(d+.2,-.02,0);g.add(bar);const noz=M(new T.CylinderGeometry(.07,.04,.11,14,1,true),W.chrome);noz.rotation.z=-Math.PI/2;noz.position.set(d+.44,-.02,0);g.add(noz);
+    for(let i=0;i<3;i++){const r=M(new T.TorusGeometry(.037,.008,6,14),W.chrome);r.rotation.y=Math.PI/2;r.position.set(d+.08+i*.11,-.02,0);g.add(r)}
+    const pil=new T.Sprite(new T.SpriteMaterial({map:W.glow,color:0xffa040,transparent:true,depthWrite:false,blending:T.AdditiveBlending}));pil.scale.set(.09,.09,.09);pil.position.set(d+.52,.03,0);g.add(pil);A.pilot=pil;
+    const tip=new T.Object3D();tip.position.set(d+.5,-.02,0);g.add(tip);A.nozzle=tip}
+  else if(k==="saw"){const d=mount(.18,.18,.14,0);const arm=rwHazBox(.34,.08,.06);arm.position.set(d+.15,0,-.05);g.add(arm);const pv=new T.Group();pv.position.set(d+.34,0,0);
+    const n=36,pts=[];for(let i=0;i<n;i++){const a=i/n*Math.PI*2,b=(i+.65)/n*Math.PI*2;pts.push([Math.cos(a)*.3,Math.sin(a)*.3],[Math.cos(b)*.255,Math.sin(b)*.255])}
+    const blade=M(rwExt(pts,.01,0),[W.disc,W.edge]);pv.add(blade);const hub=M(new T.CylinderGeometry(.065,.065,.04,16),W.steel);hub.rotation.x=Math.PI/2;pv.add(hub);bolt(pv,0,0,.025,"z",.025);
+    for(let i=0;i<4;i++){const h=M(new T.CylinderGeometry(.03,.03,.014,12),W.dark);h.rotation.x=Math.PI/2;const a=i/4*Math.PI*2+.4;h.position.set(Math.cos(a)*.16,Math.sin(a)*.16,0);pv.add(h)}
+    const blur=new T.Mesh(new T.CircleGeometry(.3,36),W.blur);blur.visible=false;blur.position.z=.01;pv.add(blur);A.blur=blur;g.add(pv);A.spinZ=pv}
+  else{const d=mount(.2,.18,.14,0);const col=M(new T.CylinderGeometry(.075,.085,.07,6),W.steel);col.rotation.z=Math.PI/2;col.position.x=d+.035;g.add(col);
+    const sp=M(new T.LatheGeometry([[0,.42],[.01,.39],[.035,.26],[.055,.12],[.062,.03],[.065,0]].map(p=>new T.Vector2(p[0],p[1])),16),W.edge);sp.rotation.z=-Math.PI/2;sp.position.x=d+.07;g.add(sp);
+    for(const a of[0,2.1,4.2]){const b=M(new T.CylinderGeometry(.016,.016,.012,6),W.chrome);b.rotation.z=Math.PI/2;b.position.set(d+.072,Math.cos(a)*.06,Math.sin(a)*.06);g.add(b)}}
+  g.scale.setScalar(sz*1.15);return{g,A}}
 function rwStkTex(e){RWR.stkT=RWR.stkT||{};if(!RWR.stkT[e])RWR.stkT[e]=rwTex(128,128,(x,w,h)=>{x.clearRect(0,0,w,h);x.font=`${e.length===1&&/[0-9]/.test(e)?"900 110px Outfit,sans-serif":"104px serif"}`;x.textAlign="center";x.textBaseline="middle";x.fillStyle="#fff";x.fillText(e,w/2,h/2+6)});return RWR.stkT[e]}
 function rwModel(R,body,o={}){const T=THREE,g=new T.Group(),M={g,anim:{flip:[],axe:[],crush:[],spinY:[],spinZ:[],blur:[],flame:[],pilot:[]},wheels:[],weps:[],R,body};if(!body)return M;
   const bx=body.box,L=bx.x1-bx.x0,Wd=bx.z1-bx.z0;M.r=Math.max(L,Wd)/2;M.box=bx;
@@ -3439,7 +3441,7 @@ function rwDriveStep(dt){const G=RWG,c=G.car,M=G.M,R=M.R;let jx=0,jy=0;
   /* the barrels */
   for(const d of G.dum){const dx=d.x-c.x,dz=d.z-c.z,dist=Math.hypot(dx,dz)||1e-3,nx=dx/dist,nz=dz/dist,front=nx*fx+nz*fz;
     if(dist<c.r+d.r&&d.y<.6){const ov=c.r+d.r-dist;d.x+=nx*ov;d.z+=nz*ov;const pv=Math.max(0,c.v*front)*(.6+c.push*.12);d.vx+=nx*pv*.5+fx*pv*.4;d.vz+=nz*pv*.5+fz*pv*.4;if(W&&front>.6&&c.v>2&&d.y<.05)d.vy=Math.max(d.vy,1.5+c.v*.3)}
-    M.weps.forEach((wp,wi)=>{const k=wp.k,sz=wp.s||1,reach=(RW_REACH[k]||.4)*sz*1.3,lx=wp.p[0]+wp.n[0]*reach,lz=wp.p[2]+wp.n[2]*reach,ly=wp.p[1]+M.dy+wp.n[1]*reach,
+    M.weps.forEach((wp,wi)=>{const k=wp.k,sz=wp.s||1,reach=(RW_REACH[k]||.4)*sz*1.15,lx=wp.p[0]+wp.n[0]*reach,lz=wp.p[2]+wp.n[2]*reach,ly=wp.p[1]+M.dy+wp.n[1]*reach,
         wx=c.x+lx*cy+lz*sy,wz=c.z-lx*sy+lz*cy,ux=wp.n[0]*cy+wp.n[2]*sy,uz=-wp.n[0]*sy+wp.n[2]*cy,hl=Math.hypot(ux,uz)||1,ex=d.x-wx,ez=d.z-wz,ed=Math.hypot(ex,ez)||1e-3;
       if(k==="flame"){if(f>1.2)return;const bx=c.x+wp.p[0]*cy+wp.p[2]*sy,bz=c.z-wp.p[0]*sy+wp.p[2]*cy,vx=d.x-bx,vz=d.z-bz,vd=Math.hypot(vx,vz)||1e-3;
         if(vd<reach+d.r&&(vx*ux+vz*uz)/(vd*hl)>.82&&wp.p[1]+M.dy<1.6){if(!(d.burn>0)){sfx("b_boom");rwMsg(["🔥 TOASTED!","🔥 ON FIRE!","🔥 SIZZLE!"][Math.random()*3|0])}d.burn=3.5;d.vx+=ux/hl*dt*3;d.vz+=uz/hl*dt*3}return}
