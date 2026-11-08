@@ -1,10 +1,10 @@
 /* ================= ROBOT RUMBLE: the rules (parts, weights, the drawn shape -> 3D) =================
    A robot's body is drawn from the side, from above and from the front. The body is the block "cut out" to match all three
-   drawings (like cutting a robot out of a block of foam), then smoothed. Units: X = forward (front is +X), Y = up, Z = across. */
+   drawings (like cutting a car out of a block of foam), then smoothed. Units: X = forward (front is +X), Y = up, Z = across. */
 const RW_B={x0:-1.25,x1:1.25,y0:0,y1:1.1,z0:-.95,z1:.95};
 const RW_VIEWS={side:{u:"x",v:"y",nm:"SIDE"},top:{u:"x",v:"z",nm:"TOP"},front:{u:"z",v:"y",nm:"FRONT"}};
 const RW_LIMIT=100;
-/* materials you can really build a robot from. kg = weight per unit of skin, arm = armour stars */
+/* materials you can really build a car from. kg = weight per unit of skin, arm = armour stars */
 const RW_MAT=[
   {k:"ply",nm:"Plywood",ic:"🪵",kg:3,arm:1,say:"Wooden boards. Super light, but breaks easily."},
   {k:"hdpe",nm:"Plastic",ic:"🧴",kg:3.8,arm:2,say:"Tough bendy plastic. Light, and soaks up bumps."},
@@ -14,14 +14,14 @@ const RW_MAT=[
   {k:"ti",nm:"Titanium",ic:"💠",kg:6.5,arm:5,say:"Strong AND light. The best metal there is!"}];
 const RW_WEP=[
   {k:"wedge",nm:"Wedge",ic:"📐",kg:5,pow:2,say:"A ramp. Get under them and shove them around."},
-  {k:"flip",nm:"Flipper",ic:"🦘",kg:13,pow:4,say:"Flicks robots into the air and onto their backs!"},
+  {k:"flip",nm:"Flipper",ic:"🦘",kg:13,pow:4,say:"Flicks cars into the air and onto their backs!"},
   {k:"spin",nm:"Spinner",ic:"🌀",kg:15,pow:5,say:"A heavy spinning bar that smashes bits off."},
-  {k:"drum",nm:"Drum",ic:"🥁",kg:14,pow:4.5,say:"A spinning drum that bounces robots up in the air."},
+  {k:"drum",nm:"Drum",ic:"🥁",kg:14,pow:4.5,say:"A spinning drum that bounces cars up in the air."},
   {k:"axe",nm:"Axe",ic:"🪓",kg:11,pow:4,say:"Swings down hard."},
   {k:"crush",nm:"Crusher",ic:"🦀",kg:14,pow:3.5,say:"Big jaws that grab and squeeze."},
   {k:"spike",nm:"Spike",ic:"📌",kg:3,pow:1.5,say:"A sharp spike. Light, so you can stick on lots!"},
   {k:"flame",nm:"Flamethrower",ic:"🔥",kg:12,pow:3.5,say:"Shoots a jet of fire that sets things alight!"},
-  {k:"saw",nm:"Buzz saw",ic:"🪚",kg:13,pow:4,say:"A screaming spinning saw blade that cuts into robots."}];
+  {k:"saw",nm:"Buzz saw",ic:"🪚",kg:13,pow:4,say:"A screaming spinning saw blade that cuts into cars."}];
 /* weapon sizes: small, medium, large, extra large */
 const RW_WSZ=[{k:"s",nm:"S",s:.7},{k:"m",nm:"M",s:1},{k:"l",nm:"L",s:1.4},{k:"xl",nm:"XL",s:1.9}];
 const rwWkg=w=>rwFind(RW_WEP,w.k).kg*Math.pow(w.s||1,1.6),rwWpow=w=>rwFind(RW_WEP,w.k).pow+((w.s||1)-1)*1.2;
@@ -122,7 +122,7 @@ function rwMesh(f,opt={}){if(!f)return null;const{F:V,nx,ny,nz,x0,y0,z0,res}=f,i
   let fx=-1e9,fy=0,fc=0;for(let v=0;v<n;v++)if(Math.abs(Pa[3*v+2])<.15&&Pa[3*v+1]<by0+(by1-by0)*.6){const x=Pa[3*v];if(x>fx+.02){fx=x;fy=0;fc=0}if(x>fx-.02){fy+=Pa[3*v+1];fc++}}
   if(!fc){fx=bx1;fy=(by0+by1)/2;fc=1}
   return{pos:Pa,idx:I.length>65535?new Uint32Array(I):new Uint16Array(I),area,box:{x0:bx0,x1:bx1,y0:by0,y1:by1,z0:bz0,z1:bz1},front:{x:fx,y:fy/fc}}}
-/* a saved robot -> its body: start from the drawing, then replay every clay stroke */
+/* a saved car -> its body: start from the drawing, then replay every clay stroke */
 function rwBody(R,opt){const f=rwField(R.shapes);if(!f)return null;for(const o of R.ops||[])rwOp(f,o);return rwMesh(f,opt)}
 function rwBuildBody(S,opt){return rwMesh(rwField(S),opt)}
 /* ready-made starting shapes (side outlines) */
