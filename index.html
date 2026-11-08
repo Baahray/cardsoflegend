@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta name="app-build" content="08 Nov 09:39 PT"><meta charset="utf-8">
+<html lang="en"><head><meta name="app-build" content="08 Nov 11:55 PT"><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Legends"><meta name="theme-color" content="#14102e">
@@ -828,6 +828,23 @@ body.dfon{overflow:hidden}
 .rwver{text-align:center;font:700 10px Outfit,sans-serif;color:#7d8aa0;margin-top:6px}
 
 .rwfireb{width:80px;height:80px;right:calc(34px + env(safe-area-inset-right,0px));bottom:calc(156px + env(safe-area-inset-bottom,0px));font-size:26px;background:radial-gradient(circle at 40% 35%,#5aa0ff,#1e4fbf)}
+
+/* live battles */
+.rwlivebtn{width:100%;margin-top:8px;background:linear-gradient(135deg,#7c3aed,#ef4444)!important;color:#fff!important;border-color:rgba(255,255,255,.35)!important}
+.rwopp{margin:10px 0 4px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.08);font:700 14px/1.35 'Outfit',sans-serif;color:#fff}
+.rwdots{display:inline-block;width:14px;height:14px;border-radius:50%;border:3px solid rgba(255,255,255,.25);border-top-color:#ffc400;vertical-align:-2px;animation:rwspin 1s linear infinite}
+@keyframes rwspin{to{transform:rotate(360deg)}}
+.rwchip[disabled]{opacity:.55}
+.rwhud{position:absolute;top:calc(8px + env(safe-area-inset-top,0px));left:60px;right:10px;z-index:5;display:none;align-items:center;gap:8px;pointer-events:none}
+.rwhud.on{display:flex}
+.rwhp{flex:1;min-width:0}.rwhp b{display:block;font:900 11px 'Outfit',sans-serif;letter-spacing:.08em;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.8);margin-bottom:3px}
+.rwhp.th{text-align:right}.rwhp i{display:block;height:14px;border-radius:8px;background:rgba(0,0,0,.55);border:2px solid rgba(255,255,255,.7);overflow:hidden;position:relative}
+.rwhp s{display:block;height:100%;width:100%;background:linear-gradient(#5ee17a,#1fa34a);transition:width .2s}.rwhp.th s{margin-left:auto;background:linear-gradient(#ff8a6b,#d63a1f)}
+.rwhp s.low{animation:rwblink .5s steps(2) infinite}@keyframes rwblink{50%{opacity:.4}}
+.rwclk{font:900 22px 'Outfit',sans-serif;color:#fff;background:rgba(15,20,35,.8);border:2px solid rgba(255,255,255,.6);border-radius:12px;padding:3px 10px;min-width:62px;text-align:center}
+.rwclk.low{color:#ff5a3c;border-color:#ff5a3c}
+.rwres{position:absolute;inset:0;z-index:8;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(10,14,25,.55)}
+.rwres .rwcard{max-width:360px;width:100%}.rwbig2{font-size:72px;text-align:center;line-height:1.1}
 
 #appupd{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:9999;border:0;border-radius:99px;padding:12px 18px;font:800 14px Outfit,sans-serif;color:#2a1d00;background:linear-gradient(135deg,#ffe066,#ffb300);box-shadow:0 8px 24px -6px rgba(0,0,0,.6);white-space:nowrap}
 /*RW-END*/
@@ -3064,7 +3081,7 @@ function rwSave(remote){if(!RWS)return;try{localStorage.setItem("rw_"+me(),JSON.
   if(remote){const o={};for(const b of RWS.bots)o[b.id]=rwPack(b);db.doc("games/rwg_"+me()).set({bots:o,sel:RWS.sel||""}).catch(er)}}
 const rwSel=()=>{const S=rwLoad();return S.bots.find(b=>b.id===S.sel)||S.bots[S.bots.length-1]||null};
 let RWL_ON=0;
-function rwListen(){if(RWL_ON)return;RWL_ON=1;for(const k of ["X","O"])db.doc("games/rwg_"+k).onSnapshot(s=>{RWD.g[k]=s.exists?s.data():null;if(k===me())rwAdopt();else{rwNotify();if(RWG&&RWG.mode==="garage")rwGarage()}},er)}
+function rwListen(){if(RWL_ON)return;RWL_ON=1;try{rwListenLive()}catch(e){console.error(e)}for(const k of ["X","O"])db.doc("games/rwg_"+k).onSnapshot(s=>{RWD.g[k]=s.exists?s.data():null;if(k===me())rwAdopt();else{rwNotify();if(RWG&&RWG.mode==="garage")rwGarage();else if(RWG&&RWG.mode==="lobby"){RWG.lobbyShown=null;rwLobbyUI()}}},er)}
 function rwAdopt(){const r=RWD.g[me()];if(!r||!r.bots)return;const S=rwLoad();if(S.bots.length)return;S.bots=Object.entries(r.bots).map(([id,o])=>rwUnpack(id,o)).sort((a,b)=>a.t-b.t);S.sel=r.sel||(S.bots[0]&&S.bots[0].id);rwSave();if(RWG&&RWG.mode==="garage")rwGarage()}
 function rwNotify(){const th=rwThem(),r=RWD.g[th],S=rwLoad();if(!r||!r.bots)return;let ch=0;for(const id in r.bots){const k=th+id;if(!S.note[k]){S.note[k]=1;ch=1;if(S.note._i)toast(`🏎️ ${rwNm(th)} built a new car: "${r.bots[id].nm}"! See it in BATTLE CARS`)}}if(!S.note._i){S.note._i=1;ch=1}if(ch)rwSave()}
 const rwTheirs=()=>{const r=RWD.g[rwThem()];return r&&r.bots?Object.entries(r.bots).map(([id,o])=>rwUnpack(id,o)).sort((a,b)=>b.t-a.t):[]};
@@ -3075,7 +3092,7 @@ function vRw(){g2Shell("rwc",`<div class="rwtop" id="rwtop"></div><div class="g2
   $("#g2q").onclick=()=>rwBack();rwLoad();try{rwListen()}catch(e){console.error(e)}
   hpThree(()=>{if(!$("#rwc"))return;try{rwStart()}catch(e){console.error(e);const m=$("#hpload");if(m)m.textContent="Something went wrong opening the workshop."}})}
 function rwQuit(){g2Stop();window.onkeydown=window.onkeyup=null;if(RWG)RWG.dead=1;RWG=null;g=null;view()}
-function rwBack(){const G=RWG;if(!G)return rwQuit();if(G.mode==="garage")return rwQuit();
+function rwBack(){const G=RWG;if(!G)return rwQuit();if(G.mode==="battle"||G.mode==="lobby")return rwLiveLeave();if(G.mode==="garage")return rwQuit();
   if(G.mode==="build"){if(G.dirty&&!confirm("Leave without saving this car?"))return;return rwGarage()}rwGarage()}
 function rwStart(){const T=THREE;if(!RWR){const r=new T.WebGLRenderer({antialias:true,powerPreference:"high-performance"});r.setPixelRatio(Math.min(2,window.devicePixelRatio||1));r.outputEncoding=T.sRGBEncoding;
     r.shadowMap.enabled=true;r.shadowMap.type=T.PCFSoftShadowMap;RWR={r};rwScene()}
@@ -3115,8 +3132,8 @@ function rwScene(){const T=THREE,S=new T.Scene();RWR.scene=S;S.background=new T.
   for(const[sx,sz,rw,rd]of[[0,-A,A*2+.5,.3],[0,A,A*2+.5,.3],[-A,0,.3,A*2],[A,0,.3,A*2]]){const w=new T.Mesh(new T.BoxGeometry(rw,.6,rd),new T.MeshStandardMaterial({color:0x2b2f36,metalness:.6,roughness:.4}));w.position.set(sx,.3,sz);w.castShadow=w.receiveShadow=true;ar.add(w);
     const s=new T.Mesh(new T.BoxGeometry(rw*1.001,.14,rd*1.02),new T.MeshStandardMaterial({map:hz}));s.position.set(sx,.62,sz);ar.add(s)}
   /* the pit (just for show while testing) */
-  const pit=new T.Mesh(new T.PlaneGeometry(2,2),new T.MeshStandardMaterial({color:0x0b0c0f}));pit.rotation.x=-Math.PI/2;pit.position.set(6,.01,-6);ar.add(pit);
-  const pb=new T.Mesh(new T.RingGeometry(1.42,1.6,4),new T.MeshStandardMaterial({map:hz}));pb.rotation.set(-Math.PI/2,0,Math.PI/4);pb.position.set(6,.012,-6);ar.add(pb);
+  const pit=new T.Mesh(new T.PlaneGeometry(2,2),new T.MeshStandardMaterial({color:0x0b0c0f}));pit.rotation.x=-Math.PI/2;pit.position.set(6.5,.01,0);ar.add(pit);
+  const pb=new T.Mesh(new T.RingGeometry(1.42,1.6,4),new T.MeshStandardMaterial({map:hz}));pb.rotation.set(-Math.PI/2,0,Math.PI/4);pb.position.set(6.5,.012,0);ar.add(pb);
   /* the car holder */
   RWR.bot=new T.Group();S.add(RWR.bot);RWR.dummies=new T.Group();ar.add(RWR.dummies);RWR.fx=new T.Group();S.add(RWR.fx)}
 /* a car -> 3D model. Returns {g, parts...} */
@@ -3251,7 +3268,7 @@ function rwRemesh(){const G=RWG;if(!G||!G.clay||!G.M)return;const b=rwMesh(G.cla
   if(!m){rwShow(G.R);return}const geo=new T.BufferGeometry();geo.setAttribute("position",new T.BufferAttribute(b.pos,3));geo.setIndex(new T.BufferAttribute(b.idx,1));geo.computeVertexNormals();m.geometry.dispose();m.geometry=geo;G.M.body=b;G.remeshT=G.t}
 
 /* ---------- the garage ---------- */
-function rwGarage(){const G=RWG;if(!G)return;G.mode="garage";G.view=null;G.auto=1;G.dirty=0;rwArena(0);const S=rwLoad(),th=rwNm(rwThem());
+function rwGarage(){const G=RWG;if(!G)return;if(rwLiveFresh())return rwLobby();rwBattleTidy();G.mode="garage";G.view=null;G.auto=1;G.dirty=0;rwArena(0);const S=rwLoad(),th=rwNm(rwThem());
   if(G.viewing){const L=rwTheirs();G.viewR=L.find(b=>b.id===G.viewing)||null;if(!G.viewR)G.viewing=null}
   const R=G.viewing?G.viewR:rwSel();rwShow(R);rwCam("show");$("#rwbot").innerHTML="";$("#rwbot").className="rwbot";$("#rwhint").textContent="";rwControls(0);
   const theirs=rwTheirs();
@@ -3265,10 +3282,10 @@ function rwGarage(){const G=RWG;if(!G)return;G.mode="garage";G.view=null;G.auto=
       ${theirs.length?`<div class="rwchips"><b>${th.toUpperCase()}'S CARS</b>${chips(theirs,0)}</div>`:""}
       <div class="rwbtns"><button class="b y rwbig" id="rwnew">＋ BUILD A CAR</button>${R&&!G.viewing?`<button class="b rwfix" id="rwfix">🔧 CHANGE IT</button>`:""}</div>
       ${R&&st?`<button class="b o rwbig" id="rwdrive" style="width:100%;margin-top:8px">🎮 TEST DRIVE${G.viewing?" "+th.toUpperCase()+"'S":""}</button>`:""}
-      <div class="rwsoon">⚔️ Battles in the arena are coming next!</div><div class="rwver">${typeof APP_BUILD!=="undefined"&&APP_BUILD?"app version "+rwEsc(APP_BUILD):""}</div></div>`;
+      ${G.viewing?"":rwLiveBtn()}<div class="rwver">${typeof APP_BUILD!=="undefined"&&APP_BUILD?"app version "+rwEsc(APP_BUILD):""}</div></div>`;
   $("#rwpanel").querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{S.sel=b.dataset.m;G.viewing=null;rwSave(1);sfx("tap");rwGarage()});
   $("#rwpanel").querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{G.viewing=b.dataset.t;sfx("tap");rwGarage()});
-  $("#rwnew").onclick=()=>rwBuild(null);const fx=$("#rwfix");if(fx)fx.onclick=()=>rwBuild(rwSel());const dv=$("#rwdrive");if(dv)dv.onclick=()=>rwDrive(R)}
+  $("#rwnew").onclick=()=>rwBuild(null);const fx=$("#rwfix");if(fx)fx.onclick=()=>rwBuild(rwSel());const dv=$("#rwdrive");if(dv)dv.onclick=()=>rwDrive(R);const lb=$("#rwlive");if(lb)lb.onclick=()=>rwLiveAsk()}
 function rwStatRow(st){const pc=Math.min(100,st.kg/150*100);
   return`<div class="rwstats"><span>🛡️ Armour <b>${rwStars(st.arm)}</b></span><span>⚡ Speed <b>${rwStars(st.spd)}</b></span><span>💪 Push <b>${rwStars(st.push)}</b></span><span>💥 Weapon <b>${rwStars(st.pow)}</b></span></div>
     <div class="rwkg"><div class="rwkgb"><i style="width:${pc}%"></i></div><b>⚖️ ${st.kg} kg · ${st.cls}</b></div>`}
@@ -3432,10 +3449,11 @@ function rwDrive(R){const G=RWG;G.mode="drive";G.view=null;$("#rwpanel").classNa
   G.dum=[];RWR.dummies.clear();const T=THREE;
   for(const[x,z]of[[1,0],[4,3],[-3,-4],[0,-7],[7,5],[-6,5],[6,-2]]){const g=new T.Group(),b=new T.Mesh(new T.CylinderGeometry(.38,.42,.8,20),new T.MeshStandardMaterial({color:0xe3672b,roughness:.6}));b.position.y=.4;b.castShadow=true;g.add(b);
     const s=new T.Mesh(new T.CylinderGeometry(.385,.385,.12,20),new T.MeshStandardMaterial({color:0xffffff}));s.position.y=.55;g.add(s);g.position.set(x,0,z);RWR.dummies.add(g);G.dum.push({g,x,z,y:0,vx:0,vz:0,vy:0,rx:0,rz:0,wx:0,wz:0,r:.42})}
-  const lab=sd=>{const ks=[...new Set(G.M.weps.filter(w=>w.sd===sd).map(w=>w.k))];return(ks.length?ks.slice(0,2).map(k=>rwFind(RW_WEP,k).ic).join(""):"💨")+`<small>${sd==="b"?"BACK":"FRONT"}</small>`};
-  $("#rwfire").innerHTML=lab("f");$("#rwfireb").innerHTML=lab("b");const hasB=G.M.weps.some(w=>w.sd==="b");$("#rwfireb").classList.toggle("on",hasB);
+  const hasB=rwFireLabels();
   G.fireT=9;G.fireB=9;G.joy=null;G.dash=0;G.camSet=0;rwMsg("TEST DRIVE!");$("#rwhint").textContent=hasB?"Smash the barrels! Left: steer · Right: FRONT and BACK weapons":"Smash the practice barrels! Left: steer · Right: weapon"}
-function rwFire(sd){const G=RWG;sd=sd==="b"?"b":"f";const key=sd==="b"?"fireB":"fireT";if(G.mode!=="drive"||G[key]<.45)return;const ws=G.M.weps.filter(w=>w.sd===sd);if(sd==="b"&&!ws.length)return;G[key]=0;sfx("b_swish");if(!ws.length||ws.some(w=>w.k==="wedge"||w.k==="spike")){G.dash=.35;G.dashSd=sd}}
+function rwFireLabels(){const G=RWG,lab=sd=>{const ks=[...new Set(G.M.weps.filter(w=>w.sd===sd).map(w=>w.k))];return(ks.length?ks.slice(0,2).map(k=>rwFind(RW_WEP,k).ic).join(""):"💨")+`<small>${sd==="b"?"BACK":"FRONT"}</small>`};
+  $("#rwfire").innerHTML=lab("f");$("#rwfireb").innerHTML=lab("b");const hasB=G.M.weps.some(w=>w.sd==="b");$("#rwfireb").classList.toggle("on",hasB);return hasB}
+function rwFire(sd){const G=RWG;sd=sd==="b"?"b":"f";const key=sd==="b"?"fireB":"fireT";if((G.mode!=="drive"&&G.mode!=="battle")||G[key]<.45)return;if(G.mode==="battle"&&!rwCanAct())return;const ws=G.M.weps.filter(w=>w.sd===sd);if(sd==="b"&&!ws.length)return;G[key]=0;sfx("b_swish");if(G.mode==="battle"){G.B.fc[sd]++;rwLiveSend(1)}if(!ws.length||ws.some(w=>w.k==="wedge"||w.k==="spike")){G.dash=.35;G.dashSd=sd}}
 function rwDriveStep(dt){const G=RWG,c=G.car,M=G.M,R=M.R;let jx=0,jy=0;
   if(G.joy){jx=G.joy.dx;jy=G.joy.dy}if(G.keys.ArrowUp||G.keys.w)jy=-1;if(G.keys.ArrowDown||G.keys.s)jy=1;if(G.keys.ArrowLeft||G.keys.a)jx=-1;if(G.keys.ArrowRight||G.keys.d)jx=1;
   const mag=Math.min(1,Math.hypot(jx,jy));
@@ -3476,23 +3494,28 @@ function rwFlame(p,d,s,kind){const T=THREE,W=rwWM();if(RWR.fx.children.length>26
   m.userData={fl:1,vx:d.x*sp+(Math.random()-.5)*.8,vy:d.y*sp+(Math.random()-.5)*.8+(kind===1?.3:1.2),vz:d.z*sp+(Math.random()-.5)*.8,l:.42+Math.random()*.15,l0:.5,s};RWR.fx.add(m)}
 function rwSparks(x,y,z,n){const T=THREE;for(let i=0;i<n;i++){const m=new T.Mesh(new T.BoxGeometry(.04,.04,.04),new T.MeshBasicMaterial({color:i%3?0xffd23f:0xff7a00}));m.position.set(x,y,z);m.userData={vx:(Math.random()-.5)*6,vy:Math.random()*5+1,vz:(Math.random()-.5)*6,l:.5+Math.random()*.4};RWR.fx.add(m)}}
 
+/* ---------- weapons and wheels moving ---------- */
+function rwAnim(M,dt,fOf,drv,spd){const pl=f=>f<.12?f/.12:f<.5?1-(f-.12)/.38:0;
+  for(const a of M.anim.flip)a.rotation.z=pl(fOf(a.userData.sd))*1.2;for(const a of M.anim.axe)a.rotation.z=1.1-pl(fOf(a.userData.sd))*1.5;for(const a of M.anim.crush)a.rotation.z=.6-pl(fOf(a.userData.sd))*.55;
+  const sp=a=>drv?(fOf(a.userData.sd)<1.5?30:18):6;for(const a of M.anim.spinY)a.rotation.y+=dt*sp(a);for(const a of M.anim.spinZ)a.rotation.z-=dt*sp(a);for(const a of M.anim.blur)a.visible=!!drv;
+  for(const a of M.anim.pilot){const q=.07+Math.random()*.05;a.scale.set(q,q,q)}
+  if(M.anim.flame.length){const T=THREE;for(const fl of M.anim.flame){if(fOf(fl.sd)>=1.2)continue;const p=new T.Vector3(),q=new T.Quaternion();fl.o.getWorldPosition(p);fl.o.getWorldQuaternion(q);const d=new T.Vector3(1,0,0).applyQuaternion(q);for(let i=0;i<3;i++)rwFlame(p,d,fl.s,1)}}
+  if(drv&&spd){const roll=spd*dt/0.25;for(const w of M.wheels)w.rotation.z-=roll;if(M.trackTex)M.trackTex.offset.x-=spd*dt*.8}}
+
 /* ---------- every frame ---------- */
 function rwFrame(dt){const G=RWG;if(!G||G.dead||!RWR)return;G.t+=dt;rwSize();if(G.needMesh&&G.t-(G.remeshT||0)>.05){G.needMesh=0;rwRemesh()}const M=G.M;
-  if(G.mode==="drive"&&M&&G.car){rwDriveStep(dt);const c=G.car,pc=G.pcam,port=G.H>G.W,hgt=port?12.6:9.8,back=port?10.3:9;
+  if(G.mode==="battle"&&M&&G.car&&G.B)rwBattleFrame(dt);
+  else if(G.mode==="drive"&&M&&G.car){rwDriveStep(dt);const c=G.car,pc=G.pcam,port=G.H>G.W,hgt=port?12.6:9.8,back=port?10.3:9;
     const want=new THREE.Vector3(c.x*.6,hgt,c.z*.6+back);if(!G.camSet){pc.position.copy(want);G.camSet=1}else pc.position.lerp(want,1-Math.exp(-dt*3));pc.lookAt(c.x*.85,0,c.z*.85-.8)}
   else{rwCamUpdate(dt);if(!G.auto&&!(G.mode==="build"&&G.step==="shape")&&!G.ptr.size){G.idle+=dt;if(G.idle>4){G.auto=1;G.idle=0}}if(M&&G.auto&&(G.mode==="garage"||G.step!=="shape")){G.camK.az+=dt*.35;rwCam("show")}if(M)M.g.position.set(0,0,0)}
   /* weapons moving */
-  if(M){if(G.demo>0){G.demo-=dt;if(G.fireT>1.1)G.fireT=0}if(G.mode!=="drive"){G.fireT=(G.fireT==null?9:G.fireT)+dt;G.fireB=G.fireT}
-    const fOf=sd=>{const v=sd==="b"?G.fireB:G.fireT;return v==null?9:v},pl=f=>f<.12?f/.12:f<.5?1-(f-.12)/.38:0;
-    for(const a of M.anim.flip)a.rotation.z=pl(fOf(a.userData.sd))*1.2;for(const a of M.anim.axe)a.rotation.z=1.1-pl(fOf(a.userData.sd))*1.5;for(const a of M.anim.crush)a.rotation.z=.6-pl(fOf(a.userData.sd))*.55;
-    const sp=a=>G.mode==="drive"?(fOf(a.userData.sd)<1.5?30:18):6;for(const a of M.anim.spinY)a.rotation.y+=dt*sp(a);for(const a of M.anim.spinZ)a.rotation.z-=dt*sp(a);for(const a of M.anim.blur)a.visible=G.mode==="drive";
-    for(const a of M.anim.pilot){const q=.07+Math.random()*.05;a.scale.set(q,q,q)}
-    if(M.anim.flame.length){const T=THREE;for(const fl of M.anim.flame){if(fOf(fl.sd)>=1.2)continue;const p=new T.Vector3(),q=new T.Quaternion();fl.o.getWorldPosition(p);fl.o.getWorldQuaternion(q);const d=new T.Vector3(1,0,0).applyQuaternion(q);for(let i=0;i<3;i++)rwFlame(p,d,fl.s,1)}}
-    if(G.mode==="drive"&&G.car){const roll=G.car.v*dt/0.25;for(const w of M.wheels)w.rotation.z-=roll;if(M.trackTex)M.trackTex.offset.x-=G.car.v*dt*.8}}
+  if(M){if(G.demo>0){G.demo-=dt;if(G.fireT>1.1)G.fireT=0}const drv=G.mode==="drive"||G.mode==="battle";if(!drv){G.fireT=(G.fireT==null?9:G.fireT)+dt;G.fireB=G.fireT}
+    rwAnim(M,dt,sd=>{const v=sd==="b"?G.fireB:G.fireT;return v==null?9:v},drv,drv&&G.car?G.car.v:0)}
+  if(G.mode==="battle"&&G.B&&G.B.foe.M){const F=G.B.foe;F.fT+=dt;F.fB+=dt;rwAnim(F.M,dt,sd=>sd==="b"?F.fB:F.fT,1,F.spd||0)}
   for(let i=RWR.fx.children.length-1;i>=0;i--){const m=RWR.fx.children[i],u=m.userData;u.l-=dt;if(u.l<=0){RWR.fx.remove(m);if(m.material)m.material.dispose();continue}
     if(u.fl){const a=1-u.l/u.l0;u.vx*=Math.pow(.25,dt);u.vz*=Math.pow(.25,dt);u.vy=u.vy*Math.pow(.4,dt)+dt*3;m.scale.setScalar((.14+a*.7)*u.s);m.material.color.setRGB(1,Math.max(.15,1-a*1.1),Math.max(0,.75-a*2));m.material.opacity=Math.min(1,u.l*3)}
     else u.vy-=12*dt;m.position.x+=u.vx*dt;m.position.y+=u.vy*dt;m.position.z+=u.vz*dt}
-  if(RWR.frontSign)RWR.frontSign.visible=!(G.mode==="build"&&G.step==="shape"&&!G.clay);RWR.r.render(RWR.scene,G.mode==="drive"?G.pcam:G.cam);rwOverlay()}
+  if(RWR.frontSign)RWR.frontSign.visible=!(G.mode==="build"&&G.step==="shape"&&!G.clay);if(RWR.foe)RWR.foe.visible=G.mode==="battle";const hud=$("#rwhud");if(hud)hud.classList.toggle("on",G.mode==="battle");RWR.r.render(RWR.scene,G.mode==="drive"||G.mode==="battle"?G.pcam:G.cam);rwOverlay()}
 
 /* ---------- touch ---------- */
 function rwInput(){const G=RWG,cv=G.ov,pt=e=>{const r=cv.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top,id:e.pointerId}};
@@ -3506,6 +3529,198 @@ function rwInput(){const G=RWG,cv=G.ov,pt=e=>{const r=cv.getBoundingClientRect()
   jz.onpointerup=jz.onpointercancel=e=>{if(e.pointerId!==jid)return;jid=null;G.joy=null;jk.style.transform=""};
   $("#rwfire").onpointerdown=e=>{e.preventDefault();e.stopPropagation();rwFire("f")};$("#rwfireb").onpointerdown=e=>{e.preventDefault();e.stopPropagation();rwFire("b")};
   window.onkeydown=e=>{if(!RWG||e.target&&e.target.tagName==="INPUT")return;RWG.keys[e.key]=1;if(e.key===" "){e.preventDefault();rwFire("f")}if(e.key==="b"||e.key==="Shift")rwFire("b")};window.onkeyup=e=>{if(RWG)RWG.keys[e.key]=0}}
+
+/* ================= BATTLE CARS: live battles between the two phones =================
+   Uses the app's challenge pop-up. When it's accepted, games/rwl holds the battle: the car each player picked, READY, the start time, and who left.
+   Each phone drives its own car and sends where it is a few times a second (games/rwp_X|O), with the hits it landed on the other car.
+   The other phone takes those hits (damage, knocks, flips) on its own car. games/rwwin counts the wins. */
+const RW_BT=120,RW_PIT={x:6.5,z:0,h:1},RW_VENTS=[[-6.5,0],[0,0]],RW_GUARD=[[9.4,9.4],[-9.4,-9.4]],RW_SPAWN={X:[0,7,Math.PI/2],O:[0,-7,-Math.PI/2]};
+const RW_DMG={wedge:4,flip:6,spin:9,drum:9,axe:12,crush:11,spike:7,saw:8};
+/* Cass's edge (never shown): he takes less damage and gets knocked about less, his pit is a bit smaller, he rights himself faster, and a draw goes to him */
+const rwEdge=()=>me()==="O";
+
+function rwListenLive(){if(typeof GNAME!=="undefined")GNAME.rw="BATTLE CARS";
+  db.doc("games/rwl").onSnapshot(s=>{RWD.live=s.exists?s.data():null;rwOnLive()},er);
+  for(const k of ["X","O"])db.doc("games/rwp_"+k).onSnapshot(s=>{if(k!==me()&&s.exists)rwOnPos(s.data())},er);
+  db.doc("games/rwwin").onSnapshot(s=>{RWD.win=s.exists?s.data():{};if(RWG&&RWG.mode==="garage"&&!RWG.viewing){const e=$("#rwtally");if(e)e.innerHTML=rwTally()}},er)}
+function rwLiveNew(c){return db.doc("games/rwl").set({id:c&&c.id||Date.now(),at:Date.now(),bX:"",bO:"",rX:0,rO:0,s:0,qX:0,qO:0})}
+function rwLiveAsk(){const R=rwSel();if(!R){toast("Build a car first! 🏎️");return}if(typeof chSend!=="function"){rwLiveNew({id:Date.now()});return}chSend("rw")}
+const rwLiveFresh=()=>{const L=RWD.live;return!!(L&&L.id&&Date.now()-(L.at||0)<15*60000&&!L.qX&&!L.qO&&rwLoad().liveDone!==L.id)};
+const rwTally=()=>{const w=RWD.win||{};return(w.X||w.O)?`🏆 Live battles won — Dad <b>${w.X||0}</b> · Cass <b>${w.O||0}</b>`:"Fight the other phone's car, live!"};
+function rwLiveBtn(){return`<button class="b rwbig rwlivebtn" id="rwlive">⚔️ LIVE BATTLE vs ${rwNm(rwThem()).toUpperCase()}</button><div class="rwsoon" id="rwtally">${rwTally()}</div>`}
+function rwOnLive(){const G=RWG,L=RWD.live,th=rwThem();if(!G||G.dead||!RWR||typeof g==="undefined"||g!=="rw")return;
+  if(G.mode==="battle"){const B=G.B;if(B&&L&&L.id===B.id&&L["q"+th]&&!B.end)rwBEnd("win","left");return}
+  if(G.mode==="lobby"){if(!L||L.id!==G.lobby||L["q"+th]){if(L&&L["q"+th])toast(rwNm(th)+" left the battle");G.lobby=null;const S=rwLoad();if(L){S.liveDone=L.id;rwSave()}return rwGarage()}
+    rwLobbyUI();if(L.s&&L.rX&&L.rO)rwBattleGo();return}
+  if(G.mode==="garage"&&rwLiveFresh())rwLobby()}
+
+/* ---------- the lobby: pick a car, press READY ---------- */
+function rwLobby(){const G=RWG,L=RWD.live;G.mode="lobby";G.lobby=L.id;G.viewing=null;G.auto=1;rwArena(0);rwBattleTidy();$("#rwbot").innerHTML="";$("#rwbot").className="rwbot";$("#rwhint").textContent="";$("#rwtop").className="rwtop";G.lobbyShown=null;rwLobbyUI();if(L.s&&L.rX&&L.rO)rwBattleGo()}
+function rwLobbyUI(){const G=RWG,L=RWD.live,S=rwLoad(),th=rwThem(),tn=rwNm(th);if(!L||G.mode!=="lobby")return;
+  const mine=L["r"+me()],theirs=L["r"+th],tb=theirs&&RWD.g[th]&&RWD.g[th].bots?RWD.g[th].bots[L["b"+th]]:null,R=rwSel();
+  if(R&&(!G.M||G.M.R!==R))rwShow(R);rwCam("show");
+  const key=[mine,theirs,L["b"+th],R&&R.id,S.bots.length].join("|");if(G.lobbyShown===key)return;G.lobbyShown=key;
+  const chips=S.bots.slice().reverse().map(b=>`<button class="rwchip${R&&b.id===R.id?" on":""}" data-m="${rwEsc(b.id)}" ${mine?"disabled":""}><i style="background:${rwEsc(b.col)}"></i>${rwEsc(b.nm)}</button>`).join("");
+  $("#rwpanel").className="rwpanel on garage";$("#rwpanel").innerHTML=`<div class="rwlogo">LIVE<br><span>BATTLE</span></div>
+    <div class="rwcard"><div class="rwname">⚔️ You vs ${tn}</div>
+      ${S.bots.length?`<div class="rwchips"><b>${mine?"YOUR CAR":"PICK YOUR CAR"}</b>${chips}</div>`:`<p class="rwsay">You need a car first! Leave this battle and build one.</p>`}
+      <div class="rwopp">${theirs?`✅ <b>${tn}</b> is READY${tb?` with <b>“${rwEsc(tb.nm)}”</b>`:""}!`:`<span class="rwdots"></span> ${tn} is picking a car…`}</div>
+      <div class="rwbtns"><button class="b d" id="rwlq">✖ LEAVE</button>${mine?`<button class="b y rwbig" disabled>${theirs?"GET READY…":"WAITING FOR "+tn.toUpperCase()+"…"}</button>`:`<button class="b y rwbig" id="rwrdy" ${R?"":"disabled"}>READY! ⚔️</button>`}</div>
+      <p class="rwsay" style="margin-top:8px">Knock out ${tn}'s car, flip it, or push it in the pit! Watch out for the fire vents and the hammer guards in the corners. 2 minutes.</p></div>`;
+  $("#rwpanel").querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{S.sel=b.dataset.m;rwSave();sfx("tap");rwLobbyUI()});
+  $("#rwlq").onclick=()=>rwLiveLeave();const rd=$("#rwrdy");if(rd)rd.onclick=()=>{const R=rwSel();if(!R)return;rwSave(1);sfx("win");
+    const L=RWD.live;db.doc("games/rwl").update({["b"+me()]:R.id,["r"+me()]:1,...(L&&L["r"+th]?{s:Date.now()+5000}:{})}).catch(er)}}
+function rwLiveLeave(){const G=RWG,L=RWD.live,B=G&&G.B;
+  if(G&&G.mode==="battle"&&B&&!B.end){if(!confirm(`Leave the battle? ${rwNm(rwThem())} wins if you leave.`))return;B.q=1;rwLiveSend(2)}
+  if(L&&!(B&&B.end)){db.doc("games/rwl").update({["q"+me()]:1}).catch(er)}const S=rwLoad();if(L){S.liveDone=L.id;rwSave()}if(G){G.lobby=null;G.mode="garage"}sfx("tap");rwGarage()}
+
+/* ---------- starting the battle ---------- */
+function rwBattleTidy(){const G=RWG;if(RWR&&RWR.foe)RWR.foe.clear();if(RWR&&RWR.bat)RWR.bat.visible=false;if(G&&G.B&&G.mode!=="battle")G.B=null;const h=$("#rwres");if(h)h.remove()}
+function rwBattleGo(){const G=RWG,L=RWD.live,th=rwThem();if(!G||!L||(G.B&&G.B.id===L.id))return;
+  const S=rwLoad(),myR=S.bots.find(b=>b.id===L["b"+me()])||rwSel(),fo=RWD.g[th]&&RWD.g[th].bots&&RWD.g[th].bots[L["b"+th]];
+  if(!fo||!myR){clearTimeout(G.waitT);G.waitT=setTimeout(rwOnLive,700);return}
+  const T=THREE,FR=rwUnpack(L["b"+th],fo);G.mode="battle";G.view=null;G.viewing=null;$("#rwpanel").className="rwpanel";$("#rwpanel").innerHTML="";$("#rwbot").className="rwbot";$("#rwhint").textContent="";
+  rwShow(myR);$("#rwtop").className="rwtop";rwArena(1);RWR.dummies.clear();G.dum=[];rwBattleArena();RWR.bat.visible=true;
+  const fb=rwBody(FR);rwLegacy(FR,fb);const FM=rwModel(FR,fb,{});FM.g.rotation.order="YZX";RWR.foe.clear();RWR.foe.add(FM.g);FM.ht=FM.box.y1+FM.dy;G.M.ht=G.M.box.y1+G.M.dy;G.M.g.rotation.order="YZX";
+  const st=rwStats(myR,G.body,rwCass()),fs=rwStats(FR,fb,th==="O"),sp=RW_SPAWN[me()],fp=RW_SPAWN[th],hpM=Math.round(80+st.arm*12);
+  G.car={x:sp[0],z:sp[1],yaw:sp[2],v:0,spd:2.4+st.spd*.85,turn:((myR.wheels||[]).some(w=>w.k==="t")?2.6:(myR.wheels||[]).length<=2?4.2:3.3),push:st.push,pow:st.pow,kg:st.kg,r:Math.max(.5,G.M.r*.85),
+    kx:0,kz:0,y:0,vy:0,rz:0,rzv:0,down:0,hp:hpM,hpM,out:0,burn:0};
+  G.B={id:L.id,s:L.s,ca:me()==="O"?Math.PI:0,t:-9,go:0,cd:9,seq:0,ev:[],evDone:0,fc:{f:0,b:0},cool:{},shot:{},ls:0,pend:0,fin:0,end:null,ram:0,vent:[0,0],guard:RW_GUARD.map(()=>({t:0,cd:0,sw:9,vis:9})),
+    foe:{R:FR,M:FM,r:Math.max(.5,FM.r*.85),kg:fs.kg,push:fs.push,nm:FR.nm,x:fp[0],z:fp[1],yaw:fp[2],y:0,rz:0,spd:0,hp:1,hpM:1,fT:9,fB:9,fc:{f:0,b:0},net:null,last:0,pred:0,out:0,fin:0}};
+  G.fireT=9;G.fireB=9;G.joy=null;G.dash=0;G.camSet=0;rwFireLabels();rwHud();sfx("b_warn")}
+function rwHud(){let h=$("#rwhud");if(!h){h=document.createElement("div");h.id="rwhud";h.className="rwhud";$("#rwc").appendChild(h)}const th=rwThem();
+  h.innerHTML=`<div class="rwhp me"><b>YOU</b><i><s id="rwhpm"></s></i></div><div class="rwclk" id="rwclk">2:00</div><div class="rwhp th"><b>${rwNm(th).toUpperCase()}</b><i><s id="rwhpt"></s></i></div>`}
+function rwBattleArena(){if(RWR.bat)return;const T=THREE,g=new T.Group();RWR.bat=g;RWR.arena.add(g);RWR.foe=new T.Group();RWR.scene.add(RWR.foe);
+  const hz=rwTex(128,32,(x,w,h)=>{for(let i=-2;i<12;i++){x.fillStyle=i%2?"#111":"#ffc400";x.beginPath();x.moveTo(i*16,0);x.lineTo(i*16+16,0);x.lineTo(i*16,h);x.lineTo(i*16-16,h);x.fill()}});
+  /* fire vents: a grate that glows before it fires */
+  RWR.vents=RW_VENTS.map(([x,z])=>{const gr=rwTex(128,128,(c,w,h)=>{c.fillStyle="#1a1a1a";c.fillRect(0,0,w,h);c.fillStyle="#555";for(let i=8;i<w;i+=16)c.fillRect(i,0,6,h)});
+    const m=new T.MeshStandardMaterial({map:gr,roughness:.7,metalness:.6,emissive:new T.Color(0xff4400),emissiveIntensity:0}),d=new T.Mesh(new T.CircleGeometry(.95,32),m);d.rotation.x=-Math.PI/2;d.position.set(x,.012,z);g.add(d);
+    const r=new T.Mesh(new T.RingGeometry(.95,1.12,32),new T.MeshStandardMaterial({map:hz}));r.rotation.x=-Math.PI/2;r.position.set(x,.013,z);g.add(r);return{m,x,z}});
+  /* hammer guards in two corners — our own design: a squat iron block on tracks with one glowing eye and a big hammer */
+  RWR.guards=RW_GUARD.map(([gx,gz])=>{const zone=new T.Mesh(new T.RingGeometry(3.3,3.54,4,1),new T.MeshStandardMaterial({map:hz}));zone.rotation.set(-Math.PI/2,0,Math.PI/4);zone.position.set(gx,.014,gz);zone.scale.set(1,1,1);g.add(zone);
+    const gg=new T.Group(),iron=new T.MeshStandardMaterial({color:0x2c3038,metalness:.8,roughness:.35}),dark=new T.MeshStandardMaterial({color:0x15171b,roughness:.8});
+    const bx=new T.Mesh(new T.BoxGeometry(1.5,.9,1.3),iron);bx.position.y=.6;bx.castShadow=true;gg.add(bx);
+    for(const s of[-1,1]){const t=new T.Mesh(new T.BoxGeometry(1.7,.42,.3),dark);t.position.set(0,.21,s*.72);gg.add(t)}
+    const band=new T.Mesh(new T.BoxGeometry(1.52,.16,1.32),new T.MeshStandardMaterial({map:hz}));band.position.y=.86;gg.add(band);
+    const eye=new T.Mesh(new T.SphereGeometry(.17,16,12),new T.MeshStandardMaterial({color:0xff3b1f,emissive:new T.Color(0xff2a00),emissiveIntensity:1.6}));eye.position.set(.72,.62,0);gg.add(eye);
+    const arm=new T.Group();arm.position.set(.2,1.08,0);const bar=new T.Mesh(new T.BoxGeometry(1.9,.16,.18),iron);bar.position.x=.95;arm.add(bar);
+    const head=new T.Mesh(new T.BoxGeometry(.42,.55,.55),new T.MeshStandardMaterial({color:0x8a8f99,metalness:.9,roughness:.3}));head.position.set(1.85,-.12,0);head.castShadow=true;arm.add(head);arm.rotation.z=1.1;gg.add(arm);
+    gg.position.set(gx*1.1,0,gz*1.1);gg.rotation.y=Math.atan2(gz,-gx);g.add(gg);return{arm,gx,gz}})}
+
+/* ---------- each frame of a battle ---------- */
+function rwCanAct(){const G=RWG,c=G.car,B=G.B;return!!(B&&B.go&&!B.end&&!B.fin&&!c.out&&c.y<.08&&Math.cos(c.rz)>.6)}
+function rwBattleFrame(dt){const G=RWG,B=G.B,c=G.car,F=B.foe,now=Date.now();B.t=(now-B.s)/1000;
+  if(B.t<0){const n=Math.ceil(-B.t);if(n<=3&&n!==B.cd){B.cd=n;rwMsg(String(n));sfx("tap")}}else if(!B.go){B.go=1;rwMsg("FIGHT!");sfx("b_boom");$("#rwhint").textContent="Left: drive · Right: FRONT and BACK weapons"}
+  if(B.go&&B.t>3)$("#rwhint").textContent="";
+  rwBStep(dt);rwFoeStep(dt);rwHazards(dt);
+  if(B.go&&!B.fin&&!B.end&&B.t>=RW_BT){B.fin=1;B.finAt=now;rwMsg("TIME!");sfx("b_warn");rwLiveSend(2)}
+  if(B.fin&&!B.end&&(F.fin||now-B.finAt>4000)){const a=Math.max(0,Math.round(c.hp))/c.hpM,b=F.hp/F.hpM;rwBEnd(a>b+.001||(Math.abs(a-b)<=.001&&rwEdge())?"win":"lose","time")}
+  if(B.go&&!B.end&&F.last&&now-F.last>12000)rwBEnd("none","lost");
+  if(B.go&&!B.end&&!F.last&&B.t>15)rwBEnd("none","lost");
+  if(B.pend&&performance.now()-B.ls>90)rwLiveSend(1);else rwLiveSend(0);
+  /* camera: keep both cars in view */
+  const pc=G.pcam,port=G.H>G.W,mx=(c.x*.55+F.x*.45)*.85,mz=(c.z*.55+F.z*.45)*.85,dd=Math.hypot(c.x-F.x,c.z-F.z),hgt=Math.min(21,(port?10:7.5)+dd*(port?.38:.22)),back=hgt*.8,cs=Math.cos(B.ca),sn=Math.sin(B.ca),up=port?2.2:1;
+  const want=new THREE.Vector3(mx+(back+up)*sn,hgt,mz+(back+up)*cs);if(!G.camSet){pc.position.copy(want);G.camSet=1}else pc.position.lerp(want,1-Math.exp(-dt*3));pc.lookAt(mx+up*sn,0,mz+up*cs);
+  rwHudUpd()}
+function rwHudUpd(){const G=RWG,B=G.B,c=G.car,F=B.foe,a=$("#rwhpm"),b=$("#rwhpt"),k=$("#rwclk");if(!a)return;
+  const pa=Math.max(0,c.hp/c.hpM),pb=Math.max(0,F.hp/F.hpM);a.style.width=(pa*100).toFixed(1)+"%";b.style.width=(pb*100).toFixed(1)+"%";a.className=pa<.3?"low":"";b.className=pb<.3?"low":"";
+  const left=Math.max(0,Math.ceil(RW_BT-Math.max(0,B.t)));k.textContent=Math.floor(left/60)+":"+String(left%60).padStart(2,"0");k.classList.toggle("low",left<=10&&B.go)}
+/* my car: driving, knocks, flips, walls, the pit, and my weapons hitting the other car */
+function rwBStep(dt){const G=RWG,B=G.B,c=G.car,M=G.M,F=B.foe,ed=rwEdge();let jx=0,jy=0;const act=rwCanAct();
+  if(G.joy){jx=G.joy.dx;jy=G.joy.dy}if(G.keys.ArrowUp||G.keys.w)jy=-1;if(G.keys.ArrowDown||G.keys.s)jy=1;if(G.keys.ArrowLeft||G.keys.a)jx=-1;if(G.keys.ArrowRight||G.keys.d)jx=1;
+  const mag=Math.min(1,Math.hypot(jx,jy));
+  if(act&&mag>.15){const want=Math.atan2(-jy,jx)+B.ca;let da=want-c.yaw;da=Math.atan2(Math.sin(da),Math.cos(da));const back=Math.abs(da)>2.4;
+    if(back)da=Math.atan2(Math.sin(da+Math.PI),Math.cos(da+Math.PI));c.yaw+=Math.max(-c.turn*dt,Math.min(c.turn*dt,da));const tv=(back?-.7:1)*c.spd*mag*Math.max(.2,Math.cos(Math.min(1.4,Math.abs(da))));c.v+=(tv-c.v)*Math.min(1,dt*5)}
+  else c.v*=Math.pow(act?.02:.15,dt);
+  if(G.dash>0){G.dash-=dt;if(act)c.v=G.dashSd==="b"?Math.min(c.v,-c.spd*1.8):Math.max(c.v,c.spd*1.8)}
+  G.fireT+=dt;G.fireB+=dt;
+  const fx=Math.cos(c.yaw),fz=-Math.sin(c.yaw);
+  if(c.out==="pit"){c.x+=(RW_PIT.x-c.x)*Math.min(1,dt*4);c.z+=(RW_PIT.z-c.z)*Math.min(1,dt*4);c.y=Math.max(-4,c.y-dt*(2+(-c.y)*3));c.v=0}
+  else{c.x+=(fx*c.v+c.kx)*dt;c.z+=(fz*c.v+c.kz)*dt;const kd=Math.pow(c.y>.05?.7:.05,dt);c.kx*=kd;c.kz*=kd;
+    if(c.y>0||c.vy>0){c.vy-=15*dt;c.y+=c.vy*dt;c.rz+=c.rzv*dt;if(c.y<=0){c.y=0;if(c.vy<-4){c.vy=-c.vy*.25;sfx("hit");rwSparks(c.x,.1,c.z,8)}else c.vy=0;c.rzv*=.3}}
+    else{c.rz=Math.atan2(Math.sin(c.rz),Math.cos(c.rz));const t=Math.abs(c.rz)>Math.PI/2?Math.sign(c.rz||1)*Math.PI:0;c.rz+=(t-c.rz)*Math.min(1,dt*6);c.rzv=0;
+      if(Math.cos(c.rz)<0&&!c.out){if(!c.down)rwMsg("FLIPPED! 🙃");c.down+=dt;if(c.down>(ed?1.4:2.2)){c.down=0;c.vy=4.5;c.y=.01;c.rzv=-Math.sign(c.rz||1)*Math.PI/.6;sfx("b_swish");rwMsg("SELF-RIGHT!")}}else c.down=0}
+    const A=RW_ARENA-c.r*.8;if(Math.abs(c.x)>A){c.x=Math.sign(c.x)*A;c.v*=.3;c.kx*=-.3}if(Math.abs(c.z)>A){c.z=Math.sign(c.z)*A;c.v*=.3;c.kz*=-.3}
+    const ph=RW_PIT.h*(ed?.75:1);if(!c.out&&B.go&&!B.end&&c.y<.05&&Math.abs(c.x-RW_PIT.x)<ph&&Math.abs(c.z-RW_PIT.z)<ph){c.out="pit";rwMsg("INTO THE PIT! 🕳️");sfx("lose");rwLiveSend(2);setTimeout(()=>rwBEnd("lose","pit"),1400)}}
+  /* bumping into the other car: each phone moves its own car; the heavier, pushier car moves less */
+  if(!c.out&&!F.out&&c.y<.4&&F.y<.4){const dx=F.x-c.x,dz=F.z-c.z,d=Math.hypot(dx,dz)||1e-3,ov=c.r+F.r-d;
+    if(ov>0){const nx=dx/d,nz=dz/d,mp=c.kg*(1+c.push*.2),fp=F.kg*(1+F.push*.2),sh=fp/(mp+fp);c.x-=nx*ov*sh;c.z-=nz*ov*sh;const into=(fx*c.v)*nx+(fz*c.v)*nz;if(into>0)c.v*=1-sh*.6;
+      const kin=c.kx*nx+c.kz*nz;if(kin>0){c.kx-=nx*kin;c.kz-=nz*kin}
+      if(act&&into>2.2&&G.t-B.ram>.8&&!c.out){B.ram=G.t;rwHit({d:Math.round(2+into),ix:nx*into*.9*(1-sh+.3),iz:nz*into*.9*(1-sh+.3),up:0,sp:0,k:"ram"},F.x,.4,F.z,"BASH!")}}}
+  /* my weapons on the other car */
+  if(act&&!F.out&&F.net&&c.y<.1){const cy=Math.cos(c.yaw),sy=Math.sin(c.yaw),f0=G.fireT,f1=G.fireB;
+    M.weps.forEach((wp,wi)=>{const f=wp.sd==="b"?f1:f0,k=wp.k,sz=wp.s||1,reach=(RW_REACH[k]||.4)*sz*1.15,lx=wp.p[0]+wp.n[0]*reach,lz=wp.p[2]+wp.n[2]*reach,ly=wp.p[1]+M.dy+wp.n[1]*reach,
+        wx=c.x+lx*cy+lz*sy,wz=c.z-lx*sy+lz*cy,ux=wp.n[0]*cy+wp.n[2]*sy,uz=-wp.n[0]*sy+wp.n[2]*cy,hl=Math.hypot(ux,uz)||1,ex=F.x-wx,ez=F.z-wz,edd=Math.hypot(ex,ez)||1e-3;
+      if(k==="flame"){if(f>1.2)return;const bx=c.x+wp.p[0]*cy+wp.p[2]*sy,bz=c.z-wp.p[0]*sy+wp.p[2]*cy,vx=F.x-bx,vz=F.z-bz,vd=Math.hypot(vx,vz)||1e-3;
+        if(vd<reach+F.r&&(vx*ux+vz*uz)/(vd*hl)>.8&&F.y<1.2){const ck="f"+wi;if((B.cool[ck]||0)>G.t)return;B.cool[ck]=G.t+.3;rwHit({d:2+Math.round(sz),ix:ux/hl*.4,iz:uz/hl*.4,up:0,sp:0,k:"flame",fl:1},F.x,.5,F.z,B.t-(B.burnMsg||0)>2?["🔥 TOASTED!","🔥 ON FIRE!","🔥 SIZZLE!"][Math.random()*3|0]:"",1);if(B.t-(B.burnMsg||0)>2)B.burnMsg=B.t}return}
+      if(edd>F.r+.4*sz||ly>1.5*sz||F.y>.9)return;if((B.cool[wi]||0)>G.t)return;const one=k==="flip"||k==="axe"||k==="crush"||k==="wedge";if(one&&B.shot[wi]===B.fc[wp.sd])return;let hit=null,dir=[ux/hl,uz/hl];
+      if(k==="flip"&&f<.25)hit=[2.5,5+c.pow*.8,9];else if(k==="axe"&&f>.12&&f<.3)hit=[1,2.5,4];else if(k==="crush"&&f>.1&&f<.3)hit=[.6,1.2,3];else if(k==="wedge"&&G.dash>0&&G.dashSd===wp.sd)hit=[4,2.2,3];
+      else if(k==="spin"||k==="drum"){const up=f<1.5?1.6:1;hit=k==="spin"?[4*up,2*up,8]:[2.5*up,4*up,9];if(k==="spin")dir=[-dir[1],dir[0]]}
+      else if(k==="spike"&&(wp.sd==="b"?c.v<-1.5:c.v>1.5))hit=[3,.6,3];
+      else if(k==="saw"){const up=f<1.5?1.5:1;hit=[1.6*up,2.4*up,6]}
+      if(!hit)return;if(one)B.shot[wi]=B.fc[wp.sd];const m=.7+.3*sz;hit=hit.map(v=>v*m);B.cool[wi]=G.t+(k==="spin"||k==="drum"||k==="spike"||k==="saw"?.6:.5);
+      const dmg=Math.round((RW_DMG[k]||5)*m*(.8+c.pow*.1)*(k==="spin"||k==="drum"||k==="saw"?(f<1.5?1.3:1):1)),sp=(k==="flip"?1:.35)*hit[2]*(Math.random()<.5?-1:1)*(k==="flip"?.6:.25);
+      rwHit({d:dmg,ix:dir[0]*hit[0]+ex/edd*.8,iz:dir[1]*hit[0]+ez/edd*.8,up:hit[1],sp,k},wx,Math.max(.3,ly),wz,hit[1]>4?["FLIPPED!","SMASH!","WHAM!","KER-RUNCH!"][Math.random()*4|0]:dmg>=10?["CRUNCH!","SMASH!","BOOM!"][Math.random()*3|0]:"")})}
+  /* the car's position and tilt (it turns end over end around its middle when flipped) */
+  rwPlace(M,c.x,c.y,c.z,c.yaw,c.rz)}
+function rwPlace(M,x,y,z,yaw,rz){const h=(M.ht||.8)/2,s=Math.sin(rz),k=1-Math.cos(rz);M.g.position.set(x+h*s*Math.cos(yaw),y+h*k,z-h*s*Math.sin(yaw));M.g.rotation.set(0,yaw,rz)}
+/* I landed a hit: tell the other phone, and show it here straight away */
+function rwHit(e,x,y,z,msg,quiet){const G=RWG,B=G.B,F=B.foe;e.n=++B.seq;B.ev.push(e);if(B.ev.length>8)B.ev.shift();
+  if(!quiet){sfx(e.k==="crush"||e.k==="ram"?"hit":"b_clang");rwSparks(x,y,z,e.k==="ram"?8:14)}if(msg)rwMsg(msg);
+  if(e.k!=="flame"){const km=60/Math.max(40,F.kg);F.pred=.55;F.pkx=e.ix*km;F.pkz=e.iz*km;F.pvy=e.up*km;F.prz=e.sp;}
+  F.hp=Math.max(0,F.hp-e.d*(rwEdge()?1.15:.75)*(F.hpM>1?1:0));rwLiveSend(1)}
+/* the other phone landed a hit on me */
+function rwTakeHit(e){const G=RWG,B=G.B,c=G.car,ed=rwEdge();if(!c||c.out||B.end||B.fin)return;const dm=ed?.75:1.15,km=60/Math.max(40,c.kg)*(ed?.8:1);
+  c.hp=Math.max(0,c.hp-e.d*dm);c.kx+=(e.ix||0)*km;c.kz+=(e.iz||0)*km;if(e.up>0){c.vy=Math.max(c.vy,e.up*km);c.y=Math.max(c.y,.01);c.rzv+=(e.sp||0)}
+  if(e.fl)c.burn=.5;else{sfx(e.k==="crush"||e.k==="ram"?"hit":"b_clang");rwSparks(c.x,.5,c.z,10);if(navigator.vibrate)try{navigator.vibrate(e.d>=10?60:25)}catch(_){}}
+  rwKoCheck()}
+function rwKoCheck(){const G=RWG,B=G.B,c=G.car;if(c.hp<=0&&!c.out&&!B.end){c.out="ko";c.hp=0;rwMsg("KNOCKED OUT! 💥");sfx("b_boom");rwLiveSend(2);setTimeout(()=>rwBEnd("lose","ko"),1400)}}
+/* the other car, as the network last saw it: glide towards it, guessing ahead a little */
+function rwOnPos(d){const G=RWG,B=G&&G.B;if(!G||G.mode!=="battle"||!B||d.id!==B.id)return;const F=B.foe;F.last=Date.now();F.net=d;
+  for(const e of d.ev||[])if(e.n>B.evDone){B.evDone=e.n;rwTakeHit(e)}
+  if((d.f||0)>F.fc.f){F.fc.f=d.f;F.fT=0}if((d.b||0)>F.fc.b){F.fc.b=d.b;F.fB=0}
+  F.hp=d.hp;F.hpM=d.hm||1;F.burn=d.br;if(d.fin){F.fin=1}
+  if(d.out&&!F.out){F.out=d.out;if(!B.end){rwMsg(d.out==="pit"?"INTO THE PIT! 🕳️":"KNOCKED OUT! 💥");sfx("b_boom");setTimeout(()=>rwBEnd("win",d.out),1400)}}
+  if(d.q&&!B.end)rwBEnd("win","left")}
+function rwFoeStep(dt){const G=RWG,B=G.B,F=B.foe,n=F.net;if(!n){rwPlace(F.M,F.x,0,F.z,F.yaw,0);return}
+  if(F.pred>0){F.pred-=dt;F.x+=F.pkx*dt;F.z+=F.pkz*dt;F.pkx*=Math.pow(.05,dt);F.pkz*=Math.pow(.05,dt);if(F.y>0||F.pvy>0){F.pvy-=15*dt;F.y=Math.max(0,F.y+F.pvy*dt);F.rz+=F.prz*dt;if(F.y<=0)F.pvy=0}}
+  else{const age=Math.min(.3,(Date.now()-F.last)/1000),tx=n.x+(n.vx||0)*age,tz=n.z+(n.vz||0)*age,k=1-Math.exp(-dt*9);
+    F.x+=(tx-F.x)*k;F.z+=(tz-F.z)*k;F.y+=(n.y-F.y)*k;let da=n.yw-F.yaw;da=Math.atan2(Math.sin(da),Math.cos(da));F.yaw+=da*k;let dr=n.rz-F.rz;dr=Math.atan2(Math.sin(dr),Math.cos(dr));F.rz+=dr*k;
+    if(Math.hypot(tx-F.x,tz-F.z)>4){F.x=tx;F.z=tz}}
+  F.spd=Math.hypot(n.vx||0,n.vz||0)*(Math.cos(F.yaw)*(n.vx||0)-Math.sin(F.yaw)*(n.vz||0)<0?-1:1);
+  rwPlace(F.M,F.x,F.y,F.z,F.yaw,F.rz);
+  if(F.burn&&Math.random()<.7)rwFlame(new THREE.Vector3(F.x+(Math.random()-.5)*.5,F.y+.7,F.z+(Math.random()-.5)*.5),new THREE.Vector3(0,1,0),.6,1.4);
+  if(F.out==="ko"&&Math.random()<.5)rwFlame(new THREE.Vector3(F.x,.9,F.z),new THREE.Vector3(0,1,0),.5,1.2)}
+/* fire vents and hammer guards (each phone works them out for its own car) */
+function rwHazards(dt){const G=RWG,B=G.B,c=G.car,F=B.foe,ed=rwEdge(),t=B.t,live=B.go&&!B.end&&!B.fin&&!c.out;
+  RWR.vents.forEach((v,i)=>{const p=t>3?((t+i*3.5)%7+7)%7:0,warn=p>4.8&&p<5.8,fire=p>=5.8;v.m.emissiveIntensity=fire?1.4:warn?.35+.35*Math.sin(t*20):0;
+    if(fire){for(let j=0;j<2;j++)rwFlame(new THREE.Vector3(v.x+(Math.random()-.5)*1.2,.1,v.z+(Math.random()-.5)*1.2),new THREE.Vector3(0,1,0),1.1,1)
+      if(live&&c.y<1&&Math.hypot(c.x-v.x,c.z-v.z)<1.15){c.hp-=dt*9*(ed?.75:1);c.burn=.4;if(B.vent[i]<t-1.5){B.vent[i]=t;rwMsg("🔥 BURNED!");sfx("b_boom")}rwKoCheck()}}});
+  if(c.burn>0){c.burn-=dt;if(Math.random()<.7)rwFlame(new THREE.Vector3(c.x+(Math.random()-.5)*.5,c.y+.7,c.z+(Math.random()-.5)*.5),new THREE.Vector3(0,1,0),.6,1.4)}
+  if(c.out==="ko"&&Math.random()<.5)rwFlame(new THREE.Vector3(c.x,.9,c.z),new THREE.Vector3(0,1,0),.5,1.2);
+  RWR.guards.forEach((gd,i)=>{const s=B.guard[i],inZ=(x,z)=>Math.abs(x-gd.gx)<2.5&&Math.abs(z-gd.gz)<2.5,mine=live&&inZ(c.x,c.z)&&c.y<.5,them=!F.out&&inZ(F.x,F.z);
+    s.cd-=dt;s.sw+=dt;s.vis-=dt;
+    if(mine){s.t+=dt;if(s.t>.45&&s.cd<=0){s.cd=1.7;s.sw=0;s.hit=1}}else s.t=0;
+    if(them&&!mine&&s.vis<=0&&s.sw>1.7){s.vis=1.9;s.sw=0}
+    if(s.hit&&s.sw>.18){s.hit=0;if(inZ(c.x,c.z)&&!c.out){const l=Math.hypot(gd.gx,gd.gz),km=60/Math.max(40,c.kg)*(ed?.8:1);c.hp-=10*(ed?.75:1);c.kx+=-gd.gx/l*7*km;c.kz+=-gd.gz/l*7*km;c.vy=3.5*km;c.y=.01;c.rzv+=(Math.random()-.5)*3;
+      sfx("b_boom");rwSparks(c.x,.4,c.z,16);rwMsg("🔨 WHAM!");if(navigator.vibrate)try{navigator.vibrate(80)}catch(_){}rwKoCheck()}}
+    const w=s.sw;gd.arm.rotation.z=w<.18?1.1-(w/.18)*1.55:w<.6?-.45:w<1.3?-.45+((w-.6)/.7)*1.55:1.1})}
+/* send my car a few times a second (straight away after a hit or a weapon) */
+function rwLiveSend(force){const G=RWG,B=G&&G.B;if(!B||!G.car)return;const now=performance.now();if(B.end&&force!==2&&!B.q)return;
+  if(force!==2){if(!force&&now-B.ls<180)return;if(force&&now-B.ls<90){B.pend=1;return}}B.ls=now;B.pend=0;
+  const c=G.car,fx=Math.cos(c.yaw),fz=-Math.sin(c.yaw),r=v=>Math.round(v*100)/100;
+  B.pk=(B.pk||0)+1;db.doc("games/rwp_"+me()).set({id:B.id,k:B.pk,x:r(c.x),z:r(c.z),y:r(c.y),yw:r(c.yaw),rz:r(c.rz),vx:r(fx*c.v+c.kx),vz:r(fz*c.v+c.kz),hp:Math.max(0,Math.round(c.hp)),hm:c.hpM,f:B.fc.f,b:B.fc.b,ev:B.ev,out:c.out||0,fin:B.fin?1:0,br:c.burn>0?1:0,q:B.q?1:0}).catch(er)}
+/* ---------- the end ---------- */
+function rwBEnd(res,why){const G=RWG,B=G&&G.B;if(!B||B.end||G.mode!=="battle")return;B.end={res,why};const S=rwLoad();S.liveDone=B.id;rwSave();rwControls(0);rwLiveSend(2);
+  if(res==="win"){sfx("win");const w=RWD.win||{};db.doc("games/rwwin").update({[me()]:(w[me()]||0)+1}).catch(er)}else if(res==="lose")sfx("lose");
+  setTimeout(rwBResult,res==="none"?200:1300)}
+function rwBResult(){const G=RWG,B=G&&G.B;if(!B||!B.end||G.mode!=="battle")return;const th=rwNm(rwThem()),{res,why}=B.end,win=res==="win";
+  const say=res==="none"?`Lost touch with ${th}'s phone.`:why==="left"?`${th} left the battle.`:why==="time"?(win?"Time's up — your car had more left!":`Time's up — ${th}'s car had more left.`)
+    :why==="pit"?(win?`${th}'s car fell in the pit!`:"Your car fell in the pit!"):(win?`${th}'s car was knocked out!`:"Your car was knocked out!");
+  let h=$("#rwres");if(h)h.remove();h=document.createElement("div");h.id="rwres";h.className="rwres";
+  h.innerHTML=`<div class="rwcard"><div class="rwbig2">${res==="none"?"📡":win?"🏆":"💥"}</div><div class="rwname" style="text-align:center">${res==="none"?"BATTLE OVER":win?"YOU WIN!":th.toUpperCase()+" WINS!"}</div><p class="rwsay" style="text-align:center">${say}</p>
+    <div class="rwsoon">${rwTally()}</div><div class="rwbtns"><button class="b" id="rwrg">🏠 GARAGE</button><button class="b y rwbig" id="rwrm">⚔️ REMATCH</button></div></div>`;
+  $("#rwc").appendChild(h);$("#rwrg").onclick=()=>{sfx("tap");h.remove();G.mode="garage";rwGarage()};$("#rwrm").onclick=()=>{h.remove();G.mode="garage";rwGarage();rwLiveAsk()}}
 
 /*RW-END*/</script>
 <script>
@@ -4761,7 +4976,7 @@ function chReset(n,to,mode){const r=db.doc("games/"+n);
   if(n==="mem")return r.set(memNew())
   if(n==="rx")return r.set({id:Date.now(),go:Date.now()+4500+R(2500)});
   if(n==="gw")return r.set(gwNew());
-  if(n==="dr")return drLiveNew(CHD);
+  if(n==="dr")return drLiveNew(CHD);if(n==="rw")return rwLiveNew(CHD);
   if(n==="race")return r.set({s:Date.now()+5000,pX:0,pO:0,yX:270,yO:270,w:""});if(n==="zt")return db.doc("games/zt").set(ztNew(to,mode));if(n==="hoop"||n==="sm"||n==="pen")return g2Reset(n,to)}
 function chGo(n){if(SOLO)soloEnd();chClose("chx");chClose("chi");chClose("chc");B=null;tab="play";g=n;shell()}
 function chUI(){const c=CHD;
