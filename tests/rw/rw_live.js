@@ -114,13 +114,13 @@ function rwBStep(dt){const G=RWG,B=G.B,c=G.car,M=G.M,F=B.foe,ed=rwEdge();let jx=
   if(!c.out&&!F.out&&c.y<.4&&F.y<.4){const dx=F.x-c.x,dz=F.z-c.z,d=Math.hypot(dx,dz)||1e-3,ov=c.r+F.r-d;
     if(ov>0){const nx=dx/d,nz=dz/d,mp=c.kg*(1+c.push*.2),fp=F.kg*(1+F.push*.2),sh=fp/(mp+fp);c.x-=nx*ov*sh;c.z-=nz*ov*sh;const into=(fx*c.v)*nx+(fz*c.v)*nz;if(into>0)c.v*=1-sh*.6;
       const kin=c.kx*nx+c.kz*nz;if(kin>0){c.kx-=nx*kin;c.kz-=nz*kin}
-      if(act&&into>2.2&&G.t-B.ram>.8&&!c.out){B.ram=G.t;rwHit({d:Math.round(2+into),ix:nx*into*.9*(1-sh+.3),iz:nz*into*.9*(1-sh+.3),up:0,sp:0,k:"ram"},F.x,.4,F.z,"BASH!")}}}
+      if(act&&into>2.2&&G.t-B.ram>.8&&!c.out){B.ram=G.t;rwLand({d:Math.round(2+into),ix:nx*into*.9*(1-sh+.3),iz:nz*into*.9*(1-sh+.3),up:0,sp:0,k:"ram"},F.x,.4,F.z,"BASH!")}}}
   /* my weapons on the other car */
   if(act&&!F.out&&F.net&&c.y<.1){const cy=Math.cos(c.yaw),sy=Math.sin(c.yaw),f0=G.fireT,f1=G.fireB;
     M.weps.forEach((wp,wi)=>{const f=wp.sd==="b"?f1:f0,k=wp.k,sz=wp.s||1,reach=(RW_REACH[k]||.4)*sz*1.15,lx=wp.p[0]+wp.n[0]*reach,lz=wp.p[2]+wp.n[2]*reach,ly=wp.p[1]+M.dy+wp.n[1]*reach,
         wx=c.x+lx*cy+lz*sy,wz=c.z-lx*sy+lz*cy,ux=wp.n[0]*cy+wp.n[2]*sy,uz=-wp.n[0]*sy+wp.n[2]*cy,hl=Math.hypot(ux,uz)||1,ex=F.x-wx,ez=F.z-wz,edd=Math.hypot(ex,ez)||1e-3;
       if(k==="flame"){if(f>1.2)return;const bx=c.x+wp.p[0]*cy+wp.p[2]*sy,bz=c.z-wp.p[0]*sy+wp.p[2]*cy,vx=F.x-bx,vz=F.z-bz,vd=Math.hypot(vx,vz)||1e-3;
-        if(vd<reach+F.r&&(vx*ux+vz*uz)/(vd*hl)>.8&&F.y<1.2){const ck="f"+wi;if((B.cool[ck]||0)>G.t)return;B.cool[ck]=G.t+.3;rwHit({d:2+Math.round(sz),ix:ux/hl*.4,iz:uz/hl*.4,up:0,sp:0,k:"flame",fl:1},F.x,.5,F.z,B.t-(B.burnMsg||0)>2?["🔥 TOASTED!","🔥 ON FIRE!","🔥 SIZZLE!"][Math.random()*3|0]:"",1);if(B.t-(B.burnMsg||0)>2)B.burnMsg=B.t}return}
+        if(vd<reach+F.r&&(vx*ux+vz*uz)/(vd*hl)>.8&&F.y<1.2){const ck="f"+wi;if((B.cool[ck]||0)>G.t)return;B.cool[ck]=G.t+.3;rwLand({d:2+Math.round(sz),ix:ux/hl*.4,iz:uz/hl*.4,up:0,sp:0,k:"flame",fl:1},F.x,.5,F.z,B.t-(B.burnMsg||0)>2?["🔥 TOASTED!","🔥 ON FIRE!","🔥 SIZZLE!"][Math.random()*3|0]:"",1);if(B.t-(B.burnMsg||0)>2)B.burnMsg=B.t}return}
       if(edd>F.r+.4*sz||ly>1.5*sz||F.y>.9)return;if((B.cool[wi]||0)>G.t)return;const one=k==="flip"||k==="axe"||k==="crush"||k==="wedge";if(one&&B.shot[wi]===B.fc[wp.sd])return;let hit=null,dir=[ux/hl,uz/hl];
       if(k==="flip"&&f<.25)hit=[2.5,5+c.pow*.8,9];else if(k==="axe"&&f>.12&&f<.3)hit=[1,2.5,4];else if(k==="crush"&&f>.1&&f<.3)hit=[.6,1.2,3];else if(k==="wedge"&&G.dash>0&&G.dashSd===wp.sd)hit=[4,2.2,3];
       else if(k==="spin"||k==="drum"){const up=f<1.5?1.6:1;hit=k==="spin"?[4*up,2*up,8]:[2.5*up,4*up,9];if(k==="spin")dir=[-dir[1],dir[0]]}
@@ -128,12 +128,12 @@ function rwBStep(dt){const G=RWG,B=G.B,c=G.car,M=G.M,F=B.foe,ed=rwEdge();let jx=
       else if(k==="saw"){const up=f<1.5?1.5:1;hit=[1.6*up,2.4*up,6]}
       if(!hit)return;if(one)B.shot[wi]=B.fc[wp.sd];const m=.7+.3*sz;hit=hit.map(v=>v*m);B.cool[wi]=G.t+(k==="spin"||k==="drum"||k==="spike"||k==="saw"?.6:.5);
       const dmg=Math.round((RW_DMG[k]||5)*m*(.8+c.pow*.1)*(k==="spin"||k==="drum"||k==="saw"?(f<1.5?1.3:1):1)),sp=(k==="flip"?1:.35)*hit[2]*(Math.random()<.5?-1:1)*(k==="flip"?.6:.25);
-      rwHit({d:dmg,ix:dir[0]*hit[0]+ex/edd*.8,iz:dir[1]*hit[0]+ez/edd*.8,up:hit[1],sp,k},wx,Math.max(.3,ly),wz,hit[1]>4?["FLIPPED!","SMASH!","WHAM!","KER-RUNCH!"][Math.random()*4|0]:dmg>=10?["CRUNCH!","SMASH!","BOOM!"][Math.random()*3|0]:"")})}
+      rwLand({d:dmg,ix:dir[0]*hit[0]+ex/edd*.8,iz:dir[1]*hit[0]+ez/edd*.8,up:hit[1],sp,k},wx,Math.max(.3,ly),wz,hit[1]>4?["FLIPPED!","SMASH!","WHAM!","KER-RUNCH!"][Math.random()*4|0]:dmg>=10?["CRUNCH!","SMASH!","BOOM!"][Math.random()*3|0]:"")})}
   /* the car's position and tilt (it turns end over end around its middle when flipped) */
-  rwPlace(M,c.x,c.y,c.z,c.yaw,c.rz)}
-function rwPlace(M,x,y,z,yaw,rz){const h=(M.ht||.8)/2,s=Math.sin(rz),k=1-Math.cos(rz);M.g.position.set(x+h*s*Math.cos(yaw),y+h*k,z-h*s*Math.sin(yaw));M.g.rotation.set(0,yaw,rz)}
+  rwPose(M,c.x,c.y,c.z,c.yaw,c.rz)}
+function rwPose(M,x,y,z,yaw,rz){const h=(M.ht||.8)/2,s=Math.sin(rz),k=1-Math.cos(rz);M.g.position.set(x+h*s*Math.cos(yaw),y+h*k,z-h*s*Math.sin(yaw));M.g.rotation.set(0,yaw,rz)}
 /* I landed a hit: tell the other phone, and show it here straight away */
-function rwHit(e,x,y,z,msg,quiet){const G=RWG,B=G.B,F=B.foe;e.n=++B.seq;B.ev.push(e);if(B.ev.length>8)B.ev.shift();
+function rwLand(e,x,y,z,msg,quiet){const G=RWG,B=G.B,F=B.foe;e.n=++B.seq;B.ev.push(e);if(B.ev.length>8)B.ev.shift();
   if(!quiet){sfx(e.k==="crush"||e.k==="ram"?"hit":"b_clang");rwSparks(x,y,z,e.k==="ram"?8:14)}if(msg)rwMsg(msg);
   if(e.k!=="flame"){const km=60/Math.max(40,F.kg);F.pred=.55;F.pkx=e.ix*km;F.pkz=e.iz*km;F.pvy=e.up*km;F.prz=e.sp;}
   F.hp=Math.max(0,F.hp-e.d*(rwEdge()?1.15:.75)*(F.hpM>1?1:0));rwLiveSend(1)}
@@ -150,13 +150,13 @@ function rwOnPos(d){const G=RWG,B=G&&G.B;if(!G||G.mode!=="battle"||!B||d.id!==B.
   F.hp=d.hp;F.hpM=d.hm||1;F.burn=d.br;if(d.fin){F.fin=1}
   if(d.out&&!F.out){F.out=d.out;if(!B.end){rwMsg(d.out==="pit"?"INTO THE PIT! 🕳️":"KNOCKED OUT! 💥");sfx("b_boom");setTimeout(()=>rwBEnd("win",d.out),1400)}}
   if(d.q&&!B.end)rwBEnd("win","left")}
-function rwFoeStep(dt){const G=RWG,B=G.B,F=B.foe,n=F.net;if(!n){rwPlace(F.M,F.x,0,F.z,F.yaw,0);return}
+function rwFoeStep(dt){const G=RWG,B=G.B,F=B.foe,n=F.net;if(!n){rwPose(F.M,F.x,0,F.z,F.yaw,0);return}
   if(F.pred>0){F.pred-=dt;F.x+=F.pkx*dt;F.z+=F.pkz*dt;F.pkx*=Math.pow(.05,dt);F.pkz*=Math.pow(.05,dt);if(F.y>0||F.pvy>0){F.pvy-=15*dt;F.y=Math.max(0,F.y+F.pvy*dt);F.rz+=F.prz*dt;if(F.y<=0)F.pvy=0}}
   else{const age=Math.min(.3,(Date.now()-F.last)/1000),tx=n.x+(n.vx||0)*age,tz=n.z+(n.vz||0)*age,k=1-Math.exp(-dt*9);
     F.x+=(tx-F.x)*k;F.z+=(tz-F.z)*k;F.y+=(n.y-F.y)*k;let da=n.yw-F.yaw;da=Math.atan2(Math.sin(da),Math.cos(da));F.yaw+=da*k;let dr=n.rz-F.rz;dr=Math.atan2(Math.sin(dr),Math.cos(dr));F.rz+=dr*k;
     if(Math.hypot(tx-F.x,tz-F.z)>4){F.x=tx;F.z=tz}}
   F.spd=Math.hypot(n.vx||0,n.vz||0)*(Math.cos(F.yaw)*(n.vx||0)-Math.sin(F.yaw)*(n.vz||0)<0?-1:1);
-  rwPlace(F.M,F.x,F.y,F.z,F.yaw,F.rz);
+  rwPose(F.M,F.x,F.y,F.z,F.yaw,F.rz);
   if(F.burn&&Math.random()<.7)rwFlame(new THREE.Vector3(F.x+(Math.random()-.5)*.5,F.y+.7,F.z+(Math.random()-.5)*.5),new THREE.Vector3(0,1,0),.6,1.4);
   if(F.out==="ko"&&Math.random()<.5)rwFlame(new THREE.Vector3(F.x,.9,F.z),new THREE.Vector3(0,1,0),.5,1.2)}
 /* fire vents and hammer guards (each phone works them out for its own car) */
