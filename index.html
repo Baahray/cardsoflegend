@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta name="app-build" content="09 Nov 13:08 PT"><meta charset="utf-8">
+<html lang="en"><head><meta name="app-build" content="10 Nov 09:43 PT"><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Legends"><meta name="theme-color" content="#14102e">
@@ -845,6 +845,12 @@ body.dfon{overflow:hidden}
 .rwclk.low{color:#ff5a3c;border-color:#ff5a3c}
 .rwres{position:absolute;inset:0;z-index:8;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(10,14,25,.55)}
 .rwres .rwcard{max-width:360px;width:100%}.rwbig2{font-size:72px;text-align:center;line-height:1.1}
+
+/* battleground picker */
+.rwmaps{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin:4px 0 2px}
+.rwmap{border:2px solid rgba(255,255,255,.15);background:rgba(255,255,255,.07);border-radius:12px;padding:6px 2px 5px;color:#fff;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;min-width:0}
+.rwmap i{font-style:normal;font-size:22px;line-height:1}.rwmap b{font:800 8.5px/1.1 'Outfit',sans-serif;letter-spacing:.02em;text-align:center;white-space:normal}
+.rwmap.on{border-color:#ffc400;background:rgba(255,196,0,.18);box-shadow:0 0 0 2px rgba(255,196,0,.25)}
 
 #appupd{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:9999;border:0;border-radius:99px;padding:12px 18px;font:800 14px Outfit,sans-serif;color:#2a1d00;background:linear-gradient(135deg,#ffe066,#ffb300);box-shadow:0 8px 24px -6px rgba(0,0,0,.6);white-space:nowrap}
 /*RW-END*/
@@ -2248,10 +2254,10 @@ function drDrive(car,inp,dt){const pl=planck,ch=car.ch,vmax=car.cass?14.5:13,ev=
   /* no wheels touching (none drawn, or they snapped off): it scoots along on its belly */
   if(gr===2&&inp.go){const d=ch.getWorldVector(pl.Vec2(1,0));ch.applyForceToCenter(pl.Vec2(Math.max(.3,d.x)*car.M*9.8*.75,0))}
   const v=ch.getLinearVelocity();
-  /* wings: in the air they hold you up, so you float much further and land softly. Bigger wings (and more speed) = more float */
-  car.glide=0;if(car.G.wingL>0&&!gr&&car.air>.12){const wk=Math.min(1,car.G.wingL/1.6)*(car.cass?1.15:1),sp=Math.min(1,Math.abs(v.x)/8);
-    let up=car.M*9.8*.78*wk*sp;if(v.y<-1.5)up+=car.M*Math.min(9.8*.9,(-v.y-1.5)*4*wk);if(v.y>2)up*=.3;
-    ch.applyForceToCenter(pl.Vec2(car.M*1.2*wk*sp,up));car.glide=up>car.M*2?1:0}
+  /* wings: in the air they slow your fall like a glider (bigger wings = gentler), but they don't push you along,
+     they bleed off a little speed, and they tire after a few seconds — so you can glide over a gap, not fly the whole track */
+  car.glide=0;if(car.G.wingL>0&&!gr&&car.air>.12){const wk=Math.min(1,car.G.wingL/1.6)*(car.cass?1.12:1)*Math.max(0,Math.min(1,1-(car.air-1.6)/1.4)),sp=Math.min(1,Math.abs(v.x)/6);
+    if(wk>0&&v.y<0){const minSink=3.4-1.3*wk,sink=-v.y;if(sink>minSink){const up=car.M*Math.min(9.8*1.15,(sink-minSink)*5*wk*Math.max(.35,sp));ch.applyForceToCenter(pl.Vec2(-car.M*v.x*.1*wk,up));car.glide=up>car.M*2?1:0}}}
   /* helping wind: after a few tries at the same jump, a magic breeze carries you further */
   if(car.help&&inp.go){if(!gr)ch.applyForceToCenter(pl.Vec2(car.M*9.8*.22*car.help,v.y<0?car.M*9.8*.18*car.help:0));else if(Math.abs(v.x)<vmax)ch.applyForceToCenter(pl.Vec2(car.M*9.8*.25*car.help,0))}
   car.burn=0;if(inp.rk&&car.fuel>0&&car.G.rockets.length){car.fuel=Math.max(0,car.fuel-dt);const f=car.M*9.8*Math.min(1.8,.7+.35*car.G.rockets.length),d=ch.getWorldVector(pl.Vec2(1,0));ch.applyForceToCenter(pl.Vec2(d.x*f,d.y*f));car.burn=1}
@@ -2263,7 +2269,7 @@ function drSnapCheck(W,car,dt){const ev=[];if(car.safe>0){car.safe-=dt;for(const
 /* ---- tracks ---- */
 /* pre-made tracks are a list of pieces laid end to end */
 function drRand(s){let a=s>>>0||1;return()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
-function drMake(ops,seed=7){const r=drRand(seed),T={chains:[],boosts:[],mush:[],lava:[],planks:[],cps:[],deco:[],gaps:[],seesaws:[],crates:[],barrels:[],gems:[],loops:[],cannons:[],winds:[],dominoes:[]};let x=-8,y=0,cur=[[x,y]];
+function drMake(ops,seed=7){const r=drRand(seed),T={chains:[],boosts:[],mush:[],lava:[],planks:[],cps:[],deco:[],gaps:[],seesaws:[],crates:[],barrels:[],gems:[],loops:[],cannons:[],winds:[],dominoes:[],ceils:[],plats:[],swings:[],rings:[]};let x=-8,y=0,cur=[[x,y]];
   const pt=(a,b)=>{x=a;y=b;cur.push([+a.toFixed(3),+b.toFixed(3)])},end=cliff=>{if(cur&&cur.length>1){if(cliff){cur.push([x-.02,y-7]);cur.c1=1}T.chains.push(cur)}cur=null},start=cliff=>{cur=cliff?[[x+.02,y-7],[x,y]]:[[x,y]];if(cliff)cur.c0=1;T.cps.push(x+.8)};
   T.cps.push(0);
   for(const o of ops){const[k,a=0,b=0,c]=o,x0=x,y0=y;
@@ -2284,23 +2290,54 @@ function drMake(ops,seed=7){const r=drRand(seed),T={chains:[],boosts:[],mush:[],
     else if(k==="crates"){let n=a,row=0,cx=x+3;while(n>0){const m=Math.max(1,a-row);for(let i=0;i<m&&n>0;i++,n--)T.crates.push({x:cx+row*.36+i*.74,y:y+.37+row*.74});row++;if(row>3)break}pt(x+a*.75+6,y)}
     else if(k==="barrels"){for(let i=0;i<a;i++)T.barrels.push({x:x+3+i*1.3,y:y+.48});pt(x+a*1.3+5,y)}
     else if(k==="gems"){for(let i=0;i<a;i++)T.gems.push({x:x+1+i*1.6,y:y+1.15+Math.sin(i/(a-1||1)*Math.PI)*.6});pt(x+a*1.6+1,y)}
-    else if(k==="loop"){const R=a||5,bx=x+3;T.loops.push({cx:bx,cy:y+R,r:R,ph:0});for(let i=0;i<7;i++){const q=-Math.PI/2+.5+i*.85;T.gems.push({x:bx+Math.cos(q)*(R-1.3),y:y+R+Math.sin(q)*(R-1.3)})}pt(bx+R+7,y)}
+    /* loop-the-loop: always 26 m of flat track; how big the loop is gets set to fit the ride (drFit) */
+    else if(k==="loop"){const bx=x+13,L={cx:bx,y,r:6,cy:y+6,ph:0,gems:[]};T.loops.push(L);for(let i=0;i<7;i++){const g={x:bx,y:y+6,lq:.35+i*.92};L.gems.push(g);T.gems.push(g)}pt(x+26,y)}
+    /* a proper jump: ramp up, a gap, and a downhill landing so you land smoothly */
+    else if(k==="jump"){const h=a||1.5,gp=b||6,dr=c||2,lava=o[4]==="lava",n=8;for(let i=1;i<=n;i++){const t=i/n;pt(x0+6*t,y0+h*Math.pow(t,1.7))}const yt=y,xs=x;end(1);x+=gp;y=yt-dr;
+      T.gaps.push({x0:xs,x1:x,y:Math.min(yt,y)-1,kind:lava?"lava":"pit"});if(lava)T.lava.push({x0:xs-.2,x1:x+.2,y:Math.min(yt,y)-2.6});
+      const top=yt+1.4+gp*.12;T.rings.push({x:xs+gp*.5,y:top,r:1.05});T.gems.push({x:xs+gp*.5,y:top});for(const t of[.22,.78])T.gems.push({x:xs+gp*t,y:yt+(y-yt)*t+(top-yt)*4*t*(1-t)*.9});
+      start(1);const x1=x,y1=y;for(let i=1;i<=7;i++){const t=i/7;pt(x1+7*t,y1-1.4*(1-Math.cos(Math.PI*t))/2)}}
+    /* rolling waves to pump over */
+    else if(k==="wave"){const n=a||3,amp=b||1.2,L=c||9;for(let j=0;j<n;j++){const xs=x,ys=y,m=Math.max(6,Math.ceil(L/.7));for(let i=1;i<=m;i++){const t=i/m;pt(xs+L*t,ys+amp*Math.pow(Math.sin(Math.PI*t),2))}}}
+    /* a rock tunnel: a roof you have to drive under, with a tall wall on top so you can't fly over it */
+    else if(k==="tunnel"){pt(x+5,y);const L=a||18;T.ceils.push({x0:x,x1:x+L,y,hb:b||2.6,h:b||2.6});for(let i=1;i<=3;i++)T.gems.push({x:x+L*i/4,y:y+.9,tun:T.ceils.length-1});pt(x+L,y)}
+    /* moving platforms going up and down over a pit (or lava) */
+    else if(k==="lift"){const gp=a||9,n=b||3,lava=c==="lava",yy=y;end(1);const w=gp/n;for(let i=0;i<n;i++)T.plats.push({x:x0+w*(i+.5),y:yy-.2,amp:1.1,w:w-.25,per:3.4,ph:i*.9});
+      x+=gp;T.gaps.push({x0,x1:x,y:yy-1.6,kind:lava?"lava":"pit"});if(lava)T.lava.push({x0:x0-.2,x1:x+.2,y:yy-3.6});start(1)}
+    /* swinging logs to time your way under */
+    else if(k==="swing"){const n=a||2;for(let i=0;i<n;i++)T.swings.push({x:x+4+i*7,y:y+5.6,L:4,A:.95,per:3.2,ph:i*1.6});pt(x+n*7+2,y)}
     else if(k==="cannon"){const an=a||.7,v=b||15;T.cannons.push({x:x+3,y,a:an,v});for(let i=1;i<=8;i++){const t=i*.24;T.gems.push({x:x+3+v*Math.cos(an)*t,y:y+1.2+v*Math.sin(an)*t-4.9*t*t})}pt(x+5,y)}
     else if(k==="windgap"){end(1);x+=a;y+=b;T.gaps.push({x0,x1:x,y:Math.min(y0,y),kind:"wind"});T.winds.push({x0:x0+.3,x1:x-.3,y:Math.min(y0,y)});for(let i=1;i<=4;i++)T.gems.push({x:x0+(x-x0)*i/5,y:Math.max(y0,y)+3.2+Math.sin(i)*.6});start(1)}
     else if(k==="dominoes"){for(let i=0;i<a;i++)T.dominoes.push({x:x+3+i*.95,y:y+.82});pt(x+3+a*.95+4,y)}
     if(k==="gap"&&c!=="nogem"){/* gems in an arc over every jump */const top=Math.max(y0,y)+2.6;for(let i=1;i<=5;i++){const t=i/6;T.gems.push({x:x0+(x-x0)*t,y:y0+(y-y0)*t+(top-Math.max(y0,y))*4*t*(1-t)+.8})}}}
   pt(x+14,y);end();T.fin=x-8;T.len=T.fin;return T}
+/* fit loops and tunnels to the ride: bigger drawings get bigger loops and taller tunnels */
+function drFitTrack(T,G){const sz=Math.max(G.w,G.h),hh=-G.minY;
+  for(const L of T.loops||[]){L.r=Math.max(5,Math.min(9.2,sz*1.25+3.4));L.cy=L.y+L.r;L.rr=Math.max(1,L.r-hh-.05);for(const g of L.gems){const q=-Math.PI/2+g.lq;g.x=L.cx+Math.cos(q)*L.rr;g.y=L.cy+Math.sin(q)*L.rr}}
+  for(const q of T.swings||[]){if(q.gy==null)q.gy=q.y-5.6;q.y=q.gy+q.L+.5+Math.max(.65,G.h*.55)}
+  for(const c of T.ceils||[])c.h=Math.max(c.hb,G.h+1.5);for(const g of T.gems||[])if(g.tun!=null)g.y=T.ceils[g.tun].y+Math.min(T.ceils[g.tun].h-.6,Math.max(.9,G.h*.6));return T}
+/* platforms and swinging logs move on their own clock */
+function drMovers(T,t,dt){const pl=planck;for(const q of T.plats||[]){if(!q.b)continue;const w=2*Math.PI/q.per,ty=q.y-q.amp*(1-Math.cos(w*(t+dt)+q.ph))/2-.0,p=q.b.getPosition();q.b.setLinearVelocity(pl.Vec2(0,(ty-p.y)/dt))}
+  for(const q of T.swings||[]){const w=2*Math.PI/q.per;q.a=q.A*Math.sin(w*t+q.ph);q.av=q.A*w*Math.cos(w*t+q.ph)}}
 const DR_TRACKS=[
-  {nm:"GREEN HILLS",th:0,ops:[["flat",10],["gems",5],["deco","tree",-4],["hill",14,1.2],["flat",4],["hill",16,2.2],["deco","tree",-6],["crates",3],["slope",10,1.5],["bumps",10,.3],["deco","house",-3],["hill",18,2.5],["deco","castle",-9],["slope",12,-1.5],["ramp",7,1.2],["gap",5,-.6],["flat",6],["seesaw",8],["flat",4],["dip",16,2.5],["gems",6],["deco","tree",-3],["hill",14,1.6],["barrels",3],["bumps",12,.35],["slope",10,2],["hill",16,2.4],["deco","tree",-8],["slope",14,-2.4],["boost",5],["ramp",7,1.4],["gap",7,-1],["flat",5],["crates",6],["dip",18,3],["deco","house",-2],["hill",12,1.4],["seesaw",8],["flat",4],["boost",5],["ramp",7,1.5],["gap",8,-1],["gems",6],["flat",4],["dominoes",8],["hill",14,1.8],["flat",6],["boost",6],["flat",4],["loop",5],["gems",5],["deco","tree",-2],["hill",16,2],["cannon",.7,15],["flat",2],["gap",16,-1,"nogem"],["flat",10],["deco","house",-4],["dip",16,3],["crates",5],["hill",12,1.5],["windgap",10,0],["flat",6],["seesaw",8],["bumps",12,.35],["deco","tree",-3],["boost",5],["ramp",7,1.4],["gap",8,-1],["flat",8],["dominoes",10],["hill",14,2],["deco","castle",-6],["slope",12,-2],["flat",6],["boost",6],["flat",4],["loop",5.5],["gems",6],["flat",6]]},
-  {nm:"CASTLE BRIDGES",th:1,ops:[["flat",10],["gems",4],["slope",10,2],["deco","castle",-5],["flat",4],["bridge",12],["flat",6],["deco","flag",-3],["steps",3,2.6,-.6],["crates",4],["bridge",15],["flat",3],["slope",10,2.5],["deco","castle",-4],["flat",3],["ramp",6,1],["gap",5,-1.2],["flat",6],["bridge",10],["flat",4],["seesaw",9],["deco","flag",-2],["hill",12,1.6],["bridge",14],["flat",4],["barrels",4],["slope",8,-1.5],["deco","castle",-3],["bridge",9],["dip",14,2.2],["crates",6],["slope",10,2],["deco","castle",-4],["boost",5],["ramp",7,1.4],["gap",8,-1.5],["flat",5],["bridge",16],["gems",5],["flat",4],["flat",4],["deco","castle",-2],["dominoes",10],["bridge",12],["flat",4],["flat",6],["boost",6],["flat",4],["loop",5],["flat",4],["bridge",14],["cannon",.72,15],["flat",2],["gap",17,-1,"nogem"],["flat",8],["deco","flag",-3],["crates",6],["dip",16,2.6],["bridge",12],["windgap",10,.5],["flat",6],["deco","castle",-3],["seesaw",9],["barrels",4],["slope",10,2],["bridge",16],["flat",6],["boost",6],["flat",4],["loop",5.5],["gems",5],["flat",6]]},
-  {nm:"RAINBOW RAMPS",th:2,ops:[["flat",8],["gems",4],["boost",6],["ramp",8,2.2],["gap",8,-1.5],["flat",8],["hill",12,1.5],["boost",6],["ramp",8,2.6],["gap",9,-1.8],["flat",6],["deco","rainbow",-2],["bumps",8,.35],["crates",3],["boost",6],["ramp",7,2],["gap",7,0],["flat",4],["dip",16,3],["slope",12,-2],["boost",8],["ramp",9,3],["gap",12,-2.5],["flat",8],["deco","rainbow",-4],["seesaw",8],["hill",10,1.2],["boost",6],["ramp",7,1.8],["gap",8,-1],["flat",6],["dip",18,3.5],["gems",5],["boost",8],["ramp",10,3.4],["gap",15,-3],["flat",6],["barrels",4],["boost",6],["ramp",8,2],["gap",9,-1],["flat",8],["flat",6],["boost",6],["flat",4],["loop",5],["deco","rainbow",-2],["boost",6],["ramp",8,2.4],["gap",11,-1.5],["flat",6],["cannon",.75,16],["flat",2],["gap",19,-1,"nogem"],["flat",8],["dominoes",10],["dip",18,3.5],["windgap",12,0],["flat",6],["boost",6],["ramp",9,3],["gap",13,-2],["flat",6],["deco","rainbow",-3],["crates",5],["flat",6],["boost",6],["flat",4],["loop",6],["gems",6],["boost",8],["ramp",10,3.4],["gap",15,-3],["flat",10]]},
-  {nm:"MUSHROOM FOREST",th:3,ops:[["flat",10],["deco","shroom",-4],["mush"],["gap",7,1.5],["flat",6],["hill",10,1.2],["deco","shroom",-2],["mush"],["gap",8,2],["flat",5],["deco","shroom",-3],["gems",4],["slope",10,-2.5],["bumps",8,.3],["mush"],["gap",8,1.2],["flat",6],["deco","shroom",-1],["crates",4],["mush"],["gap",6,-1],["flat",8],["hill",10,1.4],["deco","shroom",-5],["mush"],["gap",7,1.6],["flat",5],["slope",12,-3],["seesaw",8],["bumps",10,.35],["deco","shroom",-3],["mush"],["mush"],["gap",9,2.4],["flat",5],["dip",14,2.5],["deco","shroom",-2],["mush"],["gap",8,0],["flat",4],["gems",5],["flat",6],["hill",12,1.6],["mush"],["gap",8,1.8],["flat",5],["crates",5],["slope",12,-2.5],["barrels",3],["deco","shroom",-3],["mush"],["gap",7,0],["flat",4],["dip",14,2.5],["boost",5],["ramp",6,1.2],["gap",6,0],["flat",8],["deco","shroom",-3],["dominoes",8],["mush"],["gap",8,1.6],["flat",5],["flat",6],["boost",6],["flat",4],["loop",5],["deco","shroom",-2],["cannon",.75,15],["flat",2],["gap",17,0,"nogem"],["flat",8],["windgap",10,1],["flat",5],["mush"],["mush"],["gap",9,2.2],["flat",5],["crates",5],["slope",14,-3],["deco","shroom",-4],["seesaw",8],["mush"],["gap",8,1.2],["flat",6],["gems",5],["flat",6]]},
-  {nm:"GIANT'S STAIRCASE",th:4,ops:[["flat",10],["steps",4,3.4,.3],["flat",3],["deco","boot",-2],["steps",4,3.4,.3],["crates",3],["flat",4],["deco","castle",-2],["steps",5,2.4,-.6],["flat",5],["hill",12,1.8],["steps",3,4,.3],["flat",3],["ramp",6,.8],["gap",5,-2],["flat",6],["deco","boot",-3],["steps",4,3,.28],["flat",3],["steps",4,3,-.5],["barrels",3],["flat",3],["seesaw",9],["flat",5],["steps",5,3,.27],["deco","boot",-2],["gems",4],["dip",12,2],["steps",6,2.6,-.45],["flat",4],["boost",5],["ramp",7,1.4],["gap",8,-1.5],["flat",6],["steps",4,3.2,.28],["crates",5],["flat",6],["dip",14,2.4],["hill",12,2],["deco","boot",-2],["flat",3],["seesaw",8],["slope",12,-2.5],["gems",4],["flat",8],["dominoes",8],["steps",4,3,.28],["flat",3],["flat",6],["boost",6],["flat",4],["loop",5],["deco","boot",-2],["cannon",.75,15],["flat",2],["gap",16,1,"nogem"],["flat",8],["steps",5,2.8,-.5],["windgap",10,1],["flat",6],["deco","castle",-3],["crates",6],["steps",4,3,.28],["flat",4],["flat",6],["boost",6],["flat",4],["loop",5],["gems",5],["flat",6]]},
-  {nm:"CRUMBLY CLIFFS",th:5,ops:[["flat",10],["slope",14,-3],["bridge",10],["flat",4],["deco","rock",-2],["steps",4,3,-.8],["flat",4],["ramp",5,.8],["gap",6,-2],["flat",5],["bridge",14],["slope",12,-2.5],["bumps",10,.4],["deco","rock",-4],["barrels",4],["slope",10,2],["bridge",10],["flat",4],["slope",10,-2],["bridge",12],["flat",3],["ramp",5,1],["gap",6,-1.5],["flat",5],["dip",16,3],["crates",5],["deco","rock",-3],["slope",14,-3],["bridge",18],["flat",4],["seesaw",8],["boost",5],["ramp",7,1.6],["gap",9,-2],["gems",5],["flat",6],["deco","rock",-2],["dominoes",9],["slope",12,-2.5],["flat",6],["boost",6],["flat",4],["loop",5],["bridge",12],["cannon",.72,15],["flat",2],["gap",17,-2,"nogem"],["flat",6],["deco","rock",-3],["windgap",11,-1],["flat",5],["bridge",14],["dip",16,3],["crates",5],["slope",14,-3],["bridge",16],["barrels",4],["flat",6],["boost",6],["flat",4],["loop",5.5],["gems",5],["flat",6]]},
-  {nm:"LAVA JUMP",th:6,ops:[["flat",10],["boost",5],["ramp",6,1.4],["gap",6,0,"lava"],["flat",8],["hill",12,1.6],["boost",5],["ramp",7,1.8],["gap",8,-.5,"lava"],["flat",6],["crates",4],["slope",10,2],["deco","volcano",-6],["flat",3],["ramp",5,1],["gap",7,-2,"lava"],["flat",5],["boost",6],["ramp",7,1.6],["gap",9,0,"lava"],["flat",8],["bumps",8,.3],["barrels",3],["boost",5],["ramp",6,1.5],["gap",7,-1,"lava"],["flat",6],["dip",14,2.4],["deco","volcano",-4],["seesaw",8],["boost",6],["ramp",8,2.2],["gap",11,-1.5,"lava"],["flat",6],["gems",4],["boost",5],["ramp",6,1.5],["gap",8,0,"lava"],["flat",8],["hill",10,1.4],["crates",5],["boost",5],["ramp",7,1.8],["gap",9,-1,"lava"],["flat",5],["dip",12,2],["deco","volcano",-3],["boost",5],["ramp",6,1.4],["gap",7,0,"lava"],["gems",4],["flat",8],["deco","volcano",-4],["flat",6],["boost",6],["flat",4],["loop",5],["cannon",.72,16],["flat",2],["gap",19,-1,"nogem"],["flat",8],["dominoes",10],["windgap",11,0],["flat",6],["boost",5],["ramp",7,1.8],["gap",10,-1,"lava"],["flat",6],["crates",5],["dip",14,2.5],["deco","volcano",-3],["flat",6],["boost",6],["flat",4],["loop",5.5],["boost",6],["ramp",8,2.2],["gap",12,0,"lava"],["gems",5],["flat",6]]},
-  {nm:"SKY ISLANDS",th:7,ops:[["flat",10],["boost",5],["ramp",6,1.4],["gap",7,-1,"sky"],["flat",7],["hill",8,1],["ramp",5,1.2],["gap",7,-1.5,"sky"],["flat",6],["boost",5],["ramp",6,1.8],["gap",9,-2,"sky"],["flat",6],["mush"],["gap",6,2.5,"sky"],["flat",7],["crates",3],["boost",6],["ramp",6,1.5],["gap",8,-1,"sky"],["flat",6],["hill",8,1.2],["boost",5],["ramp",6,1.4],["gap",7,-1,"sky"],["flat",6],["seesaw",8],["boost",6],["ramp",7,2],["gap",11,-2,"sky"],["flat",5],["mush"],["gap",7,3,"sky"],["flat",6],["gems",4],["boost",8],["ramp",9,2.6],["gap",14,-3,"sky"],["flat",8],["hill",8,1],["barrels",3],["boost",6],["ramp",7,1.8],["gap",10,-1.5,"sky"],["flat",5],["mush"],["gap",6,2,"sky"],["flat",6],["boost",6],["ramp",7,1.6],["gap",9,-1,"sky"],["flat",8],["flat",6],["boost",6],["flat",4],["loop",5],["flat",4],["cannon",.75,16],["flat",2],["gap",20,-2,"nogem"],["flat",7],["windgap",12,0],["flat",6],["dominoes",8],["boost",6],["ramp",7,1.8],["gap",10,-1.5,"sky"],["flat",6],["windgap",11,1],["flat",6],["mush"],["gap",7,2.5,"sky"],["flat",6],["crates",4],["flat",6],["boost",6],["flat",4],["loop",5.5],["gems",5],["boost",8],["ramp",9,2.6],["gap",14,-3,"sky"],["flat",10]]}];
+  {nm:"GREEN HILLS",th:0,ops:[["flat",10],["gems",5],["deco","tree",-4],["wave",3,1.1,9],["flat",3],["jump",1.2,5,1.6],["flat",3],["deco","house",-3],["hill",16,2.2],["crates",4],["slope",12,1.6],["tunnel",20],["deco","tree",-2],["slope",10,-1.6],
+    ["loop"],["seesaw",8],["wave",4,1,8],["deco","tree",-6],["jump",1.6,7,2.2],["flat",4],["dominoes",6],["dip",16,2.6],["deco","castle",-6],["hill",14,2],["boost",5],["jump",2,9,2.4],["flat",4],["swing",2],["wave",3,1.5,10],["barrels",3],["slope",10,-1.4],["hill",12,1.6],["deco","house",-4],["jump",1.4,7,2],["flat",3],["crates",5],["tunnel",22],["wave",4,1.3,9],["lift",9,3],["flat",4],["deco","tree",-3],["seesaw",9],["dip",14,2.4],["boost",5],["jump",2.2,10,2.6],["flat",4],["loop"],["gems",5],["hill",16,2.4],["deco","castle",-7],["slope",12,-2],["gems",6],["flat",4]]},
+  {nm:"CASTLE BRIDGES",th:1,ops:[["flat",10],["gems",4],["slope",10,2],["deco","castle",-5],["flat",4],["bridge",12],["flat",4],["tunnel",18],["flat",2],["swing",2],["bridge",15],["deco","flag",-2],["jump",1.2,6,1.8],["flat",3],["lift",9,3],["flat",4],
+    ["steps",3,2.6,-.6],["crates",5],["bridge",12],["flat",3],["loop"],["slope",8,2],["deco","castle",-4],["tunnel",20],["swing",3],["bridge",14],["deco","flag",-3],["jump",1.6,8,2],["flat",3],["dominoes",7],["slope",10,-2],["bridge",10],["slope",10,2.2],["deco","castle",-3],["bridge",16],["flat",3],["lift",10,3],["flat",4],["tunnel",22],["swing",2],["crates",4],["jump",1.8,9,2.2],["flat",4],["bridge",13],["deco","flag",-2],["loop"],["wave",3,1.2,9],["bridge",11],["barrels",3],["gems",5],["flat",4]]},
+  {nm:"RAINBOW RAMPS",th:2,ops:[["flat",8],["gems",4],["boost",6],["jump",2.2,9,2.8],["flat",3],["wave",3,1.4,9],["boost",5],["loop"],["boost",6],["jump",2.8,12,3.2],["flat",4],["deco","rainbow",-2],["tunnel",24],["boost",6],["loop"],
+    ["jump",2,10,2.5],["flat",4],["seesaw",8],["wave",4,1.6,8],["deco","rainbow",-4],["boost",6],["jump",3,14,3.5],["flat",5],["dip",18,3.2],["gems",5],["boost",8],["loop"],["jump",2.4,11,2.6],["flat",4],["swing",2],["boost",6],["jump",2.6,13,3],["flat",4],["deco","rainbow",-3],["wave",3,1.5,9],["tunnel",20],["lift",10,3],["flat",4],["boost",6],["loop"],["crates",5],["boost",7],["jump",3.2,15,3.6],["flat",5],["dip",16,3],["dominoes",7],["gems",5],["flat",4]]},
+  {nm:"MUSHROOM FOREST",th:3,ops:[["flat",10],["deco","shroom",-4],["mush"],["gap",7,1.5],["flat",6],["wave",3,1,8],["mush"],["gap",8,2],["flat",4],["tunnel",20],["deco","shroom",-3],["slope",10,-2.5],["lift",10,3],["flat",4],["deco","shroom",-1],["mush"],["gap",7,1.2],["flat",5],
+    ["swing",2],["mush"],["mush"],["gap",9,2.4],["flat",5],["tunnel",16],["dip",14,2.5],["crates",4],["deco","shroom",-5],["mush"],["gap",8,0],["flat",4],["loop"],["hill",10,1.4],["deco","shroom",-2],["mush"],["gap",8,1.8],["flat",4],["swing",2],["lift",10,3],["flat",4],["tunnel",20],["mush"],["mush"],["gap",10,2.6],["flat",5],["deco","shroom",-4],["wave",4,1.2,8],["jump",1.6,8,2.2],["flat",4],["crates",4],["mush"],["gap",7,0],["flat",4],["loop"],["dip",14,2.4],["deco","shroom",-3],["mush"],["gap",8,1.4],["flat",5],["gems",5],["wave",3,1.2,9],["flat",4]]},
+  {nm:"GIANT'S STAIRCASE",th:4,ops:[["flat",10],["steps",4,3.4,.3],["flat",3],["deco","boot",-2],["steps",4,3.4,.3],["crates",3],["flat",4],["tunnel",16],["steps",5,2.4,-.6],["flat",5],["jump",1.4,6,2.2],["flat",3],["swing",2],["steps",4,3,.28],["flat",3],["seesaw",9],["flat",3],
+    ["lift",9,3],["flat",4],["steps",5,3,.27],["deco","boot",-2],["gems",4],["dip",12,2],["steps",6,2.6,-.45],["loop"],["boost",5],["jump",1.8,8,2.4],["flat",5],["tunnel",18],["steps",4,3.2,.28],["steps",5,3,.3],["deco","boot",-3],["flat",3],["swing",3],["jump",1.6,8,2.4],["flat",4],["steps",5,2.8,-.5],["lift",10,3],["flat",4],["tunnel",20],["steps",4,3.2,.3],["crates",4],["loop"],["steps",6,2.6,-.45],["seesaw",9],["boost",5],["jump",2,9,2.6],["flat",4],["deco","castle",-5],["steps",4,3,.28],["gems",4],["flat",4]]},
+  {nm:"CRUMBLY CLIFFS",th:5,ops:[["flat",10],["slope",14,-3],["bridge",10],["flat",4],["deco","rock",-2],["jump",1,7,2.2],["flat",4],["bridge",14],["slope",12,-2.5],["tunnel",20],["windgap",12,0],["flat",5],["dominoes",7],["bridge",12],["flat",3],["swing",2],
+    ["slope",10,2],["jump",1.4,8,2.4],["flat",3],["deco","rock",-3],["lift",10,3],["flat",3],["bridge",16],["loop"],["slope",14,-3],["barrels",3],["jump",1.6,9,2.6],["flat",4],["slope",12,-2.5],["bridge",14],["deco","rock",-4],["windgap",14,1],["flat",5],["tunnel",22],["swing",2],["bridge",12],["jump",1.4,9,2.4],["flat",4],["lift",10,3],["flat",4],["dip",16,3],["crates",5],["slope",12,-2.5],["bridge",16],["loop"],["windgap",12,0],["flat",5],["deco","rock",-2],["dominoes",8],["gems",5],["flat",4]]},
+  {nm:"LAVA JUMP",th:6,ops:[["flat",10],["gems",4],["jump",1.4,6,1.8,"lava"],["flat",3],["deco","volcano",-6],["wave",3,1.2,9],["lift",10,3,"lava"],["flat",4],["cannon",.72,15],["flat",2],["gap",17,-1,"nogem"],["flat",3],["tunnel",18],
+    ["swing",2],["jump",2,9,2.4,"lava"],["flat",3],["deco","volcano",-4],["loop"],["boost",5],["jump",2.4,11,2.8,"lava"],["flat",4],["tunnel",20],["dip",14,2.4],["lift",12,4,"lava"],["flat",4],["deco","volcano",-6],["wave",3,1.3,9],["jump",1.8,9,2.2,"lava"],["flat",3],["cannon",.75,16],["flat",2],["gap",19,-1,"nogem"],["flat",3],["tunnel",20],["lift",11,3,"lava"],["flat",4],["swing",3],["boost",6],["jump",2.6,12,3,"lava"],["flat",4],["deco","volcano",-3],["loop"],["crates",4],["jump",2,10,2.4,"lava"],["flat",4],["dip",14,2.4],["gems",5],["flat",4]]},
+  {nm:"SKY ISLANDS",th:7,ops:[["flat",10],["gems",4],["windgap",12,1],["flat",6],["hill",10,1.4],["jump",1.4,8,2],["flat",4],["lift",10,3],["flat",4],["cannon",.75,15],["flat",2],["gap",17,0,"nogem"],["flat",3],["tunnel",18],["windgap",14,1],["flat",5],
+    ["swing",2],["loop"],["jump",2,10,2.5],["flat",4],["seesaw",8],["windgap",12,-1],["flat",6],["hill",12,1.6],["windgap",14,0],["flat",5],["jump",1.8,9,2.4],["flat",4],["tunnel",20],["lift",11,3],["flat",4],["cannon",.75,16],["flat",2],["gap",19,-1,"nogem"],["flat",3],["tunnel",18],["swing",2],["windgap",16,1],["flat",5],["loop"],["boost",5],["jump",2.4,11,2.8],["flat",4],["windgap",14,-1],["flat",5],["crates",4],["jump",1.6,8,2],["flat",4],["dominoes",6],["gems",5],["flat",4]]}];
 /* medal times (seconds) — set from a test car holding GO the whole way */
-const DR_MEDAL=[80,64,73,87,96,72,61,92];
+const DR_MEDAL=[75,75,75,80,90,79,81,66];
 /* tracks drawn by a player: ground lines + boost pads + bouncy mushrooms, as a string */
 function drTEnc(t){const L=t.lines.map(l=>"L"+l.map(p=>Math.round(p[0]*10)+","+Math.round(p[1]*10)).join(",")),B=t.boosts.map(b=>"B"+Math.round(b.x*10)+","+Math.round(b.y*10)),M=t.mush.map(m=>"M"+Math.round(m.x*10)+","+Math.round(m.y*10)),G=(t.gems||[]).map(m=>"G"+Math.round(m.x*10)+","+Math.round(m.y*10)),C=(t.crates||[]).map(m=>"C"+Math.round(m.x*10)+","+Math.round(m.y*10));return[...L,...B,...M,...G,...C].join(";")}
 function drTDec(s){const t={lines:[],boosts:[],mush:[],gems:[],crates:[]};if(!s||typeof s!=="string")return t;for(const part of s.split(";")){const k=part[0],v=part.slice(1).split(",").map(n=>+n/10);if(v.some(n=>!isFinite(n)))continue;
@@ -2331,10 +2368,9 @@ function drWorld(T){const pl=planck,W=pl.World({gravity:pl.Vec2(0,-9.8)});
   for(const q of T.barrels||[]){const b=W.createBody({type:"dynamic",position:pl.Vec2(q.x,q.y),angularDamping:.1});b.createFixture({shape:pl.Circle(.45),density:.25,friction:.5,restitution:.2});q.b=b}
   for(const g of T.gems||[])g.got=0;
   for(const q of T.dominoes||[]){const b=W.createBody({type:"dynamic",position:pl.Vec2(q.x,q.y)});b.createFixture({shape:pl.Box(.11,.8),density:.3,friction:.5});q.b=b}
-  /* loop-the-loops: three arcs. Going in, the back arc is switched off; after the top, the front arc is switched off so you can drive out */
-  const arc=(L,a0,a1,k)=>{const pts=[];for(let q=a0;q<=a1+1e-6;q+=Math.PI/24)pts.push(pl.Vec2(L.cx+Math.cos(q)*L.r,L.cy+Math.sin(q)*L.r));const b=W.createBody({type:"static"});const f=b.createFixture({shape:pl.Chain(pts,false),friction:.95});f.drLoop={L,k}};
-  for(const L of T.loops||[]){L.ph=0;arc(L,-Math.PI/2,0,"in");arc(L,0,Math.PI,"mid");arc(L,Math.PI,Math.PI*1.5,"out")}
-  if((T.loops||[]).length)W.on("pre-solve",c=>{const a=c.getFixtureA().drLoop||c.getFixtureB().drLoop;if(a&&(a.k==="out"&&a.L.ph===0||a.k==="in"&&a.L.ph===1))c.setEnabled(false)});
+  for(const c of T.ceils||[]){const b=W.createBody({type:"static"}),y=c.y+c.h;b.createFixture({shape:pl.Chain([pl.Vec2(c.x0-1.6,y+40),pl.Vec2(c.x0-1.6,y+2.2),pl.Vec2(c.x0,y),pl.Vec2(c.x1,y),pl.Vec2(c.x1,y+40)],false),friction:.2})}
+  for(const q of T.plats||[]){const b=W.createBody({type:"kinematic",position:pl.Vec2(q.x,q.y-q.amp*(1-Math.cos(q.ph))/2)});b.createFixture({shape:pl.Box(q.w/2,.14),friction:1});q.b=b}
+  for(const q of T.swings||[])q.a=q.A*Math.sin(q.ph);
   return W}
 /* bridges crumble a moment after a wheel touches them */
 function drPlanks(W,T,now){for(const p of T.planks){if(p.gone)continue;if(!p.t){for(let e=p.b.getContactList();e;e=e.next)if(e.contact.isTouching()&&e.other.isDynamic()){p.t=now;break}}
@@ -2346,10 +2382,19 @@ function drZones(T,car,dt,now){const pl=planck,ch=car.ch,p=ch.getPosition(),v=ch
   for(const m of T.mush)if(Math.abs(p.x-m.x)<1.7&&p.y<m.y+2.8&&p.y>m.y-.5&&(!car.bng||now-car.bng>.5)){car.bng=now;const up=car.cass?13.5:12.5,all=[ch,...car.wheels.filter(w=>!w.broken).map(w=>w.b)];
     for(const b of all){const u=b.getLinearVelocity();b.setLinearVelocity(pl.Vec2(Math.max(u.x,7),up))}for(const w of car.wheels)w.pv=null;ev="boing"}
   const bodies=[ch,...car.wheels.filter(w=>!w.broken).map(w=>w.b)],push=(fx,fy)=>{for(const b of bodies){const m=b.getMass();b.applyForceToCenter(pl.Vec2(fx*m,fy*m))}};
-  for(const L of T.loops||[]){const dx=p.x-L.cx,dy=p.y-L.cy,d=Math.hypot(dx,dy)||1;
-    if(L.ph===0&&dy>L.r*.3&&dx<0)L.ph=1;else if(L.ph===1&&(dx>L.r+1.5||dy<-L.r-3||d>L.r+5))L.ph=0;if(dx<-L.r-2&&L.ph===1&&dy<-L.r+1)L.ph=0;
-    /* magic loop: holds you onto the track and keeps you moving round */
-    if(d<L.r-.25&&d>L.r-3.2&&dy>-L.r+.8&&(L.ph===1||dx>-.5)){push(dx/d*14,dy/d*14);const tx=-dy/d,ty=dx/d,vt=v.x*tx+v.y*ty;if(vt<10)push(tx*24,ty*24);car.safe=.6;if(!car.lp||now-car.lp>2){car.lp=now;ev="loop"}}}
+  /* magic loop: when you reach the bottom of it, it carries you all the way round at a good speed and lets you go out the other side */
+  if(car.loop){const L=car.loop.L;car.loop.th+=car.loop.v/L.rr*dt;const th=Math.min(car.loop.th,Math.PI*1.5),cx=L.cx+Math.cos(th)*L.rr,cy=L.cy+Math.sin(th)*L.rr,an=th+Math.PI/2,tv=car.loop.v;
+    ch.setTransform(pl.Vec2(cx,cy),an);ch.setLinearVelocity(pl.Vec2(-Math.sin(th)*tv,Math.cos(th)*tv));ch.setAngularVelocity(tv/L.rr);
+    for(const w of car.wheels){if(w.broken)continue;const q=ch.getWorldPoint(pl.Vec2(w.lx,w.ly));w.b.setTransform(q,w.b.getAngle());w.b.setLinearVelocity(ch.getLinearVelocity());w.pv=null}car.safe=.5;
+    if(car.loop.th>=Math.PI*1.5){ch.setTransform(pl.Vec2(L.cx+.02,L.cy-L.rr),0);ch.setLinearVelocity(pl.Vec2(tv,0));ch.setAngularVelocity(0);for(const w of car.wheels)if(!w.broken){const q=ch.getWorldPoint(pl.Vec2(w.lx,w.ly));w.b.setTransform(q,0);w.b.setLinearVelocity(pl.Vec2(tv,0))}car.loopDone=L;car.loop=null}}
+  else for(const L of T.loops||[])if(car.loopDone!==L&&p.x>=L.cx-.3&&p.x<L.cx+2&&p.y<L.y-G0(car)+1.6&&v.x>.5){car.loop={L,th:-Math.PI/2,v:Math.max(Math.hypot(v.x,v.y),7.5+L.r*.45)};ev="loop";break}
+  /* swinging logs: touch one and you get bonked back (once — then it lets you through) */
+  for(const q of T.swings||[]){const a=q.a||0,hx=q.x+Math.sin(a)*q.L,hy=q.y-Math.cos(a)*q.L,G=car.G;
+    if(car.swOk===q&&now-car.swT<3)continue;
+    if(Math.abs(hx-p.x)<G.w/2+.7&&hy-.5<p.y+G.h+G.minY&&hy+.5>p.y+G.minY){const dir=(q.av||0)>=0?1:-1,kx=dir>0?Math.max(v.x,5):Math.min(-3.5,-Math.abs(v.x)*.5);
+      for(const b of bodies){b.setLinearVelocity(pl.Vec2(kx,Math.max(b.getLinearVelocity().y,3.5)))}for(const w of car.wheels)w.pv=null;car.safe=1;car.swOk=q;car.swT=now;ev="bonk"}}
+  /* dropping into any pit counts as falling straight away (long rides could get wedged between the cliffs) */
+  for(const g of T.gaps)if(g.kind!=="lava"&&p.x>g.x0-.3&&p.x<g.x1+.3&&p.y+G0(car)<g.y-1.6&&!car.loop)ev="fall";
   for(const c of T.cannons||[])if(Math.abs(p.x-c.x)<1.6&&p.y<c.y+3&&p.y>c.y-1&&(!car.cn||now-car.cn>2.5)){car.cn=now;const vx=Math.cos(c.a)*c.v*(car.cass?1.04:1),vy=Math.sin(c.a)*c.v*(car.cass?1.04:1);
     for(const b of bodies){b.setLinearVelocity(pl.Vec2(vx,vy));b.setAngularVelocity(0)}for(const w of car.wheels)w.pv=null;ch.setAngularVelocity(0);car.safe=3.5;ev="cannon"}
   for(const w of T.winds||[])if(p.x>w.x0-.5&&p.x<w.x1+.5&&p.y<w.y+9){push(4,v.y<5?9.8*1.3:9.8*.95);if(!car.wd||now-car.wd>1.5){car.wd=now;ev="wind"}for(const ww of car.wheels)ww.pv=null}
@@ -2357,8 +2402,9 @@ function drZones(T,car,dt,now){const pl=planck,ch=car.ch,p=ch.getPosition(),v=ch
   const lo=T.low!=null?T.low:(T.low=drLowest(T));
   if(p.y<lo-9)ev="fall";for(const l of T.lava)if(p.x>l.x0&&p.x<l.x1&&p.y<l.y+.9)ev="fall";
   return ev}
+const G0=car=>car.G.minY;
 function drCpAt(T,x){let c=T.cps[0]||0;for(const k of T.cps)if(k<=x+.01)c=Math.max(c,k);return c}
-if(typeof module!=="undefined")module.exports={DR_U,DR_GW,DR_GH,DR_COL,DR_TRACKS,DR_MEDAL,drEnc,drDec,drSimp,drFitCircle,drGeo,drCar,drCarKill,drDrive,drSnapCheck,drMake,drTEnc,drTDec,drFromDrawn,drGroundAt,drLowest,drWorld,drPlanks,drTouching,drZones,drCpAt,drPlanksReset};
+if(typeof module!=="undefined")module.exports={drFitTrack,drMovers,DR_U,DR_GW,DR_GH,DR_COL,DR_TRACKS,DR_MEDAL,drEnc,drDec,drSimp,drFitCircle,drGeo,drCar,drCarKill,drDrive,drSnapCheck,drMake,drTEnc,drTDec,drFromDrawn,drGroundAt,drLowest,drWorld,drPlanks,drTouching,drZones,drCpAt,drPlanksReset};
 
 /* ================= DRAW IT, RIDE IT: the screens =================
    menu (garage + buttons) · draw (make a ride) · tracks (pick a race) · race · edit (draw a track for the other one) · inbox
@@ -2459,7 +2505,7 @@ function drMenu(){const G=DRG;if(!G)return;G.mode="menu";G.race=null;drEngine(0)
 function drMedal(i,ms){const g=DR_MEDAL[i]*1000;return ms==null?"":ms<=g?"🥇":ms<=g*1.4?"🥈":ms<=g*2?"🥉":"🏁"}
 function drTracks(live){const G=DRG;G.mode="tracks";G.pick=live?"live":"";const S=drLoad(),th=drThem(),tb=DRD.b[th]||{};
   const p=drPanel(`<div class="drmenu"><div class="drh">${live?`⚡ PICK A TRACK TO RACE ${drNm(th).toUpperCase()} LIVE`:"🏁 PICK A TRACK"}</div>
-    <div class="drsub">Riding: <b>${drEsc(drSel().nm)}</b></div><div class="drtks">${DR_TRACKS.map((t,i)=>{const c=DR_TH_[t.th],mb=S.best["b"+i],ob=tb["b"+i];
+    <div class="drsub">Riding: <b>${drEsc(drSel().nm)}</b></div><div class="drtks">${DR_TRACKS.map((t,i)=>{const c=DR_TH_[t.th],mb=S.best["c"+i],ob=tb["c"+i];
       return`<button class="drtk" data-t="${i}" style="background:linear-gradient(160deg,${c[0]},${c[1]} 55%,${c[5]} 56%,${c[4]})"><b>${t.nm}</b>
         <span class="drtkt">${mb?drMedal(i,mb.ms)+" You "+drT(mb.ms):"Not raced yet"}</span>${!live&&ob&&ob.ms?`<span class="drtko">👻 ${drNm(th)} ${drT(ob.ms)}</span>`:""}</button>`}).join("")}</div>
     <p class="drsub">${live?`${drNm(th)} gets a pop-up to join you`:`Win 🥇🥈🥉 medals · beat ${drNm(th)}'s ghost 👻`}</p></div>`);
@@ -2576,11 +2622,11 @@ function drGhost(gh,ride,nm,col){if(!gh||!ride)return null;const v=gh.split(",")
   return{S,G:drGeo(drDec(ride)),nm,col}}
 function drGhostAt(gh,t){const S=gh.S,i=Math.min(S.length-1,Math.max(0,t*10)),a=S[Math.floor(i)],b=S[Math.min(S.length-1,Math.floor(i)+1)],f=i-Math.floor(i);
   let da=b[2]-a[2];if(da>Math.PI)da-=2*Math.PI;if(da<-Math.PI)da+=2*Math.PI;return{x:a[0]+(b[0]-a[0])*f,y:a[1]+(b[1]-a[1])*f,a:a[2]+da*f,done:i>=S.length-1}}
-function drRace(o){const G=DRG;G.mode="race";drShow(0);const ride=o.ride||drSel(),T=drTrackOf(o),W=drWorld(T),th=drThem();
+function drRace(o){const G=DRG;G.mode="race";drShow(0);const ride=o.ride||drSel(),T=drFitTrack(drTrackOf(o),drGeo(drDec(ride.s))),W=drWorld(T),th=drThem();
   const R={o,T,W,ride,G:drGeo(drDec(ride.s)),t:0,acc:0,st:"count",cd:o.live?Math.max(0,(o.live.s-Date.now())/1000):3.2,rec:[],recT:0,fails:{},cp:0,camx:0,camy:0,zoom:1,ghosts:[],from:o.from,live:o.live||null,parts:[],bump:0,last:-1,stuckT:0,px:-1e9,best:null,lastPos:0};
   G.race=R;
   /* the ghosts: the other one's best, and your own best */
-  if(o.kind==="t"){const ob=(DRD.b[th]||{})["b"+o.i];if(ob&&ob.gh)R.ghosts.push(drGhost(ob.gh,ob.s,drNm(th),"#7c3aed"));const mb=drLoad().best["b"+o.i];if(mb&&mb.gh)R.ghosts.push(drGhost(mb.gh,mb.s,"You","#0ea5e9"));R.best=mb?mb.ms:null}
+  if(o.kind==="t"){const ob=(DRD.b[th]||{})["c"+o.i];if(ob&&ob.gh)R.ghosts.push(drGhost(ob.gh,ob.s,drNm(th),"#7c3aed"));const mb=drLoad().best["c"+o.i];if(mb&&mb.gh)R.ghosts.push(drGhost(mb.gh,mb.s,"You","#0ea5e9"));R.best=mb?mb.ms:null}
   else if(o.kind==="u"&&!o.live){const ts=DRD.ts[me()]||{},tk=DRD.tk[th]||{},mt=DRD.tk[me()]||{};
     if(o.owner===th){const m=ts["k"+o.id];if(m&&m.gh)R.ghosts.push(drGhost(m.gh,m.s,"You","#0ea5e9"));R.best=m?m.ms:null;const a=tk["k"+o.id];if(a&&a.gh)R.ghosts.push(drGhost(a.gh,a.rs,drNm(th),"#7c3aed"))}
     else if(o.owner===me()){const os=(DRD.ts[th]||{})["k"+o.id];if(os&&os.gh)R.ghosts.push(drGhost(os.gh,os.s,drNm(th),"#7c3aed"));const a=mt["k"+o.id];if(a&&a.gh)R.ghosts.push(drGhost(a.gh,a.rs,"You","#0ea5e9"))}}
@@ -2595,18 +2641,23 @@ function drRespawn(R,why){const p=R.car.ch.getPosition(),cp=drCpAt(R.T,p.x),k=Ma
   /* stuck in the same place lots of times: hop past it */
   let x=cp;if(why==="stuck"&&R.fails[k]>=3){const nx=p.x+4;if(drGroundAt(R.T,nx)!=null)x=nx}
   if(why==="flip"){x=Math.max(cp,p.x-.5);if(drGroundAt(R.T,x)==null)x=cp}
-  drSpawn(R,x);sfx(why==="fall"?"lose":"flip");drMsg(why==="fall"?"OOPS! 🙈":why==="flip"?"FLIP! 🙃":"BOING!")}
+  let lucky=0;if(why==="fall"&&R.fails[k]>=4){const nx=R.T.cps.find(c=>c>cp+1);if(nx!=null&&nx<R.T.fin){x=nx;lucky=1}}
+  drSpawn(R,x);if(lucky){sfx("sp");drMsg("🌈 LUCKY SKIP!");return}sfx(why==="fall"?"lose":"flip");drMsg(why==="fall"?"OOPS! 🙈":why==="flip"?"FLIP! 🙃":"BOING!")}
 function drMsg(t){const m=$("#g2m");if(!m)return;m.textContent=t;m.classList.remove("on");void m.offsetWidth;m.classList.add("on")}
 function drInputState(){const G=DRG,k=G.keys;let go=!!(k.ArrowRight||k.d||k.D||k.ArrowUp),back=!!(k.ArrowLeft||k.a||k.A),rk=!!(k[" "]||G.rkOn);
   for(const p of G.ptr.values())if(p.race){if(p.x>G.W/2)go=true;else back=true}return{go,back,rk}}
 function drStep(R,dt){const G=DRG,inp=R.st==="go"?drInputState():{go:0,back:0,rk:0},car=R.car;R.inp=inp;
-  drDrive(car,inp,dt);R.W.step(dt,8,3);const sn=drSnapCheck(R.W,car,dt);drPlanks(R.W,R.T,R.t);
+  R.wt=(R.wt||0)+dt;drMovers(R.T,R.wt,dt);drDrive(car,inp,dt);R.W.step(dt,8,3);const sn=drSnapCheck(R.W,car,dt);drPlanks(R.W,R.T,R.t);
   for(const s of sn){sfx("b_clang");drBurst(R,s.x,s.y,"#ffd23f",14);drMsg("SNAP! 🔧")}
-  const ev=R.st==="go"?drZones(R.T,car,dt,R.t):"";if(car.gotGem){R.gems=(R.gems||0)+1;sfx("coin");const q=car.ch.getPosition();drBurst(R,q.x,q.y+.6,"#7ee8fa",6)}if(ev==="boost")sfx("sp");if(ev==="loop"){sfx("sp");drMsg("🎢 LOOP!")}if(ev==="cannon"){sfx("b_boom");const q=car.ch.getPosition();drBurst(R,q.x,q.y,"#ffb74d",22);drMsg("💥 BOOM!")}if(ev==="wind"){sfx("b_swish");drMsg("🌪️ WHOOSH!")}if(ev==="boing"){sfx("flap");drMsg("BOING! 🍄")}
+  const ev=R.st==="go"?drZones(R.T,car,dt,R.t):"";if(car.gotGem){R.gems=(R.gems||0)+1;sfx("coin");const q=car.ch.getPosition();drBurst(R,q.x,q.y+.6,"#7ee8fa",6)}if(ev==="boost")sfx("sp");if(ev==="loop"){sfx("sp");drMsg("🎢 LOOP!")}if(ev==="cannon"){sfx("b_boom");const q=car.ch.getPosition();drBurst(R,q.x,q.y,"#ffb74d",22);drMsg("💥 BOOM!")}if(ev==="wind"){sfx("b_swish");drMsg("🌪️ WHOOSH!")}if(ev==="boing"){sfx("flap");drMsg("BOING! 🍄")}if(ev==="bonk"){sfx("hit");const q=car.ch.getPosition();drBurst(R,q.x,q.y+.8,"#c58b4e",10);drMsg("BONK! 🪵")}
   const p=car.ch.getPosition();
   if(R.st!=="go")return;
   R.t+=dt;R.recT+=dt;if(R.recT>=.1){R.recT-=.1;if(R.rec.length<9000)R.rec.push(Math.round(p.x*50),Math.round(p.y*50),Math.round(car.ch.getAngle()*100))}
-  if(p.x>R.px+1){R.px=p.x;R.stuckT=0}else R.stuckT+=dt;
+  if(car.loop||p.x>R.px+1){if(!car.loop)R.px=p.x;R.stuckT=0;R.hopped=0}else R.stuckT+=dt;
+  /* stuck? a little hop forward first */
+  if(R.stuckT>2.4&&!R.hopped&&inp.go){R.hopped=1;for(const b of [car.ch,...car.wheels.filter(w=>!w.broken).map(w=>w.b)]){const u=b.getLinearVelocity();b.setLinearVelocity(planck.Vec2(u.x+3,u.y+4.5))}for(const w of car.wheels)w.pv=null;car.safe=1;sfx("flap");drMsg("HOP! 🦘")}
+  /* big air */
+  if(car.air>1.1&&!R.airMsg&&!car.loop){R.airMsg=1;drMsg(["BIG AIR! 🚀","WHEEE! ✨","AIRBORNE! 🦅"][Math.random()*3|0])}if(!car.air)R.airMsg=0;
   if(Math.abs(car.an||0)>1.7&&car.gr)R.flipT+=dt;else R.flipT=0;
   $("#drrs").classList.toggle("on",R.stuckT>2.2);
   if(ev==="fall")return drRespawn(R,"fall");if(R.flipT>1.3)return drRespawn(R,"flip");if(R.stuckT>6)return drRespawn(R,"stuck");
@@ -2614,7 +2665,7 @@ function drStep(R,dt){const G=DRG,inp=R.st==="go"?drInputState():{go:0,back:0,rk
 function drBurst(R,x,y,c,n){for(let i=0;i<n;i++)R.parts.push({x,y,vx:(Math.random()-.5)*7,vy:Math.random()*6,l:.6+Math.random()*.6,c,s:.06+Math.random()*.08})}
 function drFinish(R){R.st="fin";const ms=Math.round(R.t*1000),o=R.o,S=drLoad(),th=drThem(),gh=R.rec.join(",");sfx("win");drEngine(0);drConfetti(R);
   let best=0,msg="";
-  if(o.kind==="t"){const k="b"+o.i,old=S.best[k];if(!old||ms<old.ms){best=!!old||1;S.best[k]={ms,gh,s:R.ride.s,nm:R.ride.nm};drSave();db.doc("games/drb_"+me()).update({[k]:{ms,gh,s:R.ride.s,nm:R.ride.nm,t:Date.now()}}).catch(er)}
+  if(o.kind==="t"){const k="c"+o.i,old=S.best[k];if(!old||ms<old.ms){best=!!old||1;S.best[k]={ms,gh,s:R.ride.s,nm:R.ride.nm};drSave();db.doc("games/drb_"+me()).update({[k]:{ms,gh,s:R.ride.s,nm:R.ride.nm,t:Date.now()}}).catch(er)}
     const ob=(DRD.b[th]||{})[k];if(ob&&ob.ms)msg=ms<ob.ms?`You beat ${drNm(th)}'s ghost by ${((ob.ms-ms)/1000).toFixed(1)}s! 🎉`:`${drNm(th)}'s ghost was ${((ms-ob.ms)/1000).toFixed(1)}s faster — try again!`}
   else if(o.kind==="u"&&!o.live){if(o.owner===th){const cur=(DRD.ts[me()]||{})["k"+o.id];if(!cur||ms<cur.ms){best=1;db.doc("games/drts_"+me()).update({["k"+o.id]:{ms,gh,s:R.ride.s,t:Date.now()}}).catch(er)}
       const a=(DRD.tk[th]||{})["k"+o.id];if(a&&a.ms)msg=ms<a.ms?`Faster than ${drNm(th)} on their own track! 🎉`:`${drNm(th)} did it in ${drT(a.ms)}`}
@@ -2706,6 +2757,10 @@ function drGround(x,T,vx0,vx1,vyB,t){const c=DR_TH_[T.th]||DR_TH_[0];
   for(const l of T.lava){if(l.x1<vx0||l.x0>vx1)continue;const g=x.createLinearGradient(0,l.y+.8,0,l.y-3);g.addColorStop(0,"#ffcf3f");g.addColorStop(.3,"#ff6a2b");g.addColorStop(1,"#a3160b");x.fillStyle=g;
     x.beginPath();x.moveTo(l.x0,vyB-5);for(let X=l.x0;X<=l.x1;X+=.4)x.lineTo(X,l.y+.6+Math.sin(X*2+t*3)*.15);x.lineTo(l.x1,vyB-5);x.fill();
     if(Math.random()<.1){const bx=l.x0+Math.random()*(l.x1-l.x0);x.fillStyle="#ffd23f";x.beginPath();x.arc(bx,l.y+.7,.15,0,7);x.fill()}}
+  /* tunnel roofs: a big rock with a sloped lip at the front */
+  for(const cl of T.ceils||[]){if(cl.x1<vx0-2||cl.x0>vx1+2)continue;const y=cl.y+cl.h,top=y+40;x.fillStyle=c[4];x.beginPath();x.moveTo(cl.x0-1.6,top);x.lineTo(cl.x0-1.6,y+2.2);x.lineTo(cl.x0,y);x.lineTo(cl.x1,y);x.lineTo(cl.x1,top);x.closePath();x.fill();
+    x.fillStyle="rgba(0,0,0,.18)";x.fillRect(cl.x0,y,cl.x1-cl.x0,.5);x.strokeStyle=c[6];x.lineWidth=.3;x.beginPath();x.moveTo(cl.x0-1.6,top);x.lineTo(cl.x0-1.6,y+2.2);x.lineTo(cl.x0,y);x.lineTo(cl.x1,y);x.lineTo(cl.x1,top);x.stroke();
+    x.fillStyle="rgba(0,0,0,.08)";x.fillRect(cl.x0,cl.y,cl.x1-cl.x0,cl.h);for(let X=cl.x0+1.5;X<cl.x1;X+=4){x.fillStyle="#ffcf3f";x.beginPath();x.arc(X,y-.35,.12,0,7);x.fill();x.fillStyle="rgba(255,207,63,.18)";x.beginPath();x.arc(X,y-.35,.6,0,7);x.fill()}}
   for(const ch of T.chains){if(ch.x0==null){ch.x0=1e9;ch.x1=-1e9;for(const p of ch){ch.x0=Math.min(ch.x0,p[0]);ch.x1=Math.max(ch.x1,p[0])}}if(ch.x1<vx0||ch.x0>vx1)continue;
     if(ch.lo==null){ch.lo=1e9;for(let i=ch.c0?1:0;i<ch.length-(ch.c1?1:0);i++)ch.lo=Math.min(ch.lo,ch[i][1])}const sky=T.th===7,bot=sky?ch.lo-1.2:Math.min(vyB-5,ch.lo-30);
     x.fillStyle=c[4];x.beginPath();x.moveTo(ch[0][0],bot);for(const p of ch)x.lineTo(p[0],sky?Math.max(p[1],bot):p[1]);x.lineTo(ch[ch.length-1][0],bot);
@@ -2717,6 +2772,11 @@ function drGround(x,T,vx0,vx1,vyB,t){const c=DR_TH_[T.th]||DR_TH_[0];
   for(const p of T.planks){if(p.gone||!p.b)continue;const q=p.b.getPosition();if(q.x<vx0-2||q.x>vx1+2)continue;x.save();x.translate(q.x,q.y);x.rotate(p.b.getAngle());x.fillStyle=p.t?"#a0703f":"#b8834a";x.fillRect(-p.w/2,-.12,p.w,.24);x.strokeStyle="#5a3a1a";x.lineWidth=.04;x.strokeRect(-p.w/2,-.12,p.w,.24);x.restore()}
   for(const g of T.gaps)if(g.kind==="bridge"&&g.x1>vx0&&g.x0<vx1){x.strokeStyle="rgba(90,58,26,.7)";x.lineWidth=.05;x.beginPath();x.moveTo(g.x0,g.y+.9);x.quadraticCurveTo((g.x0+g.x1)/2,g.y+.3,g.x1,g.y+.9);x.stroke();
     for(const px of [g.x0,g.x1]){x.fillStyle="#6b4423";x.fillRect(px-.1,g.y-.2,.2,1.3)}}
+  for(const q of T.plats||[]){if(!q.b)continue;const P=q.b.getPosition();if(P.x<vx0-3||P.x>vx1+3)continue;x.fillStyle="#7e57c2";x.fillRect(P.x-q.w/2,P.y-.14,q.w,.28);x.fillStyle="#ffd23f";for(let i=0;i<3;i++)x.fillRect(P.x-q.w/2+.2+i*(q.w-.4)/2-.08,P.y-.05,.16,.1);
+    x.strokeStyle="rgba(255,255,255,.35)";x.lineWidth=.05;x.setLineDash([.2,.2]);x.beginPath();x.moveTo(P.x,q.y+.5);x.lineTo(P.x,q.y-q.amp-.4);x.stroke();x.setLineDash([])}
+  for(const q of T.swings||[]){if(q.x<vx0-6||q.x>vx1+6)continue;const a=q.a||0,hx=q.x+Math.sin(a)*q.L,hy=q.y-Math.cos(a)*q.L;x.fillStyle="#5d4037";x.fillRect(q.x-1.4,q.y-.1,2.8,.3);x.strokeStyle="#8d6e63";x.lineWidth=.08;x.beginPath();x.moveTo(q.x,q.y);x.lineTo(hx,hy+.5);x.stroke();
+    x.save();x.translate(hx,hy);x.rotate(a);x.fillStyle="#a0703f";x.beginPath();x.roundRect?x.roundRect(-.75,-.5,1.5,1,.35):x.rect(-.75,-.5,1.5,1);x.fill();x.strokeStyle="#6b4423";x.lineWidth=.06;for(const r of[.2,.32])x.beginPath(),x.arc(-.75,0,r,-Math.PI/2,Math.PI/2),x.stroke();x.restore()}
+  for(const r of T.rings||[]){if(r.x<vx0-2||r.x>vx1+2)continue;x.strokeStyle="rgba(255,210,63,.9)";x.lineWidth=.14;x.beginPath();x.ellipse(r.x,r.y,r.r*.45,r.r,0,0,7);x.stroke();x.strokeStyle="rgba(255,255,255,.6)";x.lineWidth=.05;x.beginPath();x.ellipse(r.x,r.y,r.r*.45-.1,r.r-.1,0,0,7);x.stroke()}
   for(const b of T.boosts){if(b.x1<vx0||b.x0>vx1)continue;const n=Math.max(2,Math.round((b.x1-b.x0)/.9));for(let i=0;i<n;i++){const X=b.x0+(i+.5)*(b.x1-b.x0)/n,ph=(t*3-i*.3)%1;
     x.fillStyle=`hsla(${(i*50+t*200)%360},90%,60%,${.55+.45*ph})`;x.beginPath();x.moveTo(X-.3,b.y+.08);x.lineTo(X+.1,b.y+.32);x.lineTo(X-.3,b.y+.56);x.lineTo(X-.1,b.y+.32);x.fill()}}
   for(const q of T.dominoes||[]){const P=q.b?q.b.getPosition():{x:q.x,y:q.y},a=q.b?q.b.getAngle():0;if(P.x<vx0-2||P.x>vx1+2)continue;x.save();x.translate(P.x,P.y);x.rotate(a);x.fillStyle=DR_COL[1+Math.round(q.x*7)%7];x.fillRect(-.11,-.8,.22,1.6);x.fillStyle="rgba(255,255,255,.85)";x.beginPath();x.arc(0,.35,.05,0,7);x.arc(0,-.35,.05,0,7);x.fill();x.restore()}
@@ -3134,6 +3194,7 @@ function rwScene(){const T=THREE,S=new T.Scene();RWR.scene=S;S.background=new T.
   /* the pit (just for show while testing) */
   const pit=new T.Mesh(new T.PlaneGeometry(2,2),new T.MeshStandardMaterial({color:0x0b0c0f}));pit.rotation.x=-Math.PI/2;pit.position.set(6.5,.01,0);ar.add(pit);
   const pb=new T.Mesh(new T.RingGeometry(1.42,1.6,4),new T.MeshStandardMaterial({map:hz}));pb.rotation.set(-Math.PI/2,0,Math.PI/4);pb.position.set(6.5,.012,0);ar.add(pb);
+  {const ab=new T.Group();[...ar.children].forEach(ch=>ab.add(ch));RWR.arenaBase=ab}
   /* the car holder */
   RWR.bot=new T.Group();S.add(RWR.bot);RWR.dummies=new T.Group();ar.add(RWR.dummies);RWR.fx=new T.Group();S.add(RWR.fx)}
 /* a car -> 3D model. Returns {g, parts...} */
@@ -3281,11 +3342,12 @@ function rwGarage(){const G=RWG;if(!G)return;if(rwLiveFresh())return rwLobby();r
       ${S.bots.length?`<div class="rwchips"><b>YOUR CARS</b>${chips(S.bots.slice().reverse(),1)}</div>`:""}
       ${theirs.length?`<div class="rwchips"><b>${th.toUpperCase()}'S CARS</b>${chips(theirs,0)}</div>`:""}
       <div class="rwbtns"><button class="b y rwbig" id="rwnew">＋ BUILD A CAR</button>${R&&!G.viewing?`<button class="b rwfix" id="rwfix">🔧 CHANGE IT</button>`:""}</div>
+      ${R&&st?`<div class="rwchips" style="margin-top:8px"><b>BATTLEGROUND</b></div>${rwMapChips(rwMapOk(S.map),"data-map")}`:""}
       ${R&&st?`<button class="b o rwbig" id="rwdrive" style="width:100%;margin-top:8px">🎮 TEST DRIVE${G.viewing?" "+th.toUpperCase()+"'S":""}</button>`:""}
       ${G.viewing?"":rwLiveBtn()}<div class="rwver">${typeof APP_BUILD!=="undefined"&&APP_BUILD?"app version "+rwEsc(APP_BUILD):""}</div></div>`;
   $("#rwpanel").querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{S.sel=b.dataset.m;G.viewing=null;rwSave(1);sfx("tap");rwGarage()});
   $("#rwpanel").querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{G.viewing=b.dataset.t;sfx("tap");rwGarage()});
-  $("#rwnew").onclick=()=>rwBuild(null);const fx=$("#rwfix");if(fx)fx.onclick=()=>rwBuild(rwSel());const dv=$("#rwdrive");if(dv)dv.onclick=()=>rwDrive(R);const lb=$("#rwlive");if(lb)lb.onclick=()=>rwLiveAsk()}
+  $("#rwnew").onclick=()=>rwBuild(null);const fx=$("#rwfix");if(fx)fx.onclick=()=>rwBuild(rwSel());const dv=$("#rwdrive");if(dv)dv.onclick=()=>rwDrive(R);const lb=$("#rwlive");if(lb)lb.onclick=()=>rwLiveAsk();$("#rwpanel").querySelectorAll("[data-map]").forEach(b=>b.onclick=()=>{S.map=b.dataset.map;rwSave();sfx("tap");rwGarage()})}
 function rwStatRow(st){const pc=Math.min(100,st.kg/150*100);
   return`<div class="rwstats"><span>🛡️ Armour <b>${rwStars(st.arm)}</b></span><span>⚡ Speed <b>${rwStars(st.spd)}</b></span><span>💪 Push <b>${rwStars(st.push)}</b></span><span>💥 Weapon <b>${rwStars(st.pow)}</b></span></div>
     <div class="rwkg"><div class="rwkgb"><i style="width:${pc}%"></i></div><b>⚖️ ${st.kg} kg · ${st.cls}</b></div>`}
@@ -3441,16 +3503,17 @@ function rwOverlay(){const G=RWG,x=G.ctx;x.setTransform(G.dpr,0,0,G.dpr,0,0);x.c
     const a=G.cur.pts[0],b=G.cur.pts[G.cur.pts.length-1];x.setLineDash([4,6]);x.strokeStyle="rgba(255,255,255,.6)";x.lineWidth=2;x.beginPath();x.moveTo(...b);x.lineTo(...a);x.stroke();x.setLineDash([])}}
 
 /* ---------- test drive ---------- */
-function rwArena(on){RWR.arena.visible=!!on;RWR.shop.visible=!on;rwControls(on)}
+function rwArena(on){RWR.arena.visible=!!on;RWR.shop.visible=!on;if(on)rwMapShow(RWG.map);else rwMapHide();rwControls(on)}
 function rwControls(on){for(const id of ["rwjoy","rwfire","rwfireb"])$("#"+id).classList.toggle("on",!!on)}
 function rwDrive(R){const G=RWG;G.mode="drive";G.view=null;$("#rwpanel").className="rwpanel";$("#rwpanel").innerHTML="";$("#rwbot").className="rwbot";$("#rwtop").className="rwtop";$("#rwhint").textContent="";
-  rwShow(R,1);rwArena(1);const st=rwStats(R,G.body,G.viewing?rwThem()==="O":rwCass());
-  G.car={x:-3,z:3,yaw:-Math.PI/4,v:0,spd:2.4+st.spd*.85,turn:((R.wheels||[]).some(w=>w.k==="t")?2.6:(R.wheels||[]).length<=2?4.2:3.3),push:st.push,pow:st.pow,r:Math.max(.5,G.M.r*.85)};
+  G.map=rwMapOk(rwLoad().map);rwShow(R,1);rwArena(1);const st=rwStats(R,G.body,G.viewing?rwThem()==="O":rwCass()),sp0=rwMapCur().drive;
+  G.car={x:sp0[0],z:sp0[1],yaw:sp0[2],kx:0,kz:0,y:0,vy:0,rz:0,mx:null,mz:null,out:0,outT:0,v:0,spd:2.4+st.spd*.85,turn:((R.wheels||[]).some(w=>w.k==="t")?2.6:(R.wheels||[]).length<=2?4.2:3.3),push:st.push,pow:st.pow,r:Math.max(.5,G.M.r*.85)};
   G.dum=[];RWR.dummies.clear();const T=THREE;
-  for(const[x,z]of[[1,0],[4,3],[-3,-4],[0,-7],[7,5],[-6,5],[6,-2]]){const g=new T.Group(),b=new T.Mesh(new T.CylinderGeometry(.38,.42,.8,20),new T.MeshStandardMaterial({color:0xe3672b,roughness:.6}));b.position.y=.4;b.castShadow=true;g.add(b);
+  for(const[x,z]of rwMapCur().barrels){const g=new T.Group(),b=new T.Mesh(new T.CylinderGeometry(.38,.42,.8,20),new T.MeshStandardMaterial({color:0xe3672b,roughness:.6}));b.position.y=.4;b.castShadow=true;g.add(b);
     const s=new T.Mesh(new T.CylinderGeometry(.385,.385,.12,20),new T.MeshStandardMaterial({color:0xffffff}));s.position.y=.55;g.add(s);g.position.set(x,0,z);RWR.dummies.add(g);G.dum.push({g,x,z,y:0,vx:0,vz:0,vy:0,rx:0,rz:0,wx:0,wz:0,r:.42})}
+  G.M.ht=G.M.box.y1+G.M.dy;
   const hasB=rwFireLabels();
-  G.fireT=9;G.fireB=9;G.joy=null;G.dash=0;G.camSet=0;rwMsg("TEST DRIVE!");$("#rwhint").textContent=hasB?"Smash the barrels! Left: steer · Right: FRONT and BACK weapons":"Smash the practice barrels! Left: steer · Right: weapon"}
+  G.fireT=9;G.fireB=9;G.joy=null;G.dash=0;G.camSet=0;rwMsg(rwMapCur().ic+" "+rwMapCur().nm+"!");$("#rwhint").textContent=hasB?"Smash the barrels! Left: steer · Right: FRONT and BACK weapons":"Smash the practice barrels! Left: steer · Right: weapon"}
 function rwFireLabels(){const G=RWG,lab=sd=>{const ks=[...new Set(G.M.weps.filter(w=>w.sd===sd).map(w=>w.k))];return(ks.length?ks.slice(0,2).map(k=>rwFind(RW_WEP,k).ic).join(""):"💨")+`<small>${sd==="b"?"BACK":"FRONT"}</small>`};
   $("#rwfire").innerHTML=lab("f");$("#rwfireb").innerHTML=lab("b");const hasB=G.M.weps.some(w=>w.sd==="b");$("#rwfireb").classList.toggle("on",hasB);return hasB}
 function rwFire(sd){const G=RWG;sd=sd==="b"?"b":"f";const key=sd==="b"?"fireB":"fireT";if((G.mode!=="drive"&&G.mode!=="battle")||G[key]<.45)return;if(G.mode==="battle"&&!rwCanAct())return;const ws=G.M.weps.filter(w=>w.sd===sd);if(sd==="b"&&!ws.length)return;G[key]=0;sfx("b_swish");if(G.mode==="battle"){G.B.fc[sd]++;rwLiveSend(1)}if(!ws.length||ws.some(w=>w.k==="wedge"||w.k==="spike")){G.dash=.35;G.dashSd=sd}}
@@ -3462,10 +3525,15 @@ function rwDriveStep(dt){const G=RWG,c=G.car,M=G.M,R=M.R;let jx=0,jy=0;
     if(back){da=Math.atan2(Math.sin(da+Math.PI),Math.cos(da+Math.PI))}c.yaw+=Math.max(-c.turn*dt,Math.min(c.turn*dt,da));const tv=(back?-.7:1)*c.spd*mag*Math.max(.2,Math.cos(Math.min(1.4,Math.abs(da))));c.v+=(tv-c.v)*Math.min(1,dt*5)}
   else c.v*=Math.pow(.02,dt);
   if(G.dash>0){G.dash-=dt;c.v=G.dashSd==="b"?Math.min(c.v,-c.spd*1.8):Math.max(c.v,c.spd*1.8)}
-  const fx=Math.cos(c.yaw),fz=-Math.sin(c.yaw);c.x+=fx*c.v*dt;c.z+=fz*c.v*dt;const A=RW_ARENA-c.r*.8;if(Math.abs(c.x)>A){c.x=Math.sign(c.x)*A;c.v*=.3}if(Math.abs(c.z)>A){c.z=Math.sign(c.z)*A;c.v*=.3}
+  const fx=Math.cos(c.yaw),fz=-Math.sin(c.yaw);
+  if(c.out){rwFallStep(c,dt);c.outT+=dt;if(c.outT>1.4){const s=rwMapCur().drive;Object.assign(c,{x:s[0],z:s[1],yaw:s[2],v:0,kx:0,kz:0,y:0,vy:0,rz:0,mx:0,mz:0,out:0,outT:0});rwMsg("BACK YOU GO! 🔧")}}
+  else{rwSlide(c,dt,0);c.x+=(c.mx+c.kx)*dt;c.z+=(c.mz+c.kz)*dt;const kd=Math.pow(c.y>.05?.7:.05,dt);c.kx*=kd;c.kz*=kd;
+    if(c.y>0||c.vy>0){c.vy-=15*dt;c.y+=c.vy*dt;if(c.y<=0){c.y=0;c.vy=0}}
+    const fall=rwBounds(c,0);if(fall){c.out=fall;c.outT=0;c.vy=0;rwMsg(RW_FALL[fall]);sfx("lose")}}
+  rwHazards(dt);
   G.fireT+=dt;G.fireB+=dt;const W=(M.weps.find(w=>w.k==="wedge")||{}).k,cy=Math.cos(c.yaw),sy=Math.sin(c.yaw);
   /* the barrels */
-  for(const d of G.dum){const dx=d.x-c.x,dz=d.z-c.z,dist=Math.hypot(dx,dz)||1e-3,nx=dx/dist,nz=dz/dist,front=nx*fx+nz*fz;
+  for(const d of G.dum){if(d.gone)continue;const dx=d.x-c.x,dz=d.z-c.z,dist=Math.hypot(dx,dz)||1e-3,nx=dx/dist,nz=dz/dist,front=nx*fx+nz*fz;
     if(dist<c.r+d.r&&d.y<.6){const ov=c.r+d.r-dist;d.x+=nx*ov;d.z+=nz*ov;const pv=Math.max(0,c.v*front)*(.6+c.push*.12);d.vx+=nx*pv*.5+fx*pv*.4;d.vz+=nz*pv*.5+fz*pv*.4;if(W&&front>.6&&c.v>2&&d.y<.05)d.vy=Math.max(d.vy,1.5+c.v*.3)}
     M.weps.forEach((wp,wi)=>{const f=wp.sd==="b"?G.fireB:G.fireT,k=wp.k,sz=wp.s||1,reach=(RW_REACH[k]||.4)*sz*1.15,lx=wp.p[0]+wp.n[0]*reach,lz=wp.p[2]+wp.n[2]*reach,ly=wp.p[1]+M.dy+wp.n[1]*reach,
         wx=c.x+lx*cy+lz*sy,wz=c.z-lx*sy+lz*cy,ux=wp.n[0]*cy+wp.n[2]*sy,uz=-wp.n[0]*sy+wp.n[2]*cy,hl=Math.hypot(ux,uz)||1,ex=d.x-wx,ez=d.z-wz,ed=Math.hypot(ex,ez)||1e-3;
@@ -3481,12 +3549,12 @@ function rwDriveStep(dt){const G=RWG,c=G.car,M=G.M,R=M.R;let jx=0,jy=0;
       sfx(k==="crush"?"hit":"b_clang");rwSparks(wx,Math.max(.3,ly),wz,14);if(hit[1]>4)rwMsg(["FLIPPED!","SMASH!","WHAM!","KER-RUNCH!"][Math.random()*4|0])});
     if(d.burn>0){d.burn-=dt;if(Math.random()<.8)rwFlame(new THREE.Vector3(d.x+(Math.random()-.5)*.4,d.y+.85,d.z+(Math.random()-.5)*.4),new THREE.Vector3(0,1,0),.6,1.6);const bm=d.g.children[0].material;bm.color.lerp(new THREE.Color(0x2b1a10),dt*.8)}
     d.vy-=15*dt;d.x+=d.vx*dt;d.z+=d.vz*dt;d.y+=d.vy*dt;d.rx+=d.wx*dt;d.rz+=d.wz*dt;
-    if(d.y<=0){d.y=0;if(d.vy<-3){d.vy=-d.vy*.3;sfx("hit")}else d.vy=0;d.vx*=Math.pow(.15,dt);d.vz*=Math.pow(.15,dt);d.wx*=Math.pow(.05,dt);d.wz*=Math.pow(.05,dt);
+    if(d.y<=0&&!d.sink){d.y=0;if(d.vy<-3){d.vy=-d.vy*.3;sfx("hit")}else d.vy=0;d.vx*=Math.pow(.15,dt);d.vz*=Math.pow(.15,dt);d.wx*=Math.pow(.05,dt);d.wz*=Math.pow(.05,dt);
       /* settle: lying on its side or standing up */d.rx=rwSettle(d.rx,dt);d.rz=rwSettle(d.rz,dt)}
-    const AA=RW_ARENA-.4;if(Math.abs(d.x)>AA){d.x=Math.sign(d.x)*AA;d.vx*=-.4}if(Math.abs(d.z)>AA){d.z=Math.sign(d.z)*AA;d.vz*=-.4}
+    rwBarrelMap(d,dt);
     for(const e of G.dum)if(e!==d){const ex=e.x-d.x,ez=e.z-d.z,ed=Math.hypot(ex,ez)||1e-3;if(ed<d.r+e.r&&Math.abs(e.y-d.y)<.6){const o=(d.r+e.r-ed)/2;d.x-=ex/ed*o;d.z-=ez/ed*o;e.x+=ex/ed*o;e.z+=ez/ed*o}}
     d.g.position.set(d.x,d.y,d.z);d.g.rotation.set(d.rx,0,d.rz)}
-  M.g.position.set(c.x,0,c.z);M.g.rotation.set(0,c.yaw,0)}
+  M.g.position.set(c.x,c.y||0,c.z);M.g.rotation.set(0,c.yaw,c.rz||0)}
 const rwSettle=(a,dt)=>{const q=Math.PI/2,t=Math.round(a/q)*q;return a+(t-a)*Math.min(1,dt*6)};
 /* a puff of flame: grows, rises, goes from white-hot to orange to dark red, then fades */
 function rwFlame(p,d,s,kind){const T=THREE,W=rwWM();if(RWR.fx.children.length>260)return;const m=new T.Sprite(new T.SpriteMaterial({map:W.glow,color:0xfff2c0,transparent:true,depthWrite:false,blending:T.AdditiveBlending}));
@@ -3505,7 +3573,7 @@ function rwAnim(M,dt,fOf,drv,spd){const pl=f=>f<.12?f/.12:f<.5?1-(f-.12)/.38:0;
 /* ---------- every frame ---------- */
 function rwFrame(dt){const G=RWG;if(!G||G.dead||!RWR)return;G.t+=dt;rwSize();if(G.needMesh&&G.t-(G.remeshT||0)>.05){G.needMesh=0;rwRemesh()}const M=G.M;
   if(G.mode==="battle"&&M&&G.car&&G.B)rwBattleFrame(dt);
-  else if(G.mode==="drive"&&M&&G.car){rwDriveStep(dt);const c=G.car,pc=G.pcam,port=G.H>G.W,hgt=port?12.6:9.8,back=port?10.3:9;
+  else if(G.mode==="drive"&&M&&G.car){rwDriveStep(dt);const c=G.car,pc=G.pcam,port=G.H>G.W,hgt=port?13.8:10.6,back=port?11.2:9.6;
     const want=new THREE.Vector3(c.x*.6,hgt,c.z*.6+back);if(!G.camSet){pc.position.copy(want);G.camSet=1}else pc.position.lerp(want,1-Math.exp(-dt*3));pc.lookAt(c.x*.85,0,c.z*.85-.8)}
   else{rwCamUpdate(dt);if(!G.auto&&!(G.mode==="build"&&G.step==="shape")&&!G.ptr.size){G.idle+=dt;if(G.idle>4){G.auto=1;G.idle=0}}if(M&&G.auto&&(G.mode==="garage"||G.step!=="shape")){G.camK.az+=dt*.35;rwCam("show")}if(M)M.g.position.set(0,0,0)}
   /* weapons moving */
@@ -3530,11 +3598,154 @@ function rwInput(){const G=RWG,cv=G.ov,pt=e=>{const r=cv.getBoundingClientRect()
   $("#rwfire").onpointerdown=e=>{e.preventDefault();e.stopPropagation();rwFire("f")};$("#rwfireb").onpointerdown=e=>{e.preventDefault();e.stopPropagation();rwFire("b")};
   window.onkeydown=e=>{if(!RWG||e.target&&e.target.tagName==="INPUT")return;RWG.keys[e.key]=1;if(e.key===" "){e.preventDefault();rwFire("f")}if(e.key==="b"||e.key==="Shift")rwFire("b")};window.onkeyup=e=>{if(RWG)RWG.keys[e.key]=0}}
 
+/* ================= BATTLE CARS: battlegrounds =================
+   Each battleground has a shape (square or round), walls or open edges, holes you fall into (pit / lava / water),
+   things in the way (rocks, scrap), slippery bits, fire vents, and hammer guards or crushers.
+   The 3D for each is built the first time it's needed. */
+const RW_MAPS={
+  arena:{nm:"THE ARENA",ic:"🏟️",say:"Walls all round, a pit, fire vents and two hammer guards.",shape:"sq",A:11,walls:1,grip:1,bg:0x1d2433,
+    holes:[{x:6.5,z:0,w:1,d:1,k:"pit"}],vents:[[-6.5,0],[0,0]],guards:[[9.4,9.4,2.5,"hammer"],[-9.4,-9.4,2.5,"hammer"]],obs:[],slick:[],
+    spawn:{X:[0,7,Math.PI/2],O:[0,-7,-Math.PI/2]},drive:[-3,3,-Math.PI/4],barrels:[[1,-2],[4,3],[-3,-4],[0,-7],[7,5],[-6,4],[5,-4]]},
+  volcano:{nm:"VOLCANO",ic:"🌋",say:"A river of lava with two stone bridges. Fall in and you're out!",shape:"circ",R:11,walls:1,grip:1,bg:0x2a120c,
+    holes:[{x:-8.9,z:0,w:2.3,d:1.3,k:"lava"},{x:0,z:0,w:3.4,d:1.3,k:"lava"},{x:8.9,z:0,w:2.3,d:1.3,k:"lava"}],vents:[[-6.5,6],[6.5,-6]],guards:[],
+    obs:[{x:-7.5,z:-5.5,r:.9},{x:7.5,z:5.5,r:.9},{x:3,z:8.3,r:.7},{x:-3,z:-8.3,r:.7}],slick:[],
+    spawn:{X:[0,7.5,Math.PI/2],O:[0,-7.5,-Math.PI/2]},drive:[0,6.5,Math.PI/2],barrels:[[2.5,4],[-3,4.5],[-5,-3.5],[4,-4],[0,-6],[5,2.5]]},
+  ice:{nm:"ICE LAKE",ic:"❄️",say:"Slippery ice, no walls, holes in the ice. Slide in and it's a splash!",shape:"circ",R:10.5,walls:0,grip:.22,bg:0x9cc7e4,
+    holes:[{x:-4.6,z:0,r:1.3,k:"water"},{x:4.6,z:0,r:1.3,k:"water"}],vents:[],guards:[],obs:[{x:0,z:0,r:1.1}],slick:[],
+    spawn:{X:[0,6.5,Math.PI/2],O:[0,-6.5,-Math.PI/2]},drive:[0,6,Math.PI/2],barrels:[[2.5,3],[-2.5,-3],[-6,3.5],[6,-3.5],[0,-6],[6.5,3]]},
+  junk:{nm:"JUNKYARD",ic:"🔩",say:"Scrap piles to hide behind, oil slicks, and two crushers.",shape:"sq",A:11,walls:1,grip:1,bg:0x2f3029,
+    holes:[],vents:[[0,0]],guards:[[-8.6,0,1.5,"press"],[8.6,0,1.5,"press"]],
+    obs:[{x:-4,z:4,w:.75,d:.75},{x:4,z:-4,w:.75,d:.75},{x:-8.2,z:-8,w:1.7,d:1.1},{x:8.2,z:8,w:1.7,d:1.1},{x:4,z:5,r:.55},{x:-4,z:-5,r:.55},{x:-8.8,z:5,r:.55},{x:8.8,z:-5,r:.55}],
+    slick:[{x:-3,z:.5,r:1.6},{x:3.5,z:1.8,r:1.3},{x:.5,z:-3.8,r:1.2}],
+    spawn:{X:[0,7.5,Math.PI/2],O:[0,-7.5,-Math.PI/2]},drive:[0,7,Math.PI/2],barrels:[[1.5,3],[-1.5,-2.5],[-6,2],[6,-2],[0,-7],[6,4]]},
+  sky:{nm:"SKY SUMO",ic:"☁️",say:"A floating island with no walls. Push them off the edge!",shape:"sq",A:7.5,walls:0,grip:1,bg:0x86c5f5,
+    holes:[],vents:[[0,0]],guards:[],obs:[],slick:[],
+    spawn:{X:[0,5,Math.PI/2],O:[0,-5,-Math.PI/2]},drive:[0,4.5,Math.PI/2],barrels:[[2,2],[-2,-2],[4,-3],[-4,3],[0,-4]]}};
+const RW_MAP_IDS=Object.keys(RW_MAPS);
+const rwMapOk=id=>RW_MAPS[id]?id:"arena";
+const rwMapCur=()=>RW_MAPS[rwMapOk(RWG&&RWG.map)];
+const RW_FALL={pit:"INTO THE PIT! 🕳️",lava:"INTO THE LAVA! 🌋",water:"SPLASH! 🌊",edge:"OFF THE EDGE! ☁️"};
+const RW_FALLSAY={pit:"fell in the pit",lava:"fell in the lava",water:"fell through the ice",edge:"went off the edge"};
+
+/* ---------- building the 3D ---------- */
+function rwHzTex(){return RWR.hzT||(RWR.hzT=rwTex(128,32,(x,w,h)=>{for(let i=-2;i<12;i++){x.fillStyle=i%2?"#111":"#ffc400";x.beginPath();x.moveTo(i*16,0);x.lineTo(i*16+16,0);x.lineTo(i*16,h);x.lineTo(i*16-16,h);x.fill()}}))}
+function rwVentMesh(g,x,z,rock){const T=THREE,gr=rwTex(128,128,(c,w,h)=>{c.fillStyle="#1a1a1a";c.fillRect(0,0,w,h);c.fillStyle="#555";for(let i=8;i<w;i+=16)c.fillRect(i,0,6,h)});
+  const m=new T.MeshStandardMaterial({map:gr,roughness:.7,metalness:.6,emissive:new T.Color(0xff4400),emissiveIntensity:0}),d=new T.Mesh(new T.CircleGeometry(.95,32),m);d.rotation.x=-Math.PI/2;d.position.set(x,.012,z);g.add(d);
+  const r=new T.Mesh(new T.RingGeometry(.95,1.12,32),rock?new T.MeshStandardMaterial({color:0x3b2a24,roughness:.9}):new T.MeshStandardMaterial({map:rwHzTex()}));r.rotation.x=-Math.PI/2;r.position.set(x,.013,z);g.add(r);return{m,x,z}}
+function rwGuardMesh(g,gx,gz,zh,kind){const T=THREE,hz=rwHzTex(),iron=new T.MeshStandardMaterial({color:0x2c3038,metalness:.8,roughness:.35}),dark=new T.MeshStandardMaterial({color:0x15171b,roughness:.8});
+  if(kind==="press"){/* a crusher: two posts, a beam, and a heavy block that slams down */
+    const zone=new T.Mesh(new T.PlaneGeometry(zh*2,zh*2),new T.MeshStandardMaterial({map:hz,transparent:true,opacity:.85}));zone.rotation.x=-Math.PI/2;zone.position.set(gx,.008,gz);g.add(zone);
+    const inner=new T.Mesh(new T.PlaneGeometry(zh*2-.4,zh*2-.4),new T.MeshStandardMaterial({color:0x2a2b2e,roughness:.9}));inner.rotation.x=-Math.PI/2;inner.position.set(gx,.01,gz);g.add(inner);
+    for(const s of[-1,1]){const p=new T.Mesh(new T.BoxGeometry(.35,3.4,.35),iron);p.position.set(gx,1.7,gz+s*(zh+.25));p.castShadow=true;g.add(p)}
+    const beam=new T.Mesh(new T.BoxGeometry(.5,.45,zh*2+.9),iron);beam.position.set(gx,3.35,gz);g.add(beam);
+    const arm=new T.Group();arm.position.set(gx,2.6,gz);const blk=new T.Mesh(new T.BoxGeometry(zh*1.8,.7,zh*1.8),new T.MeshStandardMaterial({color:0x6b7078,metalness:.85,roughness:.35}));blk.castShadow=true;arm.add(blk);
+    const st=new T.Mesh(new T.BoxGeometry(zh*1.82,.2,zh*1.82),new T.MeshStandardMaterial({map:hz}));st.position.y=.2;arm.add(st);const rod=new T.Mesh(new T.CylinderGeometry(.12,.12,1.6,10),iron);rod.position.y=1;arm.add(rod);g.add(arm);
+    return{arm,gx,gz,zh,kind}}
+  /* hammer guard — our own design: a squat iron block on tracks with one glowing eye and a big hammer */
+  const zone=new T.Mesh(new T.RingGeometry(3.3,3.54,4,1),new T.MeshStandardMaterial({map:hz}));zone.rotation.set(-Math.PI/2,0,Math.PI/4);zone.position.set(gx,.014,gz);g.add(zone);
+  const gg=new T.Group(),bx=new T.Mesh(new T.BoxGeometry(1.5,.9,1.3),iron);bx.position.y=.6;bx.castShadow=true;gg.add(bx);
+  for(const s of[-1,1]){const t=new T.Mesh(new T.BoxGeometry(1.7,.42,.3),dark);t.position.set(0,.21,s*.72);gg.add(t)}
+  const band=new T.Mesh(new T.BoxGeometry(1.52,.16,1.32),new T.MeshStandardMaterial({map:hz}));band.position.y=.86;gg.add(band);
+  const eye=new T.Mesh(new T.SphereGeometry(.17,16,12),new T.MeshStandardMaterial({color:0xff3b1f,emissive:new T.Color(0xff2a00),emissiveIntensity:1.6}));eye.position.set(.72,.62,0);gg.add(eye);
+  const arm=new T.Group();arm.position.set(.2,1.08,0);const bar=new T.Mesh(new T.BoxGeometry(1.9,.16,.18),iron);bar.position.x=.95;arm.add(bar);
+  const head=new T.Mesh(new T.BoxGeometry(.42,.55,.55),new T.MeshStandardMaterial({color:0x8a8f99,metalness:.9,roughness:.3}));head.position.set(1.85,-.12,0);head.castShadow=true;arm.add(head);arm.rotation.z=1.1;gg.add(arm);
+  gg.position.set(gx*1.1,0,gz*1.1);gg.rotation.y=Math.atan2(gz,-gx);g.add(gg);return{arm,gx,gz,zh,kind}}
+const rwRock=(g,x,z,r,col,y=0)=>{const T=THREE,m=new T.Mesh(new T.DodecahedronGeometry(r,0),new T.MeshStandardMaterial({color:col,roughness:.95,flatShading:true}));m.position.set(x,y+r*.55,z);m.rotation.set(Math.random()*3,Math.random()*3,Math.random()*3);m.scale.y=.75;m.castShadow=m.receiveShadow=true;g.add(m);return m};
+function rwMapBuild(id){RWR.mg=RWR.mg||{};if(RWR.mg[id])return RWR.mg[id];const T=THREE,m=RW_MAPS[id],g=new T.Group();g.visible=false;RWR.arena.add(g);RWR.mg[id]=g;g.userData.vents=[];g.userData.guards=[];
+  if(id==="arena"&&RWR.arenaBase)g.add(RWR.arenaBase);
+  if(id==="volcano"){
+    const ft=rwTex(256,256,(x,w,h)=>{x.fillStyle="#2b2422";x.fillRect(0,0,w,h);for(let i=0;i<500;i++){x.fillStyle=`rgba(${Math.random()<.5?0:80},${Math.random()*30|0},0,${Math.random()*.25})`;x.fillRect(Math.random()*w,Math.random()*h,6,6)}
+      x.strokeStyle="rgba(255,90,20,.35)";x.lineWidth=2;for(let i=0;i<9;i++){x.beginPath();let px=Math.random()*w,py=Math.random()*h;x.moveTo(px,py);for(let k=0;k<5;k++){px+=(Math.random()-.5)*60;py+=(Math.random()-.5)*60;x.lineTo(px,py)}x.stroke()}},5);
+    const fl=new T.Mesh(new T.CircleGeometry(m.R+1.2,64),new T.MeshStandardMaterial({map:ft,roughness:.95}));fl.rotation.x=-Math.PI/2;fl.receiveShadow=true;g.add(fl);
+    const lt=rwTex(256,64,(x,w,h)=>{const gr=x.createLinearGradient(0,0,0,h);gr.addColorStop(0,"#ff8a1f");gr.addColorStop(.5,"#ffd23f");gr.addColorStop(1,"#ff5a12");x.fillStyle=gr;x.fillRect(0,0,w,h);
+      for(let i=0;i<40;i++){x.fillStyle=`rgba(${120+Math.random()*60|0},20,0,${.3+Math.random()*.4})`;x.beginPath();x.ellipse(Math.random()*w,Math.random()*h,10+Math.random()*24,4+Math.random()*6,0,0,7);x.fill()}});
+    lt.wrapS=lt.wrapT=T.RepeatWrapping;lt.repeat.set(6,1);const lava=new T.Mesh(new T.PlaneGeometry(m.R*2+2,2.6),new T.MeshStandardMaterial({map:lt,emissive:new T.Color(0xff5a12),emissiveMap:lt,emissiveIntensity:1.1,roughness:.5}));
+    lava.rotation.x=-Math.PI/2;lava.position.y=.015;g.add(lava);g.userData.lava=lt;
+    for(const s of[-1,1])for(const e of[-1,1]){const lip=new T.Mesh(new T.BoxGeometry(m.R*2+2,.12,.18),new T.MeshStandardMaterial({color:0x1a1210,roughness:.9}));lip.position.set(0,.06,e*1.38);if(s>0)g.add(lip)}
+    const st=rwTex(128,128,(x,w,h)=>{x.fillStyle="#6d655f";x.fillRect(0,0,w,h);x.strokeStyle="#4a433e";x.lineWidth=3;for(let i=0;i<4;i++){x.strokeRect(2,i*32+2,w-4,28)}});
+    for(const bx of[-5,5]){const br=new T.Mesh(new T.BoxGeometry(3.2,.1,3.1),new T.MeshStandardMaterial({map:st,roughness:.9}));br.position.set(bx,.05,0);br.receiveShadow=true;g.add(br);
+      for(const s of[-1,1]){const rl=new T.Mesh(new T.BoxGeometry(.18,.28,3.1),new T.MeshStandardMaterial({color:0x4a433e,roughness:.9}));rl.position.set(bx+s*1.62,.14,0);g.add(rl)}}
+    for(let i=0;i<34;i++){const a=i/34*Math.PI*2;rwRock(g,Math.cos(a)*(m.R+.9),Math.sin(a)*(m.R+.9),.9+Math.random()*.7,0x3a2a24)}
+    for(const o of m.obs)rwRock(g,o.x,o.z,o.r*1.05,0x4a3a32);
+    const pl=new T.PointLight(0xff6a1f,1.1,16);pl.position.set(0,1.6,0);g.add(pl)}
+  if(id==="ice"){
+    const wt=rwTex(128,128,(x,w,h)=>{x.fillStyle="#123d5c";x.fillRect(0,0,w,h);for(let i=0;i<60;i++){x.strokeStyle=`rgba(160,210,255,${Math.random()*.2})`;x.beginPath();const y=Math.random()*h;x.moveTo(0,y);x.quadraticCurveTo(w/2,y+(Math.random()-.5)*20,w,y);x.stroke()}},8);
+    const water=new T.Mesh(new T.PlaneGeometry(70,70),new T.MeshStandardMaterial({map:wt,roughness:.15,metalness:.2}));water.rotation.x=-Math.PI/2;water.position.y=-.4;g.add(water);g.userData.water=wt;
+    const it=rwTex(256,256,(x,w,h)=>{x.fillStyle="#cfe6f7";x.fillRect(0,0,w,h);for(let i=0;i<300;i++){x.fillStyle=`rgba(255,255,255,${Math.random()*.35})`;x.fillRect(Math.random()*w,Math.random()*h,10,2)}
+      x.strokeStyle="rgba(120,170,210,.5)";x.lineWidth=1.5;for(let i=0;i<14;i++){x.beginPath();let px=Math.random()*w,py=Math.random()*h;x.moveTo(px,py);for(let k=0;k<4;k++){px+=(Math.random()-.5)*70;py+=(Math.random()-.5)*70;x.lineTo(px,py)}x.stroke()}},4);
+    const ice=new T.Mesh(new T.CylinderGeometry(m.R,m.R-.15,.4,72),new T.MeshStandardMaterial({map:it,roughness:.38,metalness:0,color:0xc4def2,envMapIntensity:.45}));ice.position.y=-.2;ice.receiveShadow=true;g.add(ice);
+    const rim=new T.Mesh(new T.TorusGeometry(m.R,.09,8,96),new T.MeshStandardMaterial({color:0xffffff,roughness:.6}));rim.rotation.x=Math.PI/2;rim.position.y=.01;g.add(rim);
+    for(const h of m.holes){const d=new T.Mesh(new T.CircleGeometry(h.r,40),new T.MeshStandardMaterial({color:0x0e3654,roughness:.1,metalness:.2}));d.rotation.x=-Math.PI/2;d.position.set(h.x,.006,h.z);g.add(d);
+      const e=new T.Mesh(new T.RingGeometry(h.r,h.r+.22,40),new T.MeshStandardMaterial({color:0xffffff,roughness:.5}));e.rotation.x=-Math.PI/2;e.position.set(h.x,.008,h.z);g.add(e)}
+    const pil=new T.Mesh(new T.CylinderGeometry(.85,1.1,1.8,7),new T.MeshStandardMaterial({color:0xaee0ff,roughness:.08,metalness:.1,transparent:true,opacity:.9,flatShading:true}));pil.position.y=.9;pil.castShadow=true;g.add(pil);
+    const cap=new T.Mesh(new T.SphereGeometry(.88,12,8,0,Math.PI*2,0,Math.PI/2),new T.MeshStandardMaterial({color:0xffffff,roughness:.9}));cap.position.y=1.78;cap.scale.y=.45;g.add(cap);
+    for(let i=0;i<14;i++){const a=Math.random()*Math.PI*2,r=m.R+2+Math.random()*9,f=new T.Mesh(new T.BoxGeometry(1+Math.random()*1.6,.18,1+Math.random()*1.2),new T.MeshStandardMaterial({color:0xe6f4ff,roughness:.3}));f.position.set(Math.cos(a)*r,-.32,Math.sin(a)*r);f.rotation.y=Math.random()*3;g.add(f)}}
+  if(id==="junk"){
+    const ft=rwTex(256,256,(x,w,h)=>{x.fillStyle="#5b5446";x.fillRect(0,0,w,h);for(let i=0;i<900;i++){const c=60+Math.random()*60|0;x.fillStyle=`rgb(${c+10},${c},${c-12})`;x.fillRect(Math.random()*w,Math.random()*h,3,3)}},6);
+    const fl=new T.Mesh(new T.PlaneGeometry(m.A*2,m.A*2),new T.MeshStandardMaterial({map:ft,roughness:.95}));fl.rotation.x=-Math.PI/2;fl.receiveShadow=true;g.add(fl);
+    const fz=rwTex(64,64,(x,w,h)=>{x.clearRect(0,0,w,h);x.strokeStyle="#b9c0c7";x.lineWidth=2.5;x.beginPath();x.moveTo(0,0);x.lineTo(w,h);x.moveTo(w,0);x.lineTo(0,h);x.stroke()});fz.wrapS=fz.wrapT=T.RepeatWrapping;fz.repeat.set(22,2);
+    const A=m.A;for(const[sx,sz,ry]of[[0,-A,0],[0,A,0],[-A,0,Math.PI/2],[A,0,Math.PI/2]]){const f=new T.Mesh(new T.PlaneGeometry(A*2,1.6),new T.MeshStandardMaterial({map:fz,transparent:true,alphaTest:.3,side:T.DoubleSide,metalness:.6,roughness:.4}));f.position.set(sx,.8,sz);f.rotation.y=ry;g.add(f)}
+    for(let i=0;i<=16;i++)for(const s of[-1,1]){const t=-A+i*A/8;for(const[px,pz]of[[t,s*A],[s*A,t]]){const p=new T.Mesh(new T.CylinderGeometry(.06,.06,1.8,6),new T.MeshStandardMaterial({color:0x7d858c,metalness:.7}));p.position.set(px,.9,pz);g.add(p)}}
+    const cols=[0xc0392b,0x2e86c1,0x27ae60,0xf1c40f,0x8e44ad,0xd35400],rust=c=>rwTex(64,64,(x,w,h)=>{x.fillStyle="#"+c.toString(16).padStart(6,"0");x.fillRect(0,0,w,h);for(let i=0;i<60;i++){x.fillStyle=`rgba(${110+Math.random()*50|0},${50+Math.random()*30|0},20,${Math.random()*.6})`;x.beginPath();x.arc(Math.random()*w,Math.random()*h,2+Math.random()*7,0,7);x.fill()}});
+    for(const o of m.obs){if(o.r){for(let k=0;k<3;k++){const t=new T.Mesh(new T.TorusGeometry(o.r*.78,o.r*.26,10,20),new T.MeshStandardMaterial({color:0x1b1b1b,roughness:.9}));t.rotation.x=Math.PI/2;t.position.set(o.x,.16+k*.32,o.z);t.castShadow=true;g.add(t)}}
+      else if(o.w<1){const b=new T.Mesh(new T.BoxGeometry(o.w*2,1.1,o.d*2),new T.MeshStandardMaterial({map:rust(cols[(o.x*7+o.z*3+30|0)%cols.length]),roughness:.7,metalness:.4}));b.position.set(o.x,.55,o.z);b.rotation.y=.3;b.castShadow=true;g.add(b)}
+      else{for(let k=0;k<7;k++){const s=.4+Math.random()*.5,b=new T.Mesh(k%2?new T.BoxGeometry(s*1.6,s,s):new T.CylinderGeometry(s*.4,s*.4,s*1.6,8),new T.MeshStandardMaterial({map:rust(cols[k%cols.length]),roughness:.7,metalness:.5}));
+        b.position.set(o.x+(Math.random()-.5)*o.w*1.6,s*.5+(k>4?.5:0),o.z+(Math.random()-.5)*o.d*1.6);b.rotation.set(Math.random(),Math.random()*3,Math.random());b.castShadow=true;g.add(b)}}}
+    for(const s of m.slick){const d=new T.Mesh(new T.CircleGeometry(s.r,32),new T.MeshStandardMaterial({color:0x0a0a0c,roughness:.05,metalness:.6}));d.rotation.x=-Math.PI/2;d.position.set(s.x,.005,s.z);d.scale.set(1,.8,1);g.add(d);
+      const sh=new T.Mesh(new T.CircleGeometry(s.r*.5,24),new T.MeshStandardMaterial({color:0x5a2a7a,roughness:.05,metalness:.6,transparent:true,opacity:.35}));sh.rotation.x=-Math.PI/2;sh.position.set(s.x+.2,.007,s.z-.1);g.add(sh)}}
+  if(id==="sky"){
+    const A=m.A,st=rwTex(256,256,(x,w,h)=>{x.fillStyle="#b9ae98";x.fillRect(0,0,w,h);x.strokeStyle="#8f846e";x.lineWidth=3;for(let i=0;i<4;i++)for(let j=0;j<4;j++)x.strokeRect(i*64+2+(j%2)*10,j*64+2,60,60);for(let i=0;i<200;i++){x.fillStyle=`rgba(0,0,0,${Math.random()*.06})`;x.fillRect(Math.random()*w,Math.random()*h,6,6)}},4);
+    const top=new T.Mesh(new T.BoxGeometry(A*2,.8,A*2),[0,0,new T.MeshStandardMaterial({map:st,roughness:.95,envMapIntensity:.4}),0,0,0].map(q=>q||new T.MeshStandardMaterial({color:0x8a7a62,roughness:.95})));top.position.y=-.4;top.receiveShadow=true;g.add(top);
+    const trim=new T.MeshStandardMaterial({color:0xd4a72c,metalness:.7,roughness:.3});for(const[sx,sz,w,d]of[[0,-A,A*2+.1,.12],[0,A,A*2+.1,.12],[-A,0,.12,A*2],[A,0,.12,A*2]]){const t=new T.Mesh(new T.BoxGeometry(w,.06,d),trim);t.position.set(sx,.02,sz);g.add(t)}
+    const und=new T.Mesh(new T.ConeGeometry(A*1.25,7,6),new T.MeshStandardMaterial({color:0x7a6a55,roughness:.95,flatShading:true}));und.rotation.x=Math.PI;und.position.y=-4.3;und.rotation.y=.4;g.add(und);
+    const grass=new T.MeshStandardMaterial({color:0x5aa84a,roughness:.9});for(let i=0;i<10;i++){const a=i/10*Math.PI*2,b=new T.Mesh(new T.SphereGeometry(.5+Math.random()*.4,8,6),grass);b.position.set(Math.cos(a)*A*1.04,-.3,Math.sin(a)*A*1.04);b.scale.y=.6;g.add(b)}
+    const cm=new T.MeshStandardMaterial({color:0xffffff,roughness:1});for(let i=0;i<16;i++){const c=new T.Group(),a=Math.random()*Math.PI*2,r=10+Math.random()*16;for(let k=0;k<4;k++){const s=new T.Mesh(new T.SphereGeometry(1+Math.random()*1.2,10,8),cm);s.position.set(k*1.2-1.8,Math.random()*.6,Math.random()-.5);c.add(s)}
+      c.position.set(Math.cos(a)*r,-5-Math.random()*6,Math.sin(a)*r);c.scale.y=.6;g.add(c)}}
+  for(const[x,z]of m.vents)g.userData.vents.push(rwVentMesh(g,x,z,id==="volcano"));
+  for(const[x,z,zh,k]of m.guards)g.userData.guards.push(rwGuardMesh(g,x,z,zh,k));
+  return g}
+/* show a battleground (or hide them all and go back to the workshop) */
+function rwMapShow(id){const G=RWG,T=THREE;id=rwMapOk(id);G.map=id;rwMapBuild(id);for(const k in RWR.mg)RWR.mg[k].visible=k===id;const m=RW_MAPS[id];
+  RWR.scene.background=new T.Color(m.bg);RWR.scene.fog=id==="sky"||id==="ice"?new T.Fog(m.bg,26,70):null;
+  RWR.vents=RWR.mg[id].userData.vents;RWR.guards=RWR.mg[id].userData.guards;G.hz={t0:G.t,vent:RWR.vents.map(()=>-9),guard:RWR.guards.map(()=>({t:0,cd:0,sw:9,vis:9}))}}
+function rwMapHide(){if(!RWR||!RWR.scene)return;RWR.scene.background=new THREE.Color(0x1d2433);RWR.scene.fog=null}
+
+/* ---------- the ground rules for a car on the current battleground ---------- */
+/* how the car actually moves: on ice and oil it keeps sliding the way it was going */
+function rwSlide(c,dt,ed){const m=rwMapCur(),fx=Math.cos(c.yaw),fz=-Math.sin(c.yaw);let grip=m.grip;for(const s of m.slick||[])if(Math.hypot(c.x-s.x,c.z-s.z)<s.r)grip=Math.min(grip,.3);if(ed)grip=Math.min(1,grip*1.4);
+  if(c.mx==null){c.mx=fx*c.v;c.mz=fz*c.v}const k=grip>=1?1:Math.min(1,dt*grip*10);c.mx+=(fx*c.v-c.mx)*k;c.mz+=(fz*c.v-c.mz)*k;c.slip=grip<1&&Math.hypot(fx*c.v-c.mx,fz*c.v-c.mz)>1.5;return grip}
+/* walls, edges, rocks and scrap in the way, and holes. Returns "", or how you fell: pit / lava / water / edge */
+function rwBounds(c,ed){const m=rwMapCur(),r=c.r*.85;
+  for(const o of m.obs||[]){if(o.r){const dx=c.x-o.x,dz=c.z-o.z,d=Math.hypot(dx,dz)||1e-3,mn=o.r+r;if(d<mn){c.x=o.x+dx/d*mn;c.z=o.z+dz/d*mn;const vi=(c.mx||0)*dx/d+(c.mz||0)*dz/d;if(vi<0){c.mx-=dx/d*vi;c.mz-=dz/d*vi}c.v*=.85;const ki=c.kx*dx/d+c.kz*dz/d;if(ki<0){c.kx-=dx/d*ki*1.4;c.kz-=dz/d*ki*1.4}}}
+    else{const px=Math.max(o.x-o.w,Math.min(o.x+o.w,c.x)),pz=Math.max(o.z-o.d,Math.min(o.z+o.d,c.z)),dx=c.x-px,dz=c.z-pz,d=Math.hypot(dx,dz);
+      if(d<r){let nx,nz;if(d>1e-4){nx=dx/d;nz=dz/d}else{const ex=c.x-o.x,ez=c.z-o.z;if(Math.abs(ex)/o.w>Math.abs(ez)/o.d){nx=Math.sign(ex);nz=0}else{nx=0;nz=Math.sign(ez)}}
+        c.x=px+nx*r;c.z=pz+nz*r;const vi=(c.mx||0)*nx+(c.mz||0)*nz;if(vi<0){c.mx-=nx*vi;c.mz-=nz*vi}c.v*=.85;const ki=c.kx*nx+c.kz*nz;if(ki<0){c.kx-=nx*ki*1.4;c.kz-=nz*ki*1.4}}}}
+  if(m.shape==="sq"){if(m.walls){const A=m.A-c.r*.8;if(Math.abs(c.x)>A){c.x=Math.sign(c.x)*A;c.v*=.3;c.kx*=-.3;c.mx=(c.mx||0)*-.2}if(Math.abs(c.z)>A){c.z=Math.sign(c.z)*A;c.v*=.3;c.kz*=-.3;c.mz=(c.mz||0)*-.2}}
+    else if(Math.max(Math.abs(c.x),Math.abs(c.z))>m.A+(ed?.35:.05))return"edge"}
+  else{const d=Math.hypot(c.x,c.z)||1e-3;if(m.walls){const R=m.R-c.r*.8;if(d>R){c.x*=R/d;c.z*=R/d;c.v*=.3;const nx=c.x/R,nz=c.z/R,ki=c.kx*nx+c.kz*nz;if(ki>0){c.kx-=nx*ki*1.3;c.kz-=nz*ki*1.3}const vi=(c.mx||0)*nx+(c.mz||0)*nz;if(vi>0){c.mx-=nx*vi*1.2;c.mz-=nz*vi*1.2}}}
+    else if(d>m.R+(ed?.35:.05))return"edge"}
+  if((c.y||0)<.05){const sh=ed?.75:1;for(const h of m.holes||[]){const inH=h.r?Math.hypot(c.x-h.x,c.z-h.z)<h.r*sh:(Math.abs(c.x-h.x)<h.w*sh&&Math.abs(c.z-h.z)<h.d*sh);if(inH){c.fallAt=[h.r?h.x:c.x,h.r?h.z:Math.max(h.z-h.d,Math.min(h.z+h.d,c.z))];return h.k}}}
+  return""}
+/* falling: into a hole you sink down; off an edge you keep going and drop */
+function rwFallStep(c,dt){if(c.out==="edge"){c.x+=(c.mx||0)*dt*.8;c.z+=(c.mz||0)*dt*.8;c.vy=(c.vy||0)-15*dt;c.y+=c.vy*dt;c.rz+=dt*1.5}
+  else{const p=c.fallAt||[c.x,c.z];c.x+=(p[0]-c.x)*Math.min(1,dt*4);c.z+=(p[1]-c.z)*Math.min(1,dt*4);c.y=Math.max(-4,c.y-dt*(2+(-c.y)*3));if(c.out==="lava"&&Math.random()<.6)rwFlame(new THREE.Vector3(c.x+(Math.random()-.5),.2,c.z+(Math.random()-.5)),new THREE.Vector3(0,1,0),.8,1.2);
+    if(c.out==="water"&&Math.random()<.5)rwSparks(c.x,.1,c.z,3)}c.v=0}
+/* barrels in test drives: rocks and walls stop them, holes and edges swallow them */
+function rwBarrelMap(d,dt){const m=rwMapCur();if(d.gone)return;
+  if(d.sink){d.y-=dt*3;d.vx*=.9;d.vz*=.9;if(d.y<-3){d.gone=1;d.g.visible=false}return}
+  for(const o of m.obs||[]){if(o.r){const dx=d.x-o.x,dz=d.z-o.z,q=Math.hypot(dx,dz)||1e-3;if(q<o.r+d.r){d.x=o.x+dx/q*(o.r+d.r);d.z=o.z+dz/q*(o.r+d.r);d.vx*=-.3;d.vz*=-.3}}
+    else if(Math.abs(d.x-o.x)<o.w+d.r&&Math.abs(d.z-o.z)<o.d+d.r){const ox=o.w+d.r-Math.abs(d.x-o.x),oz=o.d+d.r-Math.abs(d.z-o.z);if(ox<oz){d.x+=Math.sign(d.x-o.x)*ox;d.vx*=-.4}else{d.z+=Math.sign(d.z-o.z)*oz;d.vz*=-.4}}}
+  if(m.walls){if(m.shape==="sq"){const AA=m.A-.4;if(Math.abs(d.x)>AA){d.x=Math.sign(d.x)*AA;d.vx*=-.4}if(Math.abs(d.z)>AA){d.z=Math.sign(d.z)*AA;d.vz*=-.4}}else{const q=Math.hypot(d.x,d.z),R=m.R-.4;if(q>R){d.x*=R/q;d.z*=R/q;d.vx*=-.4;d.vz*=-.4}}}
+  else if((m.shape==="sq"?Math.max(Math.abs(d.x),Math.abs(d.z))>m.A:Math.hypot(d.x,d.z)>m.R))d.sink=1;
+  if(d.y<.05)for(const h of m.holes||[])if(h.r?Math.hypot(d.x-h.x,d.z-h.z)<h.r:(Math.abs(d.x-h.x)<h.w&&Math.abs(d.z-h.z)<h.d)){d.sink=1;if(h.k==="lava")d.burn=3}}
+/* the battleground choice: chips (in the garage for test drives, in the lobby for battles) */
+function rwMapChips(cur,attr){return`<div class="rwmaps">${RW_MAP_IDS.map(id=>{const m=RW_MAPS[id];return`<button class="rwmap${id===cur?" on":""}" ${attr}="${id}"><i>${m.ic}</i><b>${m.nm}</b></button>`}).join("")}</div>`}
+
 /* ================= BATTLE CARS: live battles between the two phones =================
    Uses the app's challenge pop-up. When it's accepted, games/rwl holds the battle: the car each player picked, READY, the start time, and who left.
    Each phone drives its own car and sends where it is a few times a second (games/rwp_X|O), with the hits it landed on the other car.
    The other phone takes those hits (damage, knocks, flips) on its own car. games/rwwin counts the wins. */
-const RW_BT=120,RW_PIT={x:6.5,z:0,h:1},RW_VENTS=[[-6.5,0],[0,0]],RW_GUARD=[[9.4,9.4],[-9.4,-9.4]],RW_SPAWN={X:[0,7,Math.PI/2],O:[0,-7,-Math.PI/2]};
+const RW_BT=120;
 const RW_DMG={wedge:4,flip:6,spin:9,drum:9,axe:12,crush:11,spike:7,saw:8};
 /* Cass's edge (never shown): he takes less damage and gets knocked about less, his pit is a bit smaller, he rights himself faster, and a draw goes to him */
 const rwEdge=()=>me()==="O";
@@ -3543,8 +3754,8 @@ function rwListenLive(){if(typeof GNAME!=="undefined")GNAME.rw="BATTLE CARS";
   db.doc("games/rwl").onSnapshot(s=>{RWD.live=s.exists?s.data():null;rwOnLive()},er);
   for(const k of ["X","O"])db.doc("games/rwp_"+k).onSnapshot(s=>{if(k!==me()&&s.exists)rwOnPos(s.data())},er);
   db.doc("games/rwwin").onSnapshot(s=>{RWD.win=s.exists?s.data():{};if(RWG&&RWG.mode==="garage"&&!RWG.viewing){const e=$("#rwtally");if(e)e.innerHTML=rwTally()}},er)}
-function rwLiveNew(c){return db.doc("games/rwl").set({id:c&&c.id||Date.now(),at:Date.now(),bX:"",bO:"",rX:0,rO:0,s:0,qX:0,qO:0})}
-function rwLiveAsk(){const R=rwSel();if(!R){toast("Build a car first! 🏎️");return}if(typeof chSend!=="function"){rwLiveNew({id:Date.now()});return}chSend("rw")}
+function rwLiveNew(c){return db.doc("games/rwl").set({id:c&&c.id||Date.now(),at:Date.now(),m:rwMapOk(c&&c.m),bX:"",bO:"",rX:0,rO:0,s:0,qX:0,qO:0})}
+function rwLiveAsk(){const R=rwSel();if(!R){toast("Build a car first! 🏎️");return}const m=rwMapOk(rwLoad().map);if(typeof chSend!=="function"){rwLiveNew({id:Date.now(),m});return}chSend("rw",{m})}
 const rwLiveFresh=()=>{const L=RWD.live;return!!(L&&L.id&&Date.now()-(L.at||0)<15*60000&&!L.qX&&!L.qO&&rwLoad().liveDone!==L.id)};
 const rwTally=()=>{const w=RWD.win||{};return(w.X||w.O)?`🏆 Live battles won — Dad <b>${w.X||0}</b> · Cass <b>${w.O||0}</b>`:"Fight the other phone's car, live!"};
 function rwLiveBtn(){return`<button class="b rwbig rwlivebtn" id="rwlive">⚔️ LIVE BATTLE vs ${rwNm(rwThem()).toUpperCase()}</button><div class="rwsoon" id="rwtally">${rwTally()}</div>`}
@@ -3559,15 +3770,17 @@ function rwLobby(){const G=RWG,L=RWD.live;G.mode="lobby";G.lobby=L.id;G.viewing=
 function rwLobbyUI(){const G=RWG,L=RWD.live,S=rwLoad(),th=rwThem(),tn=rwNm(th);if(!L||G.mode!=="lobby")return;
   const mine=L["r"+me()],theirs=L["r"+th],tb=theirs&&RWD.g[th]&&RWD.g[th].bots?RWD.g[th].bots[L["b"+th]]:null,R=rwSel();
   if(R&&(!G.M||G.M.R!==R))rwShow(R);rwCam("show");
-  const key=[mine,theirs,L["b"+th],R&&R.id,S.bots.length].join("|");if(G.lobbyShown===key)return;G.lobbyShown=key;
+  const key=[mine,theirs,L["b"+th],R&&R.id,S.bots.length,L.m].join("|");if(G.lobbyShown===key)return;G.lobbyShown=key;
   const chips=S.bots.slice().reverse().map(b=>`<button class="rwchip${R&&b.id===R.id?" on":""}" data-m="${rwEsc(b.id)}" ${mine?"disabled":""}><i style="background:${rwEsc(b.col)}"></i>${rwEsc(b.nm)}</button>`).join("");
   $("#rwpanel").className="rwpanel on garage";$("#rwpanel").innerHTML=`<div class="rwlogo">LIVE<br><span>BATTLE</span></div>
     <div class="rwcard"><div class="rwname">⚔️ You vs ${tn}</div>
       ${S.bots.length?`<div class="rwchips"><b>${mine?"YOUR CAR":"PICK YOUR CAR"}</b>${chips}</div>`:`<p class="rwsay">You need a car first! Leave this battle and build one.</p>`}
+      <div class="rwchips" style="margin-top:6px"><b>BATTLEGROUND</b></div>${rwMapChips(rwMapOk(L.m),"data-lm")}<p class="rwsay" style="margin:2px 0 0">${RW_MAPS[rwMapOk(L.m)].say}</p>
       <div class="rwopp">${theirs?`✅ <b>${tn}</b> is READY${tb?` with <b>“${rwEsc(tb.nm)}”</b>`:""}!`:`<span class="rwdots"></span> ${tn} is picking a car…`}</div>
       <div class="rwbtns"><button class="b d" id="rwlq">✖ LEAVE</button>${mine?`<button class="b y rwbig" disabled>${theirs?"GET READY…":"WAITING FOR "+tn.toUpperCase()+"…"}</button>`:`<button class="b y rwbig" id="rwrdy" ${R?"":"disabled"}>READY! ⚔️</button>`}</div>
-      <p class="rwsay" style="margin-top:8px">Knock out ${tn}'s car, flip it, or push it in the pit! Watch out for the fire vents and the hammer guards in the corners. 2 minutes.</p></div>`;
+      <p class="rwsay" style="margin-top:8px">Knock out ${tn}'s car, flip it, or make it fall! 2 minutes.</p></div>`;
   $("#rwpanel").querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{S.sel=b.dataset.m;rwSave();sfx("tap");rwLobbyUI()});
+  $("#rwpanel").querySelectorAll("[data-lm]").forEach(b=>b.onclick=()=>{const L=RWD.live;if(!L||b.dataset.lm===L.m||(L.rX&&L.rO))return;sfx("tap");db.doc("games/rwl").update({m:b.dataset.lm,rX:0,rO:0}).catch(er)});
   $("#rwlq").onclick=()=>rwLiveLeave();const rd=$("#rwrdy");if(rd)rd.onclick=()=>{const R=rwSel();if(!R)return;rwSave(1);sfx("win");
     const L=RWD.live;db.doc("games/rwl").update({["b"+me()]:R.id,["r"+me()]:1,...(L&&L["r"+th]?{s:Date.now()+5000}:{})}).catch(er)}}
 function rwLiveLeave(){const G=RWG,L=RWD.live,B=G&&G.B;
@@ -3575,38 +3788,21 @@ function rwLiveLeave(){const G=RWG,L=RWD.live,B=G&&G.B;
   if(L&&!(B&&B.end)){db.doc("games/rwl").update({["q"+me()]:1}).catch(er)}const S=rwLoad();if(L){S.liveDone=L.id;rwSave()}if(G){G.lobby=null;G.mode="garage"}sfx("tap");rwGarage()}
 
 /* ---------- starting the battle ---------- */
-function rwBattleTidy(){const G=RWG;if(RWR&&RWR.foe)RWR.foe.clear();if(RWR&&RWR.bat)RWR.bat.visible=false;if(G&&G.B&&G.mode!=="battle")G.B=null;const h=$("#rwres");if(h)h.remove()}
+function rwBattleTidy(){const G=RWG;if(RWR&&RWR.foe)RWR.foe.clear();if(G&&G.B&&G.mode!=="battle")G.B=null;const h=$("#rwres");if(h)h.remove()}
 function rwBattleGo(){const G=RWG,L=RWD.live,th=rwThem();if(!G||!L||(G.B&&G.B.id===L.id))return;
   const S=rwLoad(),myR=S.bots.find(b=>b.id===L["b"+me()])||rwSel(),fo=RWD.g[th]&&RWD.g[th].bots&&RWD.g[th].bots[L["b"+th]];
   if(!fo||!myR){clearTimeout(G.waitT);G.waitT=setTimeout(rwOnLive,700);return}
   const T=THREE,FR=rwUnpack(L["b"+th],fo);G.mode="battle";G.view=null;G.viewing=null;$("#rwpanel").className="rwpanel";$("#rwpanel").innerHTML="";$("#rwbot").className="rwbot";$("#rwhint").textContent="";
-  rwShow(myR);$("#rwtop").className="rwtop";rwArena(1);RWR.dummies.clear();G.dum=[];rwBattleArena();RWR.bat.visible=true;
+  G.map=rwMapOk(L.m);rwShow(myR);$("#rwtop").className="rwtop";rwArena(1);RWR.dummies.clear();G.dum=[];if(!RWR.foe){RWR.foe=new T.Group();RWR.scene.add(RWR.foe)}
   const fb=rwBody(FR);rwLegacy(FR,fb);const FM=rwModel(FR,fb,{});FM.g.rotation.order="YZX";RWR.foe.clear();RWR.foe.add(FM.g);FM.ht=FM.box.y1+FM.dy;G.M.ht=G.M.box.y1+G.M.dy;G.M.g.rotation.order="YZX";
-  const st=rwStats(myR,G.body,rwCass()),fs=rwStats(FR,fb,th==="O"),sp=RW_SPAWN[me()],fp=RW_SPAWN[th],hpM=Math.round(80+st.arm*12);
+  const st=rwStats(myR,G.body,rwCass()),fs=rwStats(FR,fb,th==="O"),sp=rwMapCur().spawn[me()],fp=rwMapCur().spawn[th],hpM=Math.round(80+st.arm*12);
   G.car={x:sp[0],z:sp[1],yaw:sp[2],v:0,spd:2.4+st.spd*.85,turn:((myR.wheels||[]).some(w=>w.k==="t")?2.6:(myR.wheels||[]).length<=2?4.2:3.3),push:st.push,pow:st.pow,kg:st.kg,r:Math.max(.5,G.M.r*.85),
-    kx:0,kz:0,y:0,vy:0,rz:0,rzv:0,down:0,hp:hpM,hpM,out:0,burn:0};
-  G.B={id:L.id,s:L.s,ca:me()==="O"?Math.PI:0,t:-9,go:0,cd:9,seq:0,ev:[],evDone:0,fc:{f:0,b:0},cool:{},shot:{},ls:0,pend:0,fin:0,end:null,ram:0,vent:[0,0],guard:RW_GUARD.map(()=>({t:0,cd:0,sw:9,vis:9})),
+    kx:0,kz:0,y:0,vy:0,rz:0,rzv:0,down:0,hp:hpM,hpM,out:0,burn:0,mx:null,mz:null};
+  G.B={id:L.id,s:L.s,ca:me()==="O"?Math.PI:0,t:-9,go:0,cd:9,seq:0,ev:[],evDone:0,fc:{f:0,b:0},cool:{},shot:{},ls:0,pend:0,fin:0,end:null,ram:0,
     foe:{R:FR,M:FM,r:Math.max(.5,FM.r*.85),kg:fs.kg,push:fs.push,nm:FR.nm,x:fp[0],z:fp[1],yaw:fp[2],y:0,rz:0,spd:0,hp:1,hpM:1,fT:9,fB:9,fc:{f:0,b:0},net:null,last:0,pred:0,out:0,fin:0}};
   G.fireT=9;G.fireB=9;G.joy=null;G.dash=0;G.camSet=0;rwFireLabels();rwHud();sfx("b_warn")}
 function rwHud(){let h=$("#rwhud");if(!h){h=document.createElement("div");h.id="rwhud";h.className="rwhud";$("#rwc").appendChild(h)}const th=rwThem();
   h.innerHTML=`<div class="rwhp me"><b>YOU</b><i><s id="rwhpm"></s></i></div><div class="rwclk" id="rwclk">2:00</div><div class="rwhp th"><b>${rwNm(th).toUpperCase()}</b><i><s id="rwhpt"></s></i></div>`}
-function rwBattleArena(){if(RWR.bat)return;const T=THREE,g=new T.Group();RWR.bat=g;RWR.arena.add(g);RWR.foe=new T.Group();RWR.scene.add(RWR.foe);
-  const hz=rwTex(128,32,(x,w,h)=>{for(let i=-2;i<12;i++){x.fillStyle=i%2?"#111":"#ffc400";x.beginPath();x.moveTo(i*16,0);x.lineTo(i*16+16,0);x.lineTo(i*16,h);x.lineTo(i*16-16,h);x.fill()}});
-  /* fire vents: a grate that glows before it fires */
-  RWR.vents=RW_VENTS.map(([x,z])=>{const gr=rwTex(128,128,(c,w,h)=>{c.fillStyle="#1a1a1a";c.fillRect(0,0,w,h);c.fillStyle="#555";for(let i=8;i<w;i+=16)c.fillRect(i,0,6,h)});
-    const m=new T.MeshStandardMaterial({map:gr,roughness:.7,metalness:.6,emissive:new T.Color(0xff4400),emissiveIntensity:0}),d=new T.Mesh(new T.CircleGeometry(.95,32),m);d.rotation.x=-Math.PI/2;d.position.set(x,.012,z);g.add(d);
-    const r=new T.Mesh(new T.RingGeometry(.95,1.12,32),new T.MeshStandardMaterial({map:hz}));r.rotation.x=-Math.PI/2;r.position.set(x,.013,z);g.add(r);return{m,x,z}});
-  /* hammer guards in two corners — our own design: a squat iron block on tracks with one glowing eye and a big hammer */
-  RWR.guards=RW_GUARD.map(([gx,gz])=>{const zone=new T.Mesh(new T.RingGeometry(3.3,3.54,4,1),new T.MeshStandardMaterial({map:hz}));zone.rotation.set(-Math.PI/2,0,Math.PI/4);zone.position.set(gx,.014,gz);zone.scale.set(1,1,1);g.add(zone);
-    const gg=new T.Group(),iron=new T.MeshStandardMaterial({color:0x2c3038,metalness:.8,roughness:.35}),dark=new T.MeshStandardMaterial({color:0x15171b,roughness:.8});
-    const bx=new T.Mesh(new T.BoxGeometry(1.5,.9,1.3),iron);bx.position.y=.6;bx.castShadow=true;gg.add(bx);
-    for(const s of[-1,1]){const t=new T.Mesh(new T.BoxGeometry(1.7,.42,.3),dark);t.position.set(0,.21,s*.72);gg.add(t)}
-    const band=new T.Mesh(new T.BoxGeometry(1.52,.16,1.32),new T.MeshStandardMaterial({map:hz}));band.position.y=.86;gg.add(band);
-    const eye=new T.Mesh(new T.SphereGeometry(.17,16,12),new T.MeshStandardMaterial({color:0xff3b1f,emissive:new T.Color(0xff2a00),emissiveIntensity:1.6}));eye.position.set(.72,.62,0);gg.add(eye);
-    const arm=new T.Group();arm.position.set(.2,1.08,0);const bar=new T.Mesh(new T.BoxGeometry(1.9,.16,.18),iron);bar.position.x=.95;arm.add(bar);
-    const head=new T.Mesh(new T.BoxGeometry(.42,.55,.55),new T.MeshStandardMaterial({color:0x8a8f99,metalness:.9,roughness:.3}));head.position.set(1.85,-.12,0);head.castShadow=true;arm.add(head);arm.rotation.z=1.1;gg.add(arm);
-    gg.position.set(gx*1.1,0,gz*1.1);gg.rotation.y=Math.atan2(gz,-gx);g.add(gg);return{arm,gx,gz}})}
-
 /* ---------- each frame of a battle ---------- */
 function rwCanAct(){const G=RWG,c=G.car,B=G.B;return!!(B&&B.go&&!B.end&&!B.fin&&!c.out&&c.y<.08&&Math.cos(c.rz)>.6)}
 function rwBattleFrame(dt){const G=RWG,B=G.B,c=G.car,F=B.foe,now=Date.now();B.t=(now-B.s)/1000;
@@ -3635,13 +3831,12 @@ function rwBStep(dt){const G=RWG,B=G.B,c=G.car,M=G.M,F=B.foe,ed=rwEdge();let jx=
   if(G.dash>0){G.dash-=dt;if(act)c.v=G.dashSd==="b"?Math.min(c.v,-c.spd*1.8):Math.max(c.v,c.spd*1.8)}
   G.fireT+=dt;G.fireB+=dt;
   const fx=Math.cos(c.yaw),fz=-Math.sin(c.yaw);
-  if(c.out==="pit"){c.x+=(RW_PIT.x-c.x)*Math.min(1,dt*4);c.z+=(RW_PIT.z-c.z)*Math.min(1,dt*4);c.y=Math.max(-4,c.y-dt*(2+(-c.y)*3));c.v=0}
-  else{c.x+=(fx*c.v+c.kx)*dt;c.z+=(fz*c.v+c.kz)*dt;const kd=Math.pow(c.y>.05?.7:.05,dt);c.kx*=kd;c.kz*=kd;
+  if(c.out&&c.out!=="ko")rwFallStep(c,dt);
+  else{rwSlide(c,dt,ed);c.x+=(c.mx+c.kx)*dt;c.z+=(c.mz+c.kz)*dt;const kd=Math.pow(c.y>.05?.7:.05,dt);c.kx*=kd;c.kz*=kd;
     if(c.y>0||c.vy>0){c.vy-=15*dt;c.y+=c.vy*dt;c.rz+=c.rzv*dt;if(c.y<=0){c.y=0;if(c.vy<-4){c.vy=-c.vy*.25;sfx("hit");rwSparks(c.x,.1,c.z,8)}else c.vy=0;c.rzv*=.3}}
     else{c.rz=Math.atan2(Math.sin(c.rz),Math.cos(c.rz));const t=Math.abs(c.rz)>Math.PI/2?Math.sign(c.rz||1)*Math.PI:0;c.rz+=(t-c.rz)*Math.min(1,dt*6);c.rzv=0;
       if(Math.cos(c.rz)<0&&!c.out){if(!c.down)rwMsg("FLIPPED! 🙃");c.down+=dt;if(c.down>(ed?1.4:2.2)){c.down=0;c.vy=4.5;c.y=.01;c.rzv=-Math.sign(c.rz||1)*Math.PI/.6;sfx("b_swish");rwMsg("SELF-RIGHT!")}}else c.down=0}
-    const A=RW_ARENA-c.r*.8;if(Math.abs(c.x)>A){c.x=Math.sign(c.x)*A;c.v*=.3;c.kx*=-.3}if(Math.abs(c.z)>A){c.z=Math.sign(c.z)*A;c.v*=.3;c.kz*=-.3}
-    const ph=RW_PIT.h*(ed?.75:1);if(!c.out&&B.go&&!B.end&&c.y<.05&&Math.abs(c.x-RW_PIT.x)<ph&&Math.abs(c.z-RW_PIT.z)<ph){c.out="pit";rwMsg("INTO THE PIT! 🕳️");sfx("lose");rwLiveSend(2);setTimeout(()=>rwBEnd("lose","pit"),1400)}}
+    const fall=c.out?"":rwBounds(c,ed);if(fall&&B.go&&!B.end){c.out=fall;c.vy=0;rwMsg(RW_FALL[fall]);sfx("lose");rwLiveSend(2);setTimeout(()=>rwBEnd("lose",fall),1400)}}
   /* bumping into the other car: each phone moves its own car; the heavier, pushier car moves less */
   if(!c.out&&!F.out&&c.y<.4&&F.y<.4){const dx=F.x-c.x,dz=F.z-c.z,d=Math.hypot(dx,dz)||1e-3,ov=c.r+F.r-d;
     if(ov>0){const nx=dx/d,nz=dz/d,mp=c.kg*(1+c.push*.2),fp=F.kg*(1+F.push*.2),sh=fp/(mp+fp);c.x-=nx*ov*sh;c.z-=nz*ov*sh;const into=(fx*c.v)*nx+(fz*c.v)*nz;if(into>0)c.v*=1-sh*.6;
@@ -3680,7 +3875,7 @@ function rwOnPos(d){const G=RWG,B=G&&G.B;if(!G||G.mode!=="battle"||!B||d.id!==B.
   for(const e of d.ev||[])if(e.n>B.evDone){B.evDone=e.n;rwTakeHit(e)}
   if((d.f||0)>F.fc.f){F.fc.f=d.f;F.fT=0}if((d.b||0)>F.fc.b){F.fc.b=d.b;F.fB=0}
   F.hp=d.hp;F.hpM=d.hm||1;F.burn=d.br;if(d.fin){F.fin=1}
-  if(d.out&&!F.out){F.out=d.out;if(!B.end){rwMsg(d.out==="pit"?"INTO THE PIT! 🕳️":"KNOCKED OUT! 💥");sfx("b_boom");setTimeout(()=>rwBEnd("win",d.out),1400)}}
+  if(d.out&&!F.out){F.out=d.out;if(!B.end){rwMsg(RW_FALL[d.out]||"KNOCKED OUT! 💥");sfx("b_boom");setTimeout(()=>rwBEnd("win",d.out),1400)}}
   if(d.q&&!B.end)rwBEnd("win","left")}
 function rwFoeStep(dt){const G=RWG,B=G.B,F=B.foe,n=F.net;if(!n){rwPose(F.M,F.x,0,F.z,F.yaw,0);return}
   if(F.pred>0){F.pred-=dt;F.x+=F.pkx*dt;F.z+=F.pkz*dt;F.pkx*=Math.pow(.05,dt);F.pkz*=Math.pow(.05,dt);if(F.y>0||F.pvy>0){F.pvy-=15*dt;F.y=Math.max(0,F.y+F.pvy*dt);F.rz+=F.prz*dt;if(F.y<=0)F.pvy=0}}
@@ -3691,32 +3886,35 @@ function rwFoeStep(dt){const G=RWG,B=G.B,F=B.foe,n=F.net;if(!n){rwPose(F.M,F.x,0
   rwPose(F.M,F.x,F.y,F.z,F.yaw,F.rz);
   if(F.burn&&Math.random()<.7)rwFlame(new THREE.Vector3(F.x+(Math.random()-.5)*.5,F.y+.7,F.z+(Math.random()-.5)*.5),new THREE.Vector3(0,1,0),.6,1.4);
   if(F.out==="ko"&&Math.random()<.5)rwFlame(new THREE.Vector3(F.x,.9,F.z),new THREE.Vector3(0,1,0),.5,1.2)}
-/* fire vents and hammer guards (each phone works them out for its own car) */
-function rwHazards(dt){const G=RWG,B=G.B,c=G.car,F=B.foe,ed=rwEdge(),t=B.t,live=B.go&&!B.end&&!B.fin&&!c.out;
+/* fire vents, hammer guards and crushers (each phone works them out for its own car; in test drives they knock you about but don't hurt) */
+function rwHazards(dt){const G=RWG,c=G.car,H=G.hz;if(!H||!c||!RWR.vents)return;const bat=G.mode==="battle"&&G.B,B=G.B,F=bat?B.foe:null,ed=bat?rwEdge():false,t=bat?B.t:G.t-H.t0,
+    live=bat?(B.go&&!B.end&&!B.fin&&!c.out):!c.out,hurt=n=>{if(bat){c.hp-=n;rwKoCheck()}};
+  const mg=RWR.mg&&RWR.mg[G.map];if(mg&&mg.userData.lava)mg.userData.lava.offset.x=(G.t*.05)%1;if(mg&&mg.userData.water)mg.userData.water.offset.x=(G.t*.02)%1;
   RWR.vents.forEach((v,i)=>{const p=t>3?((t+i*3.5)%7+7)%7:0,warn=p>4.8&&p<5.8,fire=p>=5.8;v.m.emissiveIntensity=fire?1.4:warn?.35+.35*Math.sin(t*20):0;
     if(fire){for(let j=0;j<2;j++)rwFlame(new THREE.Vector3(v.x+(Math.random()-.5)*1.2,.1,v.z+(Math.random()-.5)*1.2),new THREE.Vector3(0,1,0),1.1,1)
-      if(live&&c.y<1&&Math.hypot(c.x-v.x,c.z-v.z)<1.15){c.hp-=dt*9*(ed?.75:1);c.burn=.4;if(B.vent[i]<t-1.5){B.vent[i]=t;rwMsg("🔥 BURNED!");sfx("b_boom")}rwKoCheck()}}});
+      if(live&&c.y<1&&Math.hypot(c.x-v.x,c.z-v.z)<1.15){hurt(dt*9*(ed?.75:1));c.burn=.4;if(H.vent[i]<t-1.5){H.vent[i]=t;rwMsg("🔥 BURNED!");sfx("b_boom")}}}});
   if(c.burn>0){c.burn-=dt;if(Math.random()<.7)rwFlame(new THREE.Vector3(c.x+(Math.random()-.5)*.5,c.y+.7,c.z+(Math.random()-.5)*.5),new THREE.Vector3(0,1,0),.6,1.4)}
   if(c.out==="ko"&&Math.random()<.5)rwFlame(new THREE.Vector3(c.x,.9,c.z),new THREE.Vector3(0,1,0),.5,1.2);
-  RWR.guards.forEach((gd,i)=>{const s=B.guard[i],inZ=(x,z)=>Math.abs(x-gd.gx)<2.5&&Math.abs(z-gd.gz)<2.5,mine=live&&inZ(c.x,c.z)&&c.y<.5,them=!F.out&&inZ(F.x,F.z);
+  RWR.guards.forEach((gd,i)=>{const s=H.guard[i],zh=gd.zh||2.5,inZ=(x,z)=>Math.abs(x-gd.gx)<zh&&Math.abs(z-gd.gz)<zh,mine=live&&inZ(c.x,c.z)&&c.y<.5,them=F&&!F.out&&inZ(F.x,F.z);
     s.cd-=dt;s.sw+=dt;s.vis-=dt;
     if(mine){s.t+=dt;if(s.t>.45&&s.cd<=0){s.cd=1.7;s.sw=0;s.hit=1}}else s.t=0;
     if(them&&!mine&&s.vis<=0&&s.sw>1.7){s.vis=1.9;s.sw=0}
-    if(s.hit&&s.sw>.18){s.hit=0;if(inZ(c.x,c.z)&&!c.out){const l=Math.hypot(gd.gx,gd.gz),km=60/Math.max(40,c.kg)*(ed?.8:1);c.hp-=10*(ed?.75:1);c.kx+=-gd.gx/l*7*km;c.kz+=-gd.gz/l*7*km;c.vy=3.5*km;c.y=.01;c.rzv+=(Math.random()-.5)*3;
-      sfx("b_boom");rwSparks(c.x,.4,c.z,16);rwMsg("🔨 WHAM!");if(navigator.vibrate)try{navigator.vibrate(80)}catch(_){}rwKoCheck()}}
-    const w=s.sw;gd.arm.rotation.z=w<.18?1.1-(w/.18)*1.55:w<.6?-.45:w<1.3?-.45+((w-.6)/.7)*1.55:1.1})}
+    if(s.hit&&s.sw>.18){s.hit=0;if(inZ(c.x,c.z)&&!c.out){const l=Math.hypot(gd.gx,gd.gz)||1,km=60/Math.max(40,c.kg||60)*(ed?.8:1);hurt(10*(ed?.75:1));c.kx+=-gd.gx/l*7*km;c.kz+=-gd.gz/l*7*km;c.vy=3.5*km;c.y=.01;c.rzv=(c.rzv||0)+(Math.random()-.5)*3;
+      sfx("b_boom");rwSparks(c.x,.4,c.z,16);rwMsg(gd.kind==="press"?"💥 CRUNCH!":"🔨 WHAM!");if(navigator.vibrate)try{navigator.vibrate(80)}catch(_){}}}
+    const w=s.sw;if(gd.kind==="press")gd.arm.position.y=w<.18?2.6-(w/.18)*2.2:w<.6?.4:w<1.3?.4+((w-.6)/.7)*2.2:2.6;
+    else gd.arm.rotation.z=w<.18?1.1-(w/.18)*1.55:w<.6?-.45:w<1.3?-.45+((w-.6)/.7)*1.55:1.1})}
 /* send my car a few times a second (straight away after a hit or a weapon) */
 function rwLiveSend(force){const G=RWG,B=G&&G.B;if(!B||!G.car)return;const now=performance.now();if(B.end&&force!==2&&!B.q)return;
   if(force!==2){if(!force&&now-B.ls<180)return;if(force&&now-B.ls<90){B.pend=1;return}}B.ls=now;B.pend=0;
   const c=G.car,fx=Math.cos(c.yaw),fz=-Math.sin(c.yaw),r=v=>Math.round(v*100)/100;
-  B.pk=(B.pk||0)+1;db.doc("games/rwp_"+me()).set({id:B.id,k:B.pk,x:r(c.x),z:r(c.z),y:r(c.y),yw:r(c.yaw),rz:r(c.rz),vx:r(fx*c.v+c.kx),vz:r(fz*c.v+c.kz),hp:Math.max(0,Math.round(c.hp)),hm:c.hpM,f:B.fc.f,b:B.fc.b,ev:B.ev,out:c.out||0,fin:B.fin?1:0,br:c.burn>0?1:0,q:B.q?1:0}).catch(er)}
+  B.pk=(B.pk||0)+1;db.doc("games/rwp_"+me()).set({id:B.id,k:B.pk,x:r(c.x),z:r(c.z),y:r(c.y),yw:r(c.yaw),rz:r(c.rz),vx:r((c.mx==null?fx*c.v:c.mx)+c.kx),vz:r((c.mz==null?fz*c.v:c.mz)+c.kz),hp:Math.max(0,Math.round(c.hp)),hm:c.hpM,f:B.fc.f,b:B.fc.b,ev:B.ev,out:c.out||0,fin:B.fin?1:0,br:c.burn>0?1:0,q:B.q?1:0}).catch(er)}
 /* ---------- the end ---------- */
 function rwBEnd(res,why){const G=RWG,B=G&&G.B;if(!B||B.end||G.mode!=="battle")return;B.end={res,why};const S=rwLoad();S.liveDone=B.id;rwSave();rwControls(0);rwLiveSend(2);
   if(res==="win"){sfx("win");const w=RWD.win||{};db.doc("games/rwwin").update({[me()]:(w[me()]||0)+1}).catch(er)}else if(res==="lose")sfx("lose");
   setTimeout(rwBResult,res==="none"?200:1300)}
 function rwBResult(){const G=RWG,B=G&&G.B;if(!B||!B.end||G.mode!=="battle")return;const th=rwNm(rwThem()),{res,why}=B.end,win=res==="win";
   const say=res==="none"?`Lost touch with ${th}'s phone.`:why==="left"?`${th} left the battle.`:why==="time"?(win?"Time's up — your car had more left!":`Time's up — ${th}'s car had more left.`)
-    :why==="pit"?(win?`${th}'s car fell in the pit!`:"Your car fell in the pit!"):(win?`${th}'s car was knocked out!`:"Your car was knocked out!");
+    :RW_FALLSAY[why]?(win?`${th}'s car ${RW_FALLSAY[why]}!`:`Your car ${RW_FALLSAY[why]}!`):(win?`${th}'s car was knocked out!`:"Your car was knocked out!");
   let h=$("#rwres");if(h)h.remove();h=document.createElement("div");h.id="rwres";h.className="rwres";
   h.innerHTML=`<div class="rwcard"><div class="rwbig2">${res==="none"?"📡":win?"🏆":"💥"}</div><div class="rwname" style="text-align:center">${res==="none"?"BATTLE OVER":win?"YOU WIN!":th.toUpperCase()+" WINS!"}</div><p class="rwsay" style="text-align:center">${say}</p>
     <div class="rwsoon">${rwTally()}</div><div class="rwbtns"><button class="b" id="rwrg">🏠 GARAGE</button><button class="b y rwbig" id="rwrm">⚔️ REMATCH</button></div></div>`;
