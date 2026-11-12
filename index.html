@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta name="app-build" content="12 Nov 11:15 PT"><meta charset="utf-8">
+<html lang="en"><head><meta name="app-build" content="12 Nov 11:48 PT"><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Legends"><meta name="theme-color" content="#14102e">
@@ -9799,11 +9799,12 @@ function vRace(){const pick=(()=>{try{return localStorage.getItem("dfLv")||"r"}c
   $("#v").innerHTML=`<div class="dfs" id="rc"><canvas id="dfc"></canvas>
   <button class="dfx" id="dfq" aria-label="Back">${IC("back",26)}</button><button class="dfx dfr" id="dfre" aria-label="Restart race">RESTART</button>
   <div class="dfgo" id="dgo"><div class="dflvs">${DF_LV.map((l,i)=>`<button class="dflv${pick==String(i)?" on":""}" data-lv="${i}"><i>${l.ic}</i><b>${l.nm}</b></button>`).join("")}<button class="dflv${pick==="r"?" on":""}" data-lv="r"><i>🎲</i><b>SURPRISE ME</b></button></div>
-    <div class="dfsay" id="dfsay"></div><button class="b y" id="st">START RACE</button><div class="dfh">Tap to flap up · Press and hold to hover · Grab gems and rings to go faster</div></div>
+    <div class="dfsay" id="dfsay"></div><button class="b y" id="st">START RACE</button><div class="dfh">Tap to flap up · Hold to hover in place · Grab gems and rings to go faster</div></div>
   <button id="dff" class="dffire" aria-label="Fire breath"><b>FIRE!</b></button></div>`;
   document.body.classList.add("dfon");try{const d=document.documentElement;if(!document.fullscreenElement&&d.requestFullscreen)d.requestFullscreen({navigationUI:"hide"}).catch(()=>{})}catch(e){}
   dfFit();const c=$("#dfc");
-  c.onpointerdown=e=>{e.preventDefault();dfFlap();if(DF){DF.hold=1;DF.holdT=DF.t}};const rel=()=>{if(DF)DF.hold=0};c.onpointerup=rel;c.onpointercancel=rel;c.onpointerleave=rel;
+  /* press = stop and hover right where you are; a quick tap (let go straight away) = flap up */
+  c.onpointerdown=e=>{e.preventDefault();dfPress()};const rel=()=>dfRelease();c.onpointerup=rel;c.onpointercancel=rel;c.onpointerleave=rel;
   /* FIRE also flaps, so using it never makes you drop */
   const fb=$("#dff");fb.onpointerdown=e=>{e.preventDefault();e.stopPropagation();dfFlap();dfFire()};
   const say=()=>{const p=(()=>{try{return localStorage.getItem("dfLv")||"r"}catch(e){return"r"}})(),l=DF_LV[+p];const e=$("#dfsay");if(e)e.textContent=p==="r"?"A surprise world every race!":l?l.ic+" "+l.say:""};say();
@@ -9825,6 +9826,8 @@ function raceUp(){
   if(go)go.style.display=over?"":"none";if(re)re.style.display=over?"none":"";
   const b=$("#st");if(b){const t=r&&r.w?"RACE AGAIN":"START RACE";if(b.textContent!==t)b.textContent=t}
 }
+function dfPress(){if(!DF)return;if(!dfRun()){dfFlap();return}DF.hold=1;DF.holdT=DF.t;if(DF.stun<=0)DF.vy=0}
+function dfRelease(){if(!DF||!DF.hold)return;DF.hold=0;if(DF.t-(DF.holdT||0)<.22)dfFlap()}
 /* bump: slow down, get knocked back a little, blink for a moment */
 function dfBump(up,col){const E=dfEase();DF.hit=E.ht;DF.inv=E.inv;DF.x-=28;DF.vy=up?-220:120;DF.boost=0;sfx("hit");DF.shake=.25;
   for(let i=0;i<8;i++)DF.fx.push({x:DF.x+20,y:DF.y,vx:(Math.random()-.5)*200,vy:(Math.random()-.7)*200,t:.5,c:col||"#fff6c8"})}
@@ -9854,8 +9857,8 @@ function dfStep(dt){
     }
     /* icicles start falling when you come near */
     for(const o of DF.ob){if(o.x>DF.x+40)break;if(o.t==="ice"&&o.fy==null&&o.x+40<DF.x-30){o.fy=-DFT;o.fv=0;sfx("tap")}}
-    const hov=DF.hold&&DF.t-(DF.holdT||0)>.16&&DF.stun<=0;
-    if(hov){DF.vy+=(0-DF.vy)*Math.min(1,dt*8);DF.vy+=wind*.6*(role==="child"?.8:1)*dt}
+    const hov=DF.hold&&DF.stun<=0;
+    if(hov){DF.vy=0;DF.fl=Math.max(DF.fl,.12)}
     else DF.vy=Math.min(DF.stun>0?520:430,DF.vy+(E.grav+wind*(role==="child"?.8:1))*(DF.stun>0?1.25:1)*dt);DF.y+=DF.vy*dt;DF.x+=sp*dt;
     if(DF.y<-40){DF.y=-40;DF.vy=Math.max(0,DF.vy)}
     if(DF.y>DFH-34){DF.y=DFH-34;DF.vy=-300;if(DF.inv<=0){DF.hit=E.ht*.5;DF.inv=.5;sfx("hit");DF.shake=.15;if(DF.lv===4)DF.msg={t:.8,txt:"HOT HOT HOT!",c:"#ff8a1f"}}}
@@ -10103,8 +10106,8 @@ function dfDraw(c){
   if(live&&r.w){ctx.fillStyle="rgba(20,10,40,.45)";ctx.fillRect(0,DFH/2-150,DFW,110);big(r.w===me()?"YOU WIN!":dfNm(ot()).toUpperCase()+" WINS!",DFH/2-96,40,r.w===me()?"#ffd23f":"#fff");big(r.w===me()?(gameOK()?"+2 coins":"Share 2 things today for coins"):"Better luck next time!",DFH/2-62,16,"#fff")}
 }
 
-window.addEventListener("keyup",e=>{if([" ","ArrowUp","w","W"].includes(e.key)&&DF)DF.hold=0});
-window.addEventListener("keydown",e=>{if(g!=="race"||tab!=="play")return;if([" ","ArrowUp","w","W"].includes(e.key)){e.preventDefault();if(e.repeat)return;dfFlap();if(DF){DF.hold=1;DF.holdT=DF.t}}else if(["f","F","Enter"].includes(e.key)){e.preventDefault();dfFire()}});
+window.addEventListener("keyup",e=>{if([" ","ArrowUp","w","W"].includes(e.key))dfRelease()});
+window.addEventListener("keydown",e=>{if(g!=="race"||tab!=="play")return;if([" ","ArrowUp","w","W"].includes(e.key)){e.preventDefault();if(e.repeat)return;dfPress()}else if(["f","F","Enter"].includes(e.key)){e.preventDefault();dfFire()}});
 /* ---- More games ---- */
 /* ---- Memory Match: a big game of 52 cards (26 pairs) ----
    Kept in step between the two phones like this:
