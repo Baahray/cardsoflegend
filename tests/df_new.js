@@ -17,36 +17,38 @@ const DFI={};
 function dfImg(c){if(!DFI[c]){const i=new Image();i.src=c==="red"?DRG_RED:DRG_GREEN;DFI[c]=i}return DFI[c]}
 function dfRand(seed){let a=seed>>>0;return()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 const dfH=(i,s)=>{const x=Math.sin(i*127.1+s*311.7)*43758.5453;return x-Math.floor(x)};
-/* the course for one level: gaps to fly through, plus that world's own dangers, gems and rings */
-function dfCourse(s,lv){lv=lv||0;const r=dfRand((s+lv*7919)%4294967296),ob=[],K=DF_LV[lv].k;let x=620,y=270;
+/* the course for one level. Fair rules: the first stretch is just gaps; after every gap there's about 1½ seconds of open sky
+   before a danger, and the same again before the next gap; each stretch has one kind of danger; dangers always leave a clear way past */
+function dfCourse(s,lv){lv=lv||0;const r=dfRand((s+lv*7919)%4294967296),ob=[],K=DF_LV[lv].k,SAFE=250,AFTER=230;let x=620,y=270;
   const gap=(x,y,o)=>ob.push({t:"gap",x,y,w:DF_OW,got:0,...(o||{})}),ring=(x,y)=>ob.push({t:"ring",x:x-18,y,w:36,got:0}),
     gems=(x0,y0,x1,y1,k,arc)=>{for(let i=0;i<k;i++){const t=k>1?i/(k-1):.5;ob.push({t:"gem",x:x0+(x1-x0)*t-8,y:y0+(y1-y0)*t-(arc||0)*4*t*(1-t),w:16,got:0})}},
-    nextY=p=>Math.max(170,Math.min(390,y+(r()-.5)*(190+p*90)));
-  if(K==="cave"){/* caves: winding tunnels, with open caverns of bats and crystal spikes between them */
-    let cy=270;while(x<DF_FIN-700){const p=x/DF_FIN;
-      if(r()<.62){const len=900+r()*600,ph=r()*6,amp=60+p*40,g0=210-p*45;for(let cx=x;cx<x+len;cx+=40){const u=(cx-x)/len,c=270+Math.sin(u*Math.PI*2*(1.2+r()*.05)+ph)*amp*Math.sin(Math.PI*u);ob.push({t:"cave",x:cx,y:c,w:40,g:g0+Math.sin(u*9+ph)*12,got:0})}
-        for(let i=1;i<6;i++){const gx=x+len*i/6,o=ob.filter(o=>o.t==="cave"&&Math.abs(o.x-gx)<21)[0];if(o)ob.push({t:"gem",x:gx-8,y:o.y,w:16,got:0})}x+=len+220}
-      else{for(let k=0;k<3;k++){cy=nextY(p);y=cy;gap(x,cy,{sp:"crystal"});if(r()<.7)ob.push({t:"bats",x:x+150,y:cy+(r()-.5)*60,w:60,amp:50+r()*30,per:1.6+r()*.8,ph:r()*6});gems(x+DF_OW+10,cy,x+DF_OW+120,cy,3);x+=280+r()*40}}}
-  }else while(x<DF_FIN-700){const p=x/DF_FIN,ny=nextY(p);
-    if(K==="valley"){gap(x,ny,p>.55&&r()<.35?{mv:{a:34,per:3.2,ph:r()*6}}:null);if(r()<.5)gems(x+DF_OW+14,ny,x+DF_OW+150,nextY(p),4,30);else ring(x+DF_OW+120,ny+(r()-.5)*50);y=ny;x+=255+r()*70}
-    else if(K==="snow"){gap(x,ny);y=ny;const roll=r();
-      if(roll<.38){for(let i=0;i<2+(p>.5?1:0);i++)ob.push({t:"ice",x:x+DF_OW+60+i*55,y:0,w:22,len:70+r()*40,got:0});x+=300+r()*40}
-      else if(roll<.62){const up=r()<.6;ob.push({t:"wind",x:x+DF_OW+30,y:0,w:280,f:up?-560:430,got:0});gems(x+DF_OW+60,up?ny-70:ny+60,x+DF_OW+280,up?ny-120:ny+100,4);x+=380}
-      else{gems(x+DF_OW+14,ny,x+DF_OW+150,ny,3);x+=260+r()*60}}
-    else if(K==="castle"){const gate=p>.15&&r()<.45;gap(x,ny,gate?{sp:"gate",mv:{a:46+p*30,per:2.6+r()*.8,ph:r()*6}}:null);y=ny;
-      if(r()<.5){ob.push({t:"arc",x:x+DF_OW+110,y:0,w:30,kind:"stone",per:2.6+r()*.6,ph:r()*3,top:120+r()*120,got:0});gems(x+DF_OW+30,ny,x+DF_OW+70,ny,2);x+=330}else{ring(x+DF_OW+110,ny);gems(x+DF_OW+150,ny,x+DF_OW+210,ny,2);x+=270+r()*50}}
-    else if(K==="volcano"){gap(x,ny);y=ny;if(r()<.6){ob.push({t:"arc",x:x+DF_OW+100,y:0,w:30,kind:"fire",per:2.2+r()*.7,ph:r()*3,top:110+r()*140,got:0});if(p>.5&&r()<.5)ob.push({t:"arc",x:x+DF_OW+170,y:0,w:30,kind:"fire",per:2.4+r()*.6,ph:r()*3,top:140+r()*120,got:0});x+=340}
-      else{gems(x+DF_OW+14,ny,x+DF_OW+150,nextY(p),4,40);x+=270+r()*50}}
-    else if(K==="storm"){gap(x,ny,r()<.5?{mv:{a:28+p*24,per:4+r(),ph:r()*6}}:null);y=ny;
-      if(r()<.55){const fromTop=r()<.65;ob.push({t:"bolt",x:x+DF_OW+110,y:0,w:24,top:fromTop,to:fromTop?150+r()*120:280+r()*110,per:3.2+r()*.8,ph:r()*3,got:0});x+=330}
-      else{ring(x+DF_OW+110,ny);gems(x+DF_OW+150,ny,x+DF_OW+230,ny,2);x+=290}}}
+    nextY=p=>Math.max(180,Math.min(380,y+(r()-.5)*(150+p*90))),
+    plain=(n,p)=>{for(let i=0;i<n;i++){const ny=nextY(p);gap(x,ny);if(i<n-1){if(r()<.55)gems(x+DF_OW+20,ny,x+DF_OW+170,nextY(p),4,24);else ring(x+DF_OW+110,ny)}y=ny;x+=270+r()*50}};
+  /* gentle start */
+  plain(3,0);
+  while(x<DF_FIN-900){const p=x/DF_FIN,roll=r();
+    if(roll<.3){plain(2,p);continue}
+    /* a danger stretch: gap, open sky, the danger, open sky */
+    const ny=nextY(p);y=ny;
+    if(K==="valley"){gap(x,ny,p>.5?{mv:{a:24,per:3.8,ph:r()*6}}:null);gems(x+DF_OW+30,ny,x+DF_OW+200,nextY(p),4,30);ring(x+DF_OW+300,ny);x+=DF_OW+420}
+    else if(K==="snow"){gap(x,ny);const hx=x+DF_OW+SAFE;
+      if(r()<.55){/* a row of icicles hanging from the top: fly underneath. They shake as you come, and drop behind you */const low=200+r()*40;for(let i=0;i<3;i++)ob.push({t:"ice",x:hx+i*70,y:0,w:22,tip:low-(i===1?30:0),got:0});gems(hx,low+70,hx+150,low+70,3);x=hx+140+AFTER}
+      else{const up=r()<.6;ob.push({t:"wind",x:hx-60,y:0,w:300,f:up?-380:280,got:0});gems(hx-20,up?ny-50:ny+40,hx+200,up?ny-100:ny+80,4);x=hx+240+AFTER}}
+    else if(K==="castle"){if(r()<.5){gap(x,ny,{sp:"gate",mv:{a:34+p*16,per:3.6+r()*.6,ph:r()*6}});ring(x+DF_OW+150,ny);x+=DF_OW+330}
+      else{gap(x,ny);const hx=x+DF_OW+SAFE;ob.push({t:"arc",x:hx,y:0,w:30,kind:"stone",per:3.6+r()*.6,ph:r()*3,top:250+r()*60,got:0});gems(hx-10,160,hx+40,160,2);x=hx+30+AFTER}}
+    else if(K==="cave"){if(r()<.55){const len=800+r()*500,ph=r()*6,amp=50+p*30,g0=215-p*35;for(let cx=x;cx<x+len;cx+=40){const u=(cx-x)/len,c=270+Math.sin(u*Math.PI*2*1.1+ph)*amp*Math.sin(Math.PI*u);ob.push({t:"cave",x:cx,y:c,w:40,g:g0+Math.sin(u*9+ph)*10,got:0})}
+        for(let i=1;i<6;i++){const gx=x+len*i/6,o=ob.filter(o=>o.t==="cave"&&Math.abs(o.x-gx)<21)[0];if(o)ob.push({t:"gem",x:gx-8,y:o.y,w:16,got:0})}x+=len+AFTER}
+      else{gap(x,ny,{sp:"crystal"});const hx=x+DF_OW+SAFE,by=200+r()*140;ob.push({t:"bats",x:hx,y:by,w:60,amp:45,per:2.8+r()*.6,ph:r()*6});gems(hx+10,by<270?by+110:by-110,hx+50,by<270?by+110:by-110,2);x=hx+60+AFTER}}
+    else if(K==="volcano"){gap(x,ny);const hx=x+DF_OW+SAFE;ob.push({t:"arc",x:hx,y:0,w:30,kind:"fire",per:3.4+r()*.6,ph:r()*3,top:240+r()*70,got:0});gems(hx-10,150,hx+40,150,2);x=hx+30+AFTER}
+    else if(K==="storm"){if(r()<.5){gap(x,ny,{mv:{a:22+p*14,per:4.2+r(),ph:r()*6}});ring(x+DF_OW+150,ny);x+=DF_OW+330}
+      else{gap(x,ny);const hx=x+DF_OW+SAFE,fromTop=r()<.6;ob.push({t:"bolt",x:hx,y:0,w:24,top:fromTop,to:fromTop?190+r()*50:300+r()*50,per:3.6+r()*.6,ph:r()*3,got:0});gems(hx,fromTop?340:160,hx+40,fromTop?340:160,2);x=hx+24+AFTER}}}
   ob.sort((a,b)=>a.x-b.x);return ob}
-const dfEase=()=>role==="child"?{gap:196,grav:930,flap:-335,ht:.75,inv:1.4,rng:200,cd:2.5,stun:.9,hz:.7}:{gap:150,grav:1120,flap:-360,ht:1,inv:1.1,rng:150,cd:3.5,stun:1.4,hz:1};
+const dfEase=()=>role==="child"?{gap:196,grav:930,flap:-430,ht:.75,inv:1.4,rng:200,cd:2.5,stun:.9,hz:.7}:{gap:150,grav:1120,flap:-450,ht:1,inv:1.1,rng:150,cd:3.5,stun:1.4,hz:1};
 /* where a moving gap's middle is right now (race clock) */
 const dfGy=(o,rt)=>o.mv?o.y+Math.sin(rt*2*Math.PI/o.mv.per+o.mv.ph)*o.mv.a:o.y;
 const dfGap=(o,E)=>o.t==="cave"?o.g*(E.gap/150):E.gap;
 /* a stone or fireball thrown up from below: its height now (or null while it's out of sight) */
-const dfArcY=(o,rt)=>{const u=(((rt+o.ph)%o.per)+o.per)%o.per/o.per;if(u>.82)return null;const q=u/.82;return DFH+40-(DFH+40-o.top)*4*q*(1-q)};
+const dfArcY=(o,rt)=>{const u=(((rt+o.ph)%o.per)+o.per)%o.per/o.per;if(u>.7)return null;const q=u/.7;return DFH+40-(DFH+40-o.top)*4*q*(1-q)};
 /* lightning: 0 = quiet, 1 = warning flicker, 2 = striking */
 const dfBoltSt=(o,rt)=>{const u=(((rt+o.ph)%o.per)+o.per)%o.per;return u<o.per-1.4?0:u<o.per-.45?1:2};
 let DF=null,DFG={x:0,y:270,tx:0,ty:270,t:0,stun:0,fire:0,face:1},DFS=0;
@@ -55,7 +57,7 @@ const dfRun=()=>{const r=RA;return!!(DF&&r&&r.s===DF.s&&Date.now()>=r.s&&!r.w&&!
 const dfRt=()=>{const r=RA;return r&&r.s?(Date.now()-r.s)/1000:DF?DF.t:0};
 function dfInRange(){if(!dfRun())return false;const E=dfEase(),dx=DFG.x-DF.x,dy=DFG.y-DF.y;return Math.abs(dx)<E.rng&&Math.abs(dy)<75&&DFG.stun<=0&&(DFG.immU||0)<Date.now()&&DFG.tx<DF_FIN}
 
-function dfFire(){if(!dfRun()||DF.fcd>0||DF.stun>0)return;const E=dfEase(),hit=dfInRange(),dx=DFG.x-DF.x,n=Date.now(),k=me()==="X"?"O":"X";
+function dfFire(){if(!dfRun()||DF.fcd>0||DF.stun>0)return;const E=dfEase(),hit=false,dx=DFG.x-DF.x,n=Date.now(),k=me()==="X"?"O":"X";
   DF.face=hit&&dx<0?-1:1;DF.fire=.65;DF.fcd=E.cd;sfx("b_throw");
   for(let i=0;i<26;i++){const sp=120+Math.random()*(hit?Math.abs(dx)*2.2:260);DF.fx.push({x:DF.x+DF.face*34,y:DF.y-4,vx:DF.face*sp,vy:(Math.random()-.5)*90,t:.45,c:Math.random()<.5?"#ffb020":"#ff5a1f",fl:1})}
   if(hit){DFG.stun=1.3;DFG.vy=0;DFG.immU=n+2600;sfx("b_boom",.55);DF.msg={t:1.4,txt:dfNm(ot()).toUpperCase()+" IS STUNNED!",c:"#ffd23f"}}
@@ -92,11 +94,11 @@ function vRace(){const pick=(()=>{try{return localStorage.getItem("dfLv")||"r"}c
   $("#v").innerHTML=`<div class="dfs" id="rc"><canvas id="dfc"></canvas>
   <button class="dfx" id="dfq" aria-label="Back">${IC("back",26)}</button><button class="dfx dfr" id="dfre" aria-label="Restart race">RESTART</button>
   <div class="dfgo" id="dgo"><div class="dflvs">${DF_LV.map((l,i)=>`<button class="dflv${pick==String(i)?" on":""}" data-lv="${i}"><i>${l.ic}</i><b>${l.nm}</b></button>`).join("")}<button class="dflv${pick==="r"?" on":""}" data-lv="r"><i>🎲</i><b>SURPRISE ME</b></button></div>
-    <div class="dfsay" id="dfsay"></div><button class="b y" id="st">START RACE</button><div class="dfh">Tap anywhere to flap · Grab gems and rings to go faster · When ${dfNm(ot())} is close, hit FIRE!</div></div>
+    <div class="dfsay" id="dfsay"></div><button class="b y" id="st">START RACE</button><div class="dfh">Tap to flap up · Press and hold to hover · Grab gems and rings to go faster</div></div>
   <button id="dff" class="dffire" aria-label="Fire breath"><b>FIRE!</b></button></div>`;
   document.body.classList.add("dfon");try{const d=document.documentElement;if(!document.fullscreenElement&&d.requestFullscreen)d.requestFullscreen({navigationUI:"hide"}).catch(()=>{})}catch(e){}
   dfFit();const c=$("#dfc");
-  c.onpointerdown=e=>{e.preventDefault();dfFlap()};
+  c.onpointerdown=e=>{e.preventDefault();dfFlap();if(DF){DF.hold=1;DF.holdT=DF.t}};const rel=()=>{if(DF)DF.hold=0};c.onpointerup=rel;c.onpointercancel=rel;c.onpointerleave=rel;
   /* FIRE also flaps, so using it never makes you drop */
   const fb=$("#dff");fb.onpointerdown=e=>{e.preventDefault();e.stopPropagation();dfFlap();dfFire()};
   const say=()=>{const p=(()=>{try{return localStorage.getItem("dfLv")||"r"}catch(e){return"r"}})(),l=DF_LV[+p];const e=$("#dfsay");if(e)e.textContent=p==="r"?"A surprise world every race!":l?l.ic+" "+l.say:""};say();
@@ -113,8 +115,7 @@ function raceUp(){
   const fresh=r&&r.s&&!r.w&&Date.now()<r.s+120000;if(r&&r.s&&(!DF||DF.s!==r.s)&&(fresh||!DF||!DF.pv)){DF=dfNew(r.s,dfLvOf(r));DFG={x:0,y:270,tx:0,ty:270,t:Date.now(),stun:0,fire:0,face:1,vy:0}}
   if(r){const k=me()==="X"?"O":"X",tx=r["p"+k]||0,ty=r["y"+k]||270;if(tx!==DFG.tx||ty!==DFG.ty){DFG.tx=tx;DFG.ty=ty;DFG.t=Date.now()}
     const ft=r["f"+k];if(ft&&ft>=r.s&&ft!==DFG.fl){DFG.fl=ft;DFG.fire=.65;DFG.face=DF.x<DFG.x?-1:1}
-    const zt=r["z"+me()];if(zt&&zt>=r.s&&zt!==DF.zl){DF.zl=zt;if(dfRun()&&DF.imm<=0){const E=dfEase();DF.stun=E.stun;DF.imm=E.stun+1;DF.vy=160;DF.hit=E.ht;DF.boost=0;DF.inv=Math.max(DF.inv,E.stun+.3);DF.shake=.3;sfx("b_punch");
-      DF.msg={t:1.4,txt:"STUNNED BY "+dfNm(ot()).toUpperCase()+"!",c:"#ff7a7a"};for(let i=0;i<14;i++)DF.fx.push({x:DF.x,y:DF.y,vx:(Math.random()-.5)*220,vy:(Math.random()-.8)*200,t:.6,c:Math.random()<.5?"#ffb020":"#ff5a1f"})}}}
+  }
   const n=Date.now(),over=!r||!r.s||r.w||(DF&&DF.done)||n>r.s+120000,go=$("#dgo"),re=$("#dfre");
   if(go)go.style.display=over?"":"none";if(re)re.style.display=over?"none":"";
   const b=$("#st");if(b){const t=r&&r.w?"RACE AGAIN":"START RACE";if(b.textContent!==t)b.textContent=t}
@@ -141,14 +142,16 @@ function dfStep(dt){
       /* gaps and cave walls */
       if(o.t==="gap"||o.t==="cave"){const gy=dfGy(o,rt),G=dfGap(o,E),gt=gy-G/2,gb=gy+G/2;if(DF.y-hy<gt-6||DF.y+hy>gb+6){dfBump(DF.y-hy>=gt);break}continue}
       /* icicles drop when you get close */
-      if(o.t==="ice"){if(o.fy==null||o.gone)continue;const tipY=o.fy+o.len,ix=o.x+11;if(Math.abs(DF.x-ix)<(14+hx*.6)*hz&&DF.y-hy<tipY&&DF.y+hy>o.fy){dfBump(false,"#dff4ff");o.gone=1;break}continue}
-      if(o.t==="arc"){const ay=dfArcY(o,rt);if(ay!=null&&Math.hypot(o.x+15-DF.x,ay-DF.y)<(17+14)*hz){dfBump(ay>DF.y,o.kind==="fire"?"#ff8a1f":"#bbb");if(o.kind==="fire")DF.msg={t:.9,txt:"TOASTY!",c:"#ff8a1f"};break}continue}
-      if(o.t==="bats"){let hit=false;for(let b=0;b<3;b++){const by=o.y+Math.sin(rt*2*Math.PI/o.per+o.ph+b*2.1)*o.amp,bx=o.x+b*24;if(Math.hypot(bx-DF.x,by-DF.y)<(12+12)*hz){hit=true;break}}if(hit){dfBump(true,"#b48cff");DF.msg={t:.8,txt:"BATS!",c:"#c9a8ff"};break}continue}
+      if(o.t==="ice"){if(o.fy!=null)continue;if(Math.abs(DF.x-(o.x+11))<(9+hx*.5)*hz&&DF.y-hy<o.tip-4){dfBump(false,"#dff4ff");break}continue}
+      if(o.t==="arc"){const ay=dfArcY(o,rt);if(ay!=null&&Math.hypot(o.x+15-DF.x,ay-DF.y)<(14+10)*hz){dfBump(ay>DF.y,o.kind==="fire"?"#ff8a1f":"#bbb");if(o.kind==="fire")DF.msg={t:.9,txt:"TOASTY!",c:"#ff8a1f"};break}continue}
+      if(o.t==="bats"){let hit=false;for(let b=0;b<3;b++){const by=o.y+Math.sin(rt*2*Math.PI/o.per+o.ph)*o.amp+(b===1?-14:0),bx=o.x+b*22;if(Math.hypot(bx-DF.x,by-DF.y)<(9+10)*hz){hit=true;break}}if(hit){dfBump(true,"#b48cff");DF.msg={t:.8,txt:"BATS!",c:"#c9a8ff"};break}continue}
       if(o.t==="bolt"){if(dfBoltSt(o,rt)===2&&Math.abs(o.x+12-DF.x)<18*hz+hx*.5&&(o.top?DF.y-hy<o.to:DF.y+hy>o.to)){dfBump(!o.top,"#fff59a");DF.msg={t:.9,txt:"ZAPPED!",c:"#fff59a"};break}continue}
     }
     /* icicles start falling when you come near */
-    for(const o of DF.ob){if(o.x>DF.x+260)break;if(o.t==="ice"&&o.fy==null&&o.x-DF.x<150*(role==="child"?1.25:1)){o.fy=-DFT-10;o.fv=0}}
-    DF.vy=Math.min(DF.stun>0?520:430,DF.vy+(E.grav+wind*(role==="child"?.8:1))*(DF.stun>0?1.25:1)*dt);DF.y+=DF.vy*dt;DF.x+=sp*dt;
+    for(const o of DF.ob){if(o.x>DF.x+40)break;if(o.t==="ice"&&o.fy==null&&o.x+40<DF.x-30){o.fy=-DFT;o.fv=0;sfx("tap")}}
+    const hov=DF.hold&&DF.t-(DF.holdT||0)>.16&&DF.stun<=0;
+    if(hov){DF.vy+=(0-DF.vy)*Math.min(1,dt*8);DF.vy+=wind*.6*(role==="child"?.8:1)*dt}
+    else DF.vy=Math.min(DF.stun>0?520:430,DF.vy+(E.grav+wind*(role==="child"?.8:1))*(DF.stun>0?1.25:1)*dt);DF.y+=DF.vy*dt;DF.x+=sp*dt;
     if(DF.y<-40){DF.y=-40;DF.vy=Math.max(0,DF.vy)}
     if(DF.y>DFH-34){DF.y=DFH-34;DF.vy=-300;if(DF.inv<=0){DF.hit=E.ht*.5;DF.inv=.5;sfx("hit");DF.shake=.15;if(DF.lv===4)DF.msg={t:.8,txt:"HOT HOT HOT!",c:"#ff8a1f"}}}
     if(DF.x>=DF_FIN){DF.x=DF_FIN;DF.done=1;
@@ -320,18 +323,26 @@ function dfDrawOb(ctx,o,sx,E,rt){const k=dfLK(),P=DF_PAL[k];
     ctx.lineWidth=1.5;ctx.strokeStyle="#fff8c8";ctx.beginPath();ctx.ellipse(cx-2,cy,11,33,0,Math.PI*.6,Math.PI*1.4);ctx.stroke();const a=DF.t*3;ctx.fillStyle="#fff";ctx.fillRect(cx+Math.cos(a)*13-1.5,cy+Math.sin(a)*36-1.5,3,3);return}
   if(o.t==="wind"){ctx.save();ctx.fillStyle=o.f<0?"rgba(90,170,255,.13)":"rgba(120,110,255,.13)";ctx.fillRect(sx,-DFT,o.w,DFH+DFT+DFB);ctx.globalAlpha=.75;ctx.strokeStyle="#4f86d6";ctx.lineWidth=2.5;const up=o.f<0;for(let i=0;i<9;i++){const lx=sx+15+i*30,ph=((DF.t*(up?-1:1)*1.6+dfH(i,o.x))%1+1)%1,ly=-DFT+ph*(DFH+DFT+DFB);ctx.beginPath();ctx.moveTo(lx,ly);ctx.lineTo(lx+4,ly+(up?-26:26));ctx.stroke()}
     ctx.globalAlpha=1;ctx.font="900 30px system-ui,sans-serif";ctx.textAlign="center";ctx.lineWidth=5;ctx.strokeStyle="#1f3f7a";const ay=90+Math.sin(DF.t*4)*6;ctx.strokeText(up?"⬆":"⬇",sx+o.w/2,ay);ctx.fillStyle="#fff";ctx.fillText(up?"⬆":"⬇",sx+o.w/2,ay);ctx.font="900 11px system-ui,sans-serif";ctx.lineWidth=3;ctx.strokeText("WIND",sx+o.w/2,ay+18);ctx.fillText("WIND",sx+o.w/2,ay+18);ctx.restore();return}
-  if(o.t==="ice"){if(o.gone)return;const y=o.fy==null?-DFT:o.fy,cx=sx+11;ctx.fillStyle=dfGrad(ctx,y,y+o.len,["#ffffff","#bfe6ff","#8fd0ff"]);ctx.beginPath();ctx.moveTo(cx-11,y);ctx.lineTo(cx+11,y);ctx.lineTo(cx,y+o.len);ctx.fill();ctx.fillStyle="rgba(255,255,255,.8)";ctx.beginPath();ctx.moveTo(cx-6,y);ctx.lineTo(cx-1,y);ctx.lineTo(cx-1,y+o.len*.7);ctx.fill();
-    if(o.fy==null){ctx.fillStyle="#e9f4ff";ctx.fillRect(cx-16,-DFT,32,6)}return}
-  if(o.t==="arc"){const ay=dfArcY(o,rt);if(ay==null)return;const cx=sx+15,fire=o.kind==="fire";
+  if(o.t==="ice"){if(o.gone)return;const cx=sx+11,near=o.fy==null&&o.x-DF.x<300&&o.x-DF.x>-60,sh=near?Math.sin(DF.t*45+o.x)*1.6:0,y0=o.fy==null?-DFT:o.fy,tip=o.fy==null?o.tip:o.fy+(o.tip+DFT);
+    ctx.fillStyle=dfGrad(ctx,y0,tip,["#ffffff","#cdeaff","#8fd0ff"]);ctx.beginPath();ctx.moveTo(cx-11+sh,y0);ctx.lineTo(cx+11+sh,y0);ctx.lineTo(cx+sh,tip);ctx.fill();ctx.fillStyle="rgba(255,255,255,.8)";ctx.beginPath();ctx.moveTo(cx-6+sh,y0);ctx.lineTo(cx-1+sh,y0);ctx.lineTo(cx-1+sh,tip-(tip-y0)*.25);ctx.fill();
+    if(o.fy==null){ctx.fillStyle="#eef7ff";ctx.fillRect(cx-18,-DFT,36,10);ctx.strokeStyle="rgba(120,170,220,.6)";ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(cx+sh,tip);ctx.lineTo(cx+sh,tip+6);ctx.stroke()}return}
+  if(o.t==="arc"){const ay=dfArcY(o,rt),cx=sx+15,fire=o.kind==="fire";
+    /* warning: the ground glows and a "!" shows where it's about to come up */
+    if(ay==null)return;
+    /* how high it will go */ctx.save();ctx.setLineDash([4,6]);ctx.strokeStyle=fire?"rgba(255,180,80,.45)":"rgba(255,255,255,.4)";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(cx-16,o.top-18);ctx.lineTo(cx+16,o.top-18);ctx.stroke();ctx.restore();
     if(fire){for(let i=1;i<6;i++){ctx.globalAlpha=.5-i*.08;ctx.fillStyle=i<3?"#ffd04a":"#ff6a1f";ctx.beginPath();ctx.arc(cx+(Math.random()-.5)*4,ay+i*9,15-i*2,0,7);ctx.fill()}ctx.globalAlpha=1;dfGlow(ctx,cx,ay,40,"255,140,40",.5);const g=ctx.createRadialGradient(cx-4,ay-4,2,cx,ay,17);g.addColorStop(0,"#fff6c0");g.addColorStop(.5,"#ffb020");g.addColorStop(1,"#e8401f");ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,ay,17,0,7);ctx.fill()}
     else{ctx.fillStyle="rgba(0,0,0,.15)";ctx.beginPath();ctx.ellipse(cx,ay+20,12,4,0,0,7);ctx.fill();const g=ctx.createRadialGradient(cx-5,ay-6,2,cx,ay,17);g.addColorStop(0,"#d9d4cc");g.addColorStop(1,"#6f6a63");ctx.fillStyle=g;ctx.beginPath();for(let i=0;i<9;i++){const a=i/9*6.283+rt*3,r=15+dfH(i,o.x)*4;i?ctx.lineTo(cx+Math.cos(a)*r,ay+Math.sin(a)*r):ctx.moveTo(cx+Math.cos(a)*r,ay+Math.sin(a)*r)}ctx.fill();
       ctx.strokeStyle="rgba(255,255,255,.4)";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(cx,ay+20);ctx.lineTo(cx,ay+50);ctx.stroke()}return}
-  if(o.t==="bats"){for(let b=0;b<3;b++){const by=o.y+Math.sin(rt*2*Math.PI/o.per+o.ph+b*2.1)*o.amp,bx=sx+b*24,w=Math.sin(DF.t*18+b)*.8;ctx.save();ctx.translate(bx,by);ctx.fillStyle="#3b2366";ctx.beginPath();ctx.ellipse(0,0,6,5,0,0,7);ctx.fill();
-      for(const s of[-1,1]){ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(s*16,-6*w-2);ctx.lineTo(s*12,2);ctx.lineTo(s*7,-1);ctx.closePath();ctx.fill()}ctx.fillStyle="#ff4fd8";ctx.fillRect(-3,-2,2,2);ctx.fillRect(1,-2,2,2);ctx.restore()}return}
+  if(o.t==="bats"){for(let b=0;b<3;b++){const by=o.y+Math.sin(rt*2*Math.PI/o.per+o.ph)*o.amp+(b===1?-14:0),bx=sx+b*22,w=Math.sin(DF.t*18+b)*.8;ctx.save();ctx.translate(bx,by);ctx.scale(1.3,1.3);dfGlow(ctx,0,0,18,"255,120,230",.25);ctx.fillStyle="#7a56c8";ctx.beginPath();ctx.ellipse(0,0,6,5,0,0,7);ctx.fill();
+      for(const s of[-1,1]){ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(s*16,-6*w-2);ctx.lineTo(s*12,2);ctx.lineTo(s*7,-1);ctx.closePath();ctx.fill()}ctx.fillStyle="#fff04f";ctx.fillRect(-3,-2,2,2);ctx.fillRect(1,-2,2,2);ctx.restore()}return}
   if(o.t==="bolt"){const st=dfBoltSt(o,rt),cx=sx+12,y0=o.top?-DFT:DFH+DFB,y1=o.to;
     ctx.fillStyle="#2b315f";ctx.beginPath();if(o.top){for(const[dx,r]of[[-22,18],[0,24],[22,18]]){ctx.moveTo(cx+dx+r,-DFT+10);ctx.arc(cx+dx,-DFT+10,r,0,7)}}ctx.fill();
     if(st===1){ctx.save();ctx.setLineDash([6,6]);ctx.lineDashOffset=-DF.t*40;ctx.strokeStyle=Math.floor(DF.t*10)%2?"rgba(255,245,150,.9)":"rgba(255,255,255,.4)";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(cx,y0);ctx.lineTo(cx,y1);ctx.stroke();ctx.restore();dfGlow(ctx,cx,y1,24,"255,245,150",.4)}
     if(st===2){DF.flash=Math.max(DF.flash,.12);ctx.save();ctx.shadowColor="#fff59a";ctx.shadowBlur=14;ctx.strokeStyle="#fffbe0";ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(cx,y0);const n=8;for(let i=1;i<=n;i++){const yy=y0+(y1-y0)*i/n;ctx.lineTo(cx+(i<n?(Math.random()-.5)*26:0),yy)}ctx.stroke();ctx.lineWidth=2;ctx.strokeStyle="#ffe14d";ctx.stroke();ctx.restore();dfGlow(ctx,cx,y1,40,"255,245,150",.7)}return}}
+/* warnings drawn in front of everything: a "!" where a stone or fireball is about to come up */
+function dfWarn(ctx,cam,rt){for(const o of DF.ob){const sx=o.x-cam;if(sx>DFW+40)break;if(o.t!=="arc"||sx<-60)continue;if(dfArcY(o,rt)!=null)continue;const u=(((rt+o.ph)%o.per)+o.per)%o.per,left=o.per-u;if(left>1.1)continue;
+  const w=Math.min(1,1.1-left),cx=sx+15,fire=o.kind==="fire";dfGlow(ctx,cx,DFH-34,26+w*34,fire?"255,170,60":"255,250,220",.4+w*.45);const yy=DFH-84-Math.abs(Math.sin(DF.t*10))*6;
+  ctx.fillStyle=fire?"#ff6a1f":"#ffd23f";ctx.beginPath();ctx.arc(cx,yy,15,0,7);ctx.fill();ctx.lineWidth=3;ctx.strokeStyle="#fff";ctx.stroke();ctx.font="900 20px system-ui,sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillStyle="#fff";ctx.fillText("!",cx,yy+1);ctx.textBaseline="alphabetic"}}
 /* tunnel walls in the Crystal Caves: one smooth ceiling and floor through all the tunnel pieces on screen */
 function dfDrawCave(ctx,cam,E,rt){const cs=DF.ob.filter(o=>o.t==="cave"&&o.x-cam>-80&&o.x-cam<DFW+80);if(!cs.length)return;
   const runs=[];let cur=[];for(const o of cs){if(cur.length&&o.x-cur[cur.length-1].x>41){runs.push(cur);cur=[]}cur.push(o)}runs.push(cur);
@@ -357,7 +368,7 @@ function dfDraw(c){
   if(DF_FIN-cam<DFW+260)dfGoal(ctx,DF_FIN-cam+60);
   if(DF.lv===3)dfDrawCave(ctx,cam,E,rt);
   for(const o of DF.ob){const sx=o.x-cam;if(sx>DFW+40)break;if(sx<-(o.w||DF_OW)-60||o.t==="cave")continue;dfDrawOb(ctx,o,sx,E,rt)}
-  dfBlit(ctx,S[S.length-1],cm);
+  dfBlit(ctx,S[S.length-1],cm);dfWarn(ctx,cam,rt);
   // the other player's dragon (see-through)
   const live=r&&r.s===DF.s,oc=dfCol(ot()),gx=DFG.x-cam;
   if(live){if(gx>-60&&gx<DFW+60)dfDragon(ctx,oc,gx,DFG.y,0,DF.t+.3,(r.w&&r.w!==me())||DFG.fire>0,.6,0,DFG.fire>0?DFG.face:1,DFG.stun);
@@ -387,4 +398,5 @@ function dfDraw(c){
   if(live&&r.w){ctx.fillStyle="rgba(20,10,40,.45)";ctx.fillRect(0,DFH/2-150,DFW,110);big(r.w===me()?"YOU WIN!":dfNm(ot()).toUpperCase()+" WINS!",DFH/2-96,40,r.w===me()?"#ffd23f":"#fff");big(r.w===me()?(gameOK()?"+2 coins":"Share 2 things today for coins"):"Better luck next time!",DFH/2-62,16,"#fff")}
 }
 
-window.addEventListener("keydown",e=>{if(g!=="race"||tab!=="play")return;if([" ","ArrowUp","w","W"].includes(e.key)){e.preventDefault();dfFlap()}else if(["f","F","Enter"].includes(e.key)){e.preventDefault();dfFire()}});
+window.addEventListener("keyup",e=>{if([" ","ArrowUp","w","W"].includes(e.key)&&DF)DF.hold=0});
+window.addEventListener("keydown",e=>{if(g!=="race"||tab!=="play")return;if([" ","ArrowUp","w","W"].includes(e.key)){e.preventDefault();if(e.repeat)return;dfFlap();if(DF){DF.hold=1;DF.holdT=DF.t}}else if(["f","F","Enter"].includes(e.key)){e.preventDefault();dfFire()}});
