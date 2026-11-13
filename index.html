@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta name="app-build" content="12 Nov 11:48 PT"><meta charset="utf-8">
+<html lang="en"><head><meta name="app-build" content="13 Nov 09:32 PT"><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Legends"><meta name="theme-color" content="#14102e">
@@ -9748,7 +9748,7 @@ function dfCourse(s,lv){lv=lv||0;const r=dfRand((s+lv*7919)%4294967296),ob=[],K=
     else if(K==="storm"){if(r()<.5){gap(x,ny,{mv:{a:22+p*14,per:4.2+r(),ph:r()*6}});ring(x+DF_OW+150,ny);x+=DF_OW+330}
       else{gap(x,ny);const hx=x+DF_OW+SAFE,fromTop=r()<.6;ob.push({t:"bolt",x:hx,y:0,w:24,top:fromTop,to:fromTop?190+r()*50:300+r()*50,per:3.6+r()*.6,ph:r()*3,got:0});gems(hx,fromTop?340:160,hx+40,fromTop?340:160,2);x=hx+24+AFTER}}}
   ob.sort((a,b)=>a.x-b.x);return ob}
-const dfEase=()=>role==="child"?{gap:196,grav:930,flap:-430,ht:.75,inv:1.4,rng:200,cd:2.5,stun:.9,hz:.7}:{gap:150,grav:1120,flap:-450,ht:1,inv:1.1,rng:150,cd:3.5,stun:1.4,hz:1};
+const dfEase=()=>role==="child"?{gap:196,grav:930,flap:-245,ht:.75,inv:1.4,rng:200,cd:2.5,stun:.9,hz:.7}:{gap:150,grav:1120,flap:-260,ht:1,inv:1.1,rng:150,cd:3.5,stun:1.4,hz:1};
 /* where a moving gap's middle is right now (race clock) */
 const dfGy=(o,rt)=>o.mv?o.y+Math.sin(rt*2*Math.PI/o.mv.per+o.mv.ph)*o.mv.a:o.y;
 const dfGap=(o,E)=>o.t==="cave"?o.g*(E.gap/150):E.gap;
@@ -9799,7 +9799,7 @@ function vRace(){const pick=(()=>{try{return localStorage.getItem("dfLv")||"r"}c
   $("#v").innerHTML=`<div class="dfs" id="rc"><canvas id="dfc"></canvas>
   <button class="dfx" id="dfq" aria-label="Back">${IC("back",26)}</button><button class="dfx dfr" id="dfre" aria-label="Restart race">RESTART</button>
   <div class="dfgo" id="dgo"><div class="dflvs">${DF_LV.map((l,i)=>`<button class="dflv${pick==String(i)?" on":""}" data-lv="${i}"><i>${l.ic}</i><b>${l.nm}</b></button>`).join("")}<button class="dflv${pick==="r"?" on":""}" data-lv="r"><i>🎲</i><b>SURPRISE ME</b></button></div>
-    <div class="dfsay" id="dfsay"></div><button class="b y" id="st">START RACE</button><div class="dfh">Tap to flap up · Hold to hover in place · Grab gems and rings to go faster</div></div>
+    <div class="dfsay" id="dfsay"></div><button class="b y" id="st">START RACE</button><div class="dfh">Tap to flap up · Hold to stop and hover · Grab gems and rings to go faster</div></div>
   <button id="dff" class="dffire" aria-label="Fire breath"><b>FIRE!</b></button></div>`;
   document.body.classList.add("dfon");try{const d=document.documentElement;if(!document.fullscreenElement&&d.requestFullscreen)d.requestFullscreen({navigationUI:"hide"}).catch(()=>{})}catch(e){}
   dfFit();const c=$("#dfc");
@@ -9819,7 +9819,7 @@ window.addEventListener("resize",()=>{if(g==="race")dfFit()});
 function raceUp(){
   const r=RA,e=$("#rs");if(!$("#dfc"))return;
   const fresh=r&&r.s&&!r.w&&Date.now()<r.s+120000;if(r&&r.s&&(!DF||DF.s!==r.s)&&(fresh||!DF||!DF.pv)){DF=dfNew(r.s,dfLvOf(r));DFG={x:0,y:270,tx:0,ty:270,t:Date.now(),stun:0,fire:0,face:1,vy:0}}
-  if(r){const k=me()==="X"?"O":"X",tx=r["p"+k]||0,ty=r["y"+k]||270;if(tx!==DFG.tx||ty!==DFG.ty){DFG.tx=tx;DFG.ty=ty;DFG.t=Date.now()}
+  if(r){const k=me()==="X"?"O":"X",tx=r["p"+k]||0,ty=r["y"+k]||270;DFG.h=!!r["h"+k];if(tx!==DFG.tx||ty!==DFG.ty){DFG.tx=tx;DFG.ty=ty;DFG.t=Date.now()}
     const ft=r["f"+k];if(ft&&ft>=r.s&&ft!==DFG.fl){DFG.fl=ft;DFG.fire=.65;DFG.face=DF.x<DFG.x?-1:1}
   }
   const n=Date.now(),over=!r||!r.s||r.w||(DF&&DF.done)||n>r.s+120000,go=$("#dgo"),re=$("#dfre");
@@ -9859,12 +9859,12 @@ function dfStep(dt){
     for(const o of DF.ob){if(o.x>DF.x+40)break;if(o.t==="ice"&&o.fy==null&&o.x+40<DF.x-30){o.fy=-DFT;o.fv=0;sfx("tap")}}
     const hov=DF.hold&&DF.stun<=0;
     if(hov){DF.vy=0;DF.fl=Math.max(DF.fl,.12)}
-    else DF.vy=Math.min(DF.stun>0?520:430,DF.vy+(E.grav+wind*(role==="child"?.8:1))*(DF.stun>0?1.25:1)*dt);DF.y+=DF.vy*dt;DF.x+=sp*dt;
+    else DF.vy=Math.min(DF.stun>0?520:430,DF.vy+(E.grav+wind*(role==="child"?.8:1))*(DF.stun>0?1.25:1)*dt);DF.y+=DF.vy*dt;if(!hov)DF.x+=sp*dt;
     if(DF.y<-40){DF.y=-40;DF.vy=Math.max(0,DF.vy)}
     if(DF.y>DFH-34){DF.y=DFH-34;DF.vy=-300;if(DF.inv<=0){DF.hit=E.ht*.5;DF.inv=.5;sfx("hit");DF.shake=.15;if(DF.lv===4)DF.msg={t:.8,txt:"HOT HOT HOT!",c:"#ff8a1f"}}}
     if(DF.x>=DF_FIN){DF.x=DF_FIN;DF.done=1;
       if(!r.w){DF.won=1;GD("race").update({["p"+me()]:DF_FIN,["y"+me()]:Math.round(DF.y),w:me()}).catch(er);if(lw!==r.s){lw=r.s;gamePts(2)}sfx("win")}}
-    else if(n-DFS>200){DFS=n;GD("race").update({["p"+me()]:Math.round(DF.x),["y"+me()]:Math.round(DF.y)}).catch(er)}
+    else if(n-DFS>200||!!DF.hold!==!!DF.hs){DFS=n;DF.hs=!!DF.hold;GD("race").update({["p"+me()]:Math.round(DF.x),["y"+me()]:Math.round(DF.y),["h"+me()]:DF.hold?1:0}).catch(er)}
   }else{
     // waiting, counting down or finished: hover gently
     const ty=DF.done||r&&r.w?DFH*.42:270+Math.sin(DF.t*2.2)*10;DF.vy=0;DF.y+=(ty-DF.y)*Math.min(1,dt*3);
@@ -9875,7 +9875,7 @@ function dfStep(dt){
   for(const o of DF.ob){if(o.t!=="ice"||o.fy==null||o.gone)continue;o.fv+=900*dt;o.fy+=o.fv*dt;if(o.fy>DFH+DFB+20)o.gone=1}
   for(const p of DF.fx){p.t-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=300*dt}DF.fx=DF.fx.filter(p=>p.t>0);
   // the other dragon glides smoothly towards where it was last seen
-  const gr=r&&r.s===DF.s&&n>=r.s&&!r.w,ex=gr?Math.min(DF_FIN,DFG.tx+DF_SP*Math.min(.5,(n-DFG.t)/1000)):DFG.tx;
+  const gr=r&&r.s===DF.s&&n>=r.s&&!r.w&&!DFG.h,ex=gr?Math.min(DF_FIN,DFG.tx+DF_SP*Math.min(.5,(n-DFG.t)/1000)):DFG.tx;
   DFG.x+=(ex-DFG.x)*Math.min(1,dt*6);if(DFG.stun>0){DFG.vy=(DFG.vy||0)+600*dt;DFG.y=Math.min(DFH-34,DFG.y+DFG.vy*dt)}else{DFG.vy=0;DFG.y+=(DFG.ty-DFG.y)*Math.min(1,dt*6)}
   DF.zt=Math.max(0,DF.zt-dt);
 }
