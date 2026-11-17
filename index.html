@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta name="app-build" content="17 Nov 12:53 PT"><meta charset="utf-8">
+<html lang="en"><head><meta name="app-build" content="17 Nov 13:12 PT"><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Legends"><meta name="theme-color" content="#14102e">
@@ -861,7 +861,7 @@ body.dfon{overflow:hidden}
 #fjh{position:absolute;inset:0;z-index:2;pointer-events:none;background:transparent!important}
 .fjload{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;color:#fff;font:800 18px Outfit,sans-serif;background:radial-gradient(circle at 50% 40%,#2b4f7e,#0b1730);z-index:5}
 .fjload b{font-size:34px;color:#ffd23f}
-.fjmenu{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:6;display:none;flex-direction:column;align-items:center;gap:10px;width:min(94%,560px);padding:18px 16px;border-radius:24px;background:rgba(8,18,38,.62);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.18);box-shadow:0 20px 60px -20px rgba(0,0,0,.7)}
+.fjmenu{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:6;display:none;flex-direction:column;align-items:center;gap:10px;width:min(94%,560px);padding:18px 16px;border-radius:24px;background:rgba(8,18,38,.86);border:1px solid rgba(255,255,255,.18);box-shadow:0 20px 60px -20px rgba(0,0,0,.7)}
 .fjmenu.on{display:flex}
 .fjtitle{font:900 44px/1 Outfit,sans-serif;letter-spacing:.06em;color:#fff;text-shadow:0 4px 18px rgba(0,0,0,.6);text-align:center}
 .fjtitle b{display:inline-block;margin-left:10px;background:linear-gradient(180deg,#ffe27a,#ff8a1f);-webkit-background-clip:text;background-clip:text;color:transparent}
@@ -889,14 +889,15 @@ body.dfon{overflow:hidden}
 .fjfl.hot{background:radial-gradient(circle at 40% 35%,#fff,#ff3b2f);transform:scale(1.12)}
 .fjbo{right:calc(122px + env(safe-area-inset-right,0px));bottom:calc(116px + env(safe-area-inset-bottom,0px));width:58px;height:58px;font-size:11px;background:radial-gradient(circle at 40% 35%,#7dd3fc,#1d4ed8)}
 @keyframes fjpulse{to{box-shadow:0 0 0 8px rgba(255,170,40,.35)}}
-@media (orientation:portrait){.fjtitle{font-size:36px}.fjbig{min-width:100px;padding:12px}.fjlive{min-width:220px}}
+.fjtall .fjtitle{font-size:36px}.fjtall .fjbig{min-width:100px;padding:12px}.fjtall .fjlive{min-width:220px}
+.fjtall .fjmenu.fjhang{left:50%;right:auto;top:auto;bottom:calc(10px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:94%}
 .fjtog{background:linear-gradient(135deg,#059669,#0ea5e9);min-width:220px}
 .fjlook{right:calc(30px + env(safe-area-inset-right,0px));bottom:calc(206px + env(safe-area-inset-bottom,0px));width:56px;height:56px;font-size:20px;background:radial-gradient(circle at 40% 35%,#a7f3d0,#047857)}.fjlook small{font-size:9px;margin-top:1px}
 .fjctl.peace .fjgun,.fjctl.peace .fjmis,.fjctl.peace .fjfl{display:none}
 .fjctl.peace .fjbo{right:calc(26px + env(safe-area-inset-right,0px));bottom:calc(30px + env(safe-area-inset-bottom,0px));width:84px;height:84px;font-size:14px}
 .fjctl.peace .fjlook{right:calc(126px + env(safe-area-inset-right,0px));bottom:calc(36px + env(safe-area-inset-bottom,0px));width:64px;height:64px}
 .fjmapb{top:8px;right:8px;width:112px;height:126px;border:0;border-radius:50%;background:transparent;box-shadow:none}
-.fjmapw{position:absolute;inset:0;z-index:5;display:none;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:rgba(4,10,22,.72);backdrop-filter:blur(3px);touch-action:none}
+.fjmapw{position:absolute;inset:0;z-index:5;display:none;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:rgba(4,10,22,.86);touch-action:none}
 .fjmapw.on{display:flex}.fjmapw canvas{position:static!important;inset:auto!important;transform:none!important;border-radius:18px;box-shadow:0 18px 50px -12px rgba(0,0,0,.8);background:transparent!important}
 .fjmapn{color:#fff;font:800 13px Outfit,sans-serif;opacity:.9}
 /* sideways play: turn the whole game when the phone is upright */
@@ -921,7 +922,7 @@ body.dfon{overflow:hidden}
 .fjsws{display:flex;flex-wrap:wrap;gap:5px;justify-content:center}.fjsw{width:26px;height:26px;border-radius:50%;border:2px solid rgba(255,255,255,.35)}.fjsw.on{border:3px solid #fff;transform:scale(1.15);box-shadow:0 0 0 2px #2563eb}
 .fjpats{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}.fjpat,.fjbad{border:2px solid rgba(255,255,255,.2);border-radius:12px;background:rgba(255,255,255,.08);color:#fff;padding:8px 10px;font:800 12px Outfit,sans-serif}.fjbad{font-size:22px;padding:3px 7px}.fjpat.on,.fjbad.on{border-color:#ffd23f;background:rgba(255,210,63,.22)}
 /* a short sideways screen: tighten the menus */
-@media (max-height:460px){.fjmenu{padding:10px 12px;gap:7px}.fjtitle{font-size:30px}.fjbig{padding:10px 12px;font-size:13px;min-width:100px}.fjlive{min-width:200px}.fjtog{min-width:180px}.fjsm{padding:7px 9px;font-size:11px}.fjscore{font-size:40px}}
+.fjshort .fjmenu{padding:10px 12px;gap:6px;max-height:96%}.fjshort .fjtitle{font-size:28px}.fjshort .fjbig{padding:9px 12px;font-size:13px;min-width:96px}.fjshort .fjlive{min-width:190px}.fjshort .fjtog{min-width:170px}.fjshort .fjsm{padding:6px 8px;font-size:11px}.fjshort .fjscore{font-size:38px}.fjshort .fjtally,.fjshort .fjsay{font-size:12px}
 #fjc.fjrot .fjmenu:not(.fjhang){max-height:94%}
 
 /*FJ-END*/
@@ -4362,12 +4363,13 @@ function fjHangarJet(){const G=FJG;if(G.hj){FJR.scene.remove(G.hj)}FJR.scene.add
 /* the camera circles the jet; the picture is shifted so the jet sits on the left and the panel on the right */
 function fjHangarCam(dt){const G=FJG,cam=FJR.cam,j=G.hj;if(!j)return;G.hjA+=dt*.35;j.rotation.set(0,G.hjA,Math.sin(G.t*.7)*.12);j.position.y=2600+Math.sin(G.t*1.1)*.6;
   j.userData.flames.forEach(fl=>{const s=.5*(.85+Math.random()*.3);fl.scale.set(1,s,1)});const W=G.W||800,H=G.H||400,wide=W>H*1.2;
-  cam.position.set(20,2611,24);cam.lookAt(0,2599.5,0);cam.fov=wide?38:48;cam.aspect=W/H;if(wide)cam.setViewOffset(W,H,W*.22,0,W,H);else cam.clearViewOffset();cam.updateProjectionMatrix()}
+  cam.position.set(20,2611,24);cam.lookAt(0,2599.5,0);cam.fov=wide?38:48;cam.aspect=W/H;if(wide)cam.setViewOffset(W,H,W*.22,0,W,H);else if(H>W*1.1)cam.setViewOffset(W,H,0,H*.24,W,H);else cam.clearViewOffset();cam.updateProjectionMatrix()}
 
 /* ================= SKY ACES: playing sideways, tilt-to-steer, the speed lever, no copy/paste pop-ups, and night ================= */
 /* ---------- always sideways: if the phone is upright, the whole game is turned round so you hold the phone sideways ---------- */
-const fjRot=()=>innerHeight>innerWidth*1.05;
-function fjLayout(){const el=$("#fjc");if(!el)return[innerWidth,innerHeight];const r=fjRot();el.classList.toggle("fjrot",r);if(r){el.style.width=innerHeight+"px";el.style.height=innerWidth+"px"}else{el.style.width=el.style.height=""}if(FJG)FJG.rot=r;return r?[innerHeight,innerWidth]:[innerWidth,innerHeight]}
+const fjRot=()=>fjSet().orient!=="up"&&innerHeight>innerWidth*1.05;
+function fjLayout(){const el=$("#fjc");if(!el)return[innerWidth,innerHeight];const r=fjRot();el.classList.toggle("fjrot",r);if(r){el.style.width=innerHeight+"px";el.style.height=innerWidth+"px"}else{el.style.width=el.style.height=""}if(FJG)FJG.rot=r;
+  const W=r?innerHeight:innerWidth,H=r?innerWidth:innerHeight;el.classList.toggle("fjshort",H<470);el.classList.toggle("fjtall",H>W*1.1);return[W,H]}
 /* a finger's position on the (maybe turned) game screen */
 function fjLocal(e){return FJG&&FJG.rot?{x:e.clientY,y:innerWidth-e.clientX}:{x:e.clientX,y:e.clientY}}
 /* no text-select / copy / magnifier pop-ups while flying (long presses on buttons used to bring them up) */
@@ -4520,9 +4522,9 @@ function fjMenu(){const G=FJG;if(!G)return;G.mode="menu";G.live=0;G.over=0;fjCle
     <div class="fjrow"><button class="fjbig fjlive" id="fjL">⚔️ LIVE vs ${fjOther().toUpperCase()}</button><button class="fjbig fjtog" id="fjT">🤝 FLY WITH ${fjOther().toUpperCase()}</button></div>
     <div class="fjrow"><span class="fjlab">VS COMPUTER</span>${["EASY","MEDIUM","ACE"].map((d,i)=>`<button class="fjbig fjai" data-d="${i}">${["🙂","😎","☠️"][i]} ${d}</button>`).join("")}</div>
     <div class="fjrow"><button class="fjbig fjfree" id="fjF">🏔️ FREE FLIGHT</button><button class="fjbig fjhg" id="fjHg">✈️ MY JET</button></div>
-    <div class="fjrow"><button class="fjsm" id="fjctlb">${S.ctl==="tilt"?"📱 Steer: tilt phone":"🕹️ Steer: joystick"}</button><button class="fjsm" id="fjinv">${S.ctl==="tilt"?(S.inv?"Tip towards you = dive":"Tip away = dive"):(S.inv?"Pull back = climb":"Push up = climb")}</button><button class="fjsm" id="fjnite">${S.night?"🌙 Night":"☀️ Day"}</button></div>
+    <div class="fjrow"><button class="fjsm" id="fjctlb">${S.ctl==="tilt"?"📱 Steer: tilt phone":"🕹️ Steer: joystick"}</button><button class="fjsm" id="fjinv">${S.ctl==="tilt"?(S.inv?"Tip towards you = dive":"Tip away = dive"):(S.inv?"Pull back = climb":"Push up = climb")}</button><button class="fjsm" id="fjnite">${S.night?"🌙 Night":"☀️ Day"}</button><button class="fjsm" id="fjori">${S.orient==="up"?"↕️ Screen: upright":"↔️ Screen: sideways"}</button></div>
     <div class="fjtally">${fjTally()}</div>`;
-  $("#fjL").onclick=()=>{sfx("tap");fjLiveAsk()};$("#fjT").onclick=()=>{sfx("tap");fjLiveAsk(1)};$("#fjF").onclick=()=>{sfx("tap");fjPlay({mode:"free"})};$("#fjinv").onclick=()=>{S.inv=!S.inv;fjSave(S);fjMenu()};$("#fjHg").onclick=()=>{sfx("tap");fjHangar("jet")};$("#fjnite").onclick=()=>{S.night=!S.night;fjSave(S);fjTime(S.night);sfx("tap");fjMenu()};
+  $("#fjL").onclick=()=>{sfx("tap");fjLiveAsk()};$("#fjT").onclick=()=>{sfx("tap");fjLiveAsk(1)};$("#fjF").onclick=()=>{sfx("tap");fjPlay({mode:"free"})};$("#fjinv").onclick=()=>{S.inv=!S.inv;fjSave(S);fjMenu()};$("#fjHg").onclick=()=>{sfx("tap");fjHangar("jet")};$("#fjori").onclick=()=>{S.orient=S.orient==="up"?"side":"up";fjSave(S);sfx("tap");fjSize();fjMenu();fjMsg(S.orient==="up"?"↕️ Hold the phone upright":"↔️ Turn the phone sideways",2)};$("#fjnite").onclick=()=>{S.night=!S.night;fjSave(S);fjTime(S.night);sfx("tap");fjMenu()};
   $("#fjctlb").onclick=()=>{if(S.ctl==="tilt"){S.ctl="stick";fjSave(S);fjMenu();return}fjTiltAsk(ok=>{if(!ok){fjMsg("📱 Tilt isn't allowed on this phone — using the joystick",2.5);return}S.ctl="tilt";fjSave(S);fjTiltStart();fjMenu();fjMsg("📱 Hold the phone sideways how you like — that's straight and level",3)})};
   document.querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{sfx("tap");fjPlay({mode:"ai",diff:+b.dataset.d})});
   /* a slow tour of the island behind the menu */G.tour=G.tour||0}
@@ -4715,7 +4717,7 @@ function fjHud(dt){const G=FJG,c=$("#fjh");if(!c||!G.W)return;const x=c.getConte
   /* score */const them=G.sub==="together"?"":G.live?fjOther():G.sub==="ai"?"SHADOW":"";if(G.sub==="together"){const nw=W<560,sy=nw?64:10;x.fillStyle="rgba(0,0,0,.4)";x.beginPath();x.roundRect?x.roundRect(W/2-100,sy,200,30,15):x.rect(W/2-100,sy,200,30);x.fill();x.font="900 15px system-ui,sans-serif";x.fillStyle="#fff";x.fillText("🤝 FLYING WITH "+fjOther().toUpperCase(),W/2,sy+21)}if(them){x.fillStyle="rgba(0,0,0,.4)";x.beginPath();const nw=W<560,sw=nw?170:220,sy=nw?64:10;x.roundRect?x.roundRect(W/2-sw/2,sy,sw,30,15):x.rect(W/2-sw/2,sy,sw,30);x.fill();x.font=`900 ${nw?15:17}px system-ui,sans-serif`;x.fillStyle="#fff";x.fillText(`YOU ${G.score.me} – ${G.score.them} ${them.toUpperCase()}`,W/2,sy+21)}
   /* health and boost */x.textAlign="left";x.font="800 11px system-ui,sans-serif";x.fillStyle="rgba(0,0,0,.45)";x.fillRect(58,14,150,30);const hp=Math.max(0,me.hp/me.hpM);x.fillStyle=hp<.35?warnC:"#5ee17a";x.fillRect(62,18,142*hp,10);x.fillStyle="#ffd23f";x.fillRect(62,32,142*me.boost,6);x.fillStyle="#fff";x.fillText("ARMOUR",62,54);
   if(me.inv>0){x.strokeStyle="rgba(120,200,255,.8)";x.lineWidth=3;x.beginPath();x.arc(W/2,H/2,Math.min(W,H)*.42,0,7);x.stroke();x.lineWidth=2;x.textAlign="center";x.fillStyle="rgba(150,210,255,.95)";x.fillText("🛡️ SHIELD",W/2,H*.5+Math.min(W,H)*.42+14)}
-  /* speed and height */x.textAlign="left";x.fillStyle=ink;x.font="800 13px system-ui,sans-serif";x.fillText(Math.round(me.spd*3.6)+" km/h",84,86);x.fillText(Math.round(me.p.y-Math.max(0,fjH(me.p.x,me.p.z)))+" m up",84,104);
+  /* speed and height */x.textAlign="left";x.fillStyle=ink;x.font="800 13px system-ui,sans-serif";{const sx=W<560?14:84,sy=W<560?196:86;x.fillText(Math.round(me.spd*3.6)+" km/h",sx,sy);x.fillText(Math.round(me.p.y-Math.max(0,fjH(me.p.x,me.p.z)))+" m up",sx,sy+18)}
   /* gun sight: where the bullets go */const cp=Math.cos(me.pitch),f=new THREE.Vector3(Math.sin(me.yaw)*cp,Math.sin(me.pitch),Math.cos(me.yaw)*cp),aim=fjProj(me.p.clone().addScaledVector(f,700));
   if(aim.front){x.strokeStyle=ink;x.beginPath();x.arc(aim.x,aim.y,14,0,7);x.stroke();x.beginPath();x.moveTo(aim.x-24,aim.y);x.lineTo(aim.x-16,aim.y);x.moveTo(aim.x+16,aim.y);x.lineTo(aim.x+24,aim.y);x.moveTo(aim.x,aim.y-24);x.lineTo(aim.x,aim.y-16);x.stroke();x.fillStyle=ink;x.fillRect(aim.x-1.5,aim.y-1.5,3,3)}
   /* other jets */const foc=fjFocus();for(const e of G.jets){if(e===me||e.dead)continue;const s=fjProj(e.p),dist=Math.round(e.p.distanceTo(me.p)),locking=me.lockTgt===e&&me.lockT>0,locked=me.lock===e;
