@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta name="app-build" content="17 Nov 09:24 PT"><meta charset="utf-8">
+<html lang="en"><head><meta name="app-build" content="17 Nov 12:12 PT"><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Legends"><meta name="theme-color" content="#14102e">
@@ -890,6 +890,15 @@ body.dfon{overflow:hidden}
 .fjbo{right:calc(122px + env(safe-area-inset-right,0px));bottom:calc(116px + env(safe-area-inset-bottom,0px));width:58px;height:58px;font-size:11px;background:radial-gradient(circle at 40% 35%,#7dd3fc,#1d4ed8)}
 @keyframes fjpulse{to{box-shadow:0 0 0 8px rgba(255,170,40,.35)}}
 @media (orientation:portrait){.fjtitle{font-size:36px}.fjbig{min-width:100px;padding:12px}.fjlive{min-width:220px}}
+.fjtog{background:linear-gradient(135deg,#059669,#0ea5e9);min-width:220px}
+.fjlook{right:calc(30px + env(safe-area-inset-right,0px));bottom:calc(206px + env(safe-area-inset-bottom,0px));width:56px;height:56px;font-size:20px;background:radial-gradient(circle at 40% 35%,#a7f3d0,#047857)}.fjlook small{font-size:9px;margin-top:1px}
+.fjctl.peace .fjgun,.fjctl.peace .fjmis,.fjctl.peace .fjfl{display:none}
+.fjctl.peace .fjbo{right:calc(26px + env(safe-area-inset-right,0px));bottom:calc(30px + env(safe-area-inset-bottom,0px));width:84px;height:84px;font-size:14px}
+.fjctl.peace .fjlook{right:calc(126px + env(safe-area-inset-right,0px));bottom:calc(36px + env(safe-area-inset-bottom,0px));width:64px;height:64px}
+.fjmapb{top:8px;right:8px;width:112px;height:126px;border:0;border-radius:50%;background:transparent;box-shadow:none}
+.fjmapw{position:absolute;inset:0;z-index:5;display:none;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:rgba(4,10,22,.72);backdrop-filter:blur(3px);touch-action:none}
+.fjmapw.on{display:flex}.fjmapw canvas{position:static!important;inset:auto!important;transform:none!important;border-radius:18px;box-shadow:0 18px 50px -12px rgba(0,0,0,.8);background:transparent!important}
+.fjmapn{color:#fff;font:800 13px Outfit,sans-serif;opacity:.9}
 
 /*FJ-END*/
 </style></head><body><main>
@@ -4052,7 +4061,7 @@ function fjBuild(W,scene,renderer){const T=THREE,N=FJ_N,H=W.H,D=W.D,V=W.V,L=W.L;
       /* snow on high, gentler slopes */const sn=fjSm(1080+200*n2,1320+200*n2,h)*fjSm(.38,.6,ny);r+=(.95-r)*sn;gg+=(.96-gg)*sn;b+=(1.0-b)*sn;
       /* desert */const dm=D[k];if(dm>0){const cl=fjSm(.88,.7,ny),dr=.70+.06*n2,dg=.39+.04*n1,db=.22;r+=((cl?dr*.82:dr)-r)*dm;gg+=((cl?dg*.78:dg)-gg)*dm;b+=(db-b)*dm}}
     col[k*3]=r;col[k*3+1]=gg;col[k*3+2]=b;lit[k*2]=L[k];lit[k*2+1]=W.A[k]}
-  g.setAttribute("color",new T.BufferAttribute(col,3));g.setAttribute("lit",new T.BufferAttribute(lit,2));
+  g.setAttribute("color",new T.BufferAttribute(col,3));W.col=col;g.setAttribute("lit",new T.BufferAttribute(lit,2));
   const tex=fjNoiseTex();
   const U={tD:{value:tex},sunDir:{value:new T.Vector3(...FJ_SUN)},sunCol:{value:sunCol},skyCol:{value:skyCol},gndCol:{value:gndCol},fogCol:{value:fogCol},sunFog:{value:sunFog},dens:{value:DENS},time:{value:0}};
   const fogGL=`float fd=length(vW-cameraPosition);vec3 FV=normalize(vW-cameraPosition);float sa=pow(max(dot(FV,sunDir),0.),6.);vec3 fc=mix(fogCol,sunFog,sa*.8);float ff=1.-exp(-fd*fd*dens*dens*1.1);ff*=mix(1.,.72,smoothstep(300.,2200.,vW.y));`;
@@ -4155,7 +4164,7 @@ function fjClouds(scene){const T=THREE,A=document.createElement("canvas");A.widt
 /* ================= SKY ACES: the jets and the effects =================
    Our own fighter design (not a real aircraft): a sleek body with a bubble canopy, delta wings, twin canted tails,
    two engines with afterburner flames, and missiles under the wings. Painted with a two-tone pattern and a squadron badge. */
-const FJ_COLS={X:{a:0x3d5a80,b:0x98c1d9,nm:"Dad",badge:"🦅"},O:{a:0xc0392b,b:0xf1c40f,nm:"Cass",badge:"🐉"},AI:{a:0x2d2d34,b:0x8a1c1c,nm:"Shadow",badge:"☠"}};
+const FJ_COLS={X:{a:0x3d5a80,b:0x98c1d9,nm:"Dad",badge:"🦅"},O:{a:0xc0392b,b:0xf1c40f,nm:"Cass",badge:"🐉"},AI:{a:0x2d2d34,b:0x8a1c1c,nm:"Shadow",badge:"☠"},G1:{a:0x15803d,b:0xf0fdf4,nm:"Comet",badge:"☄️"},G2:{a:0xea580c,b:0xfff7ed,nm:"Blaze",badge:"🔥"},G3:{a:0x6d28d9,b:0xfde047,nm:"Zap",badge:"⚡"}};
 let FJE=null;/* shared effect stuff */
 /* sky reflections for shiny metal and glass: a painted sky picture (sun, sky, distant ground) turned into a reflection map */
 function fjEnv(renderer){const T=THREE,c=document.createElement("canvas");c.width=512;c.height=256;const x=c.getContext("2d"),g=x.createLinearGradient(0,0,0,256);
@@ -4220,6 +4229,86 @@ function fjBoom(x,y,z,big){const F=FJE.fx,R=Math.random;for(let i=0;i<(big?60:22
   for(let i=0;i<(big?50:16);i++){const a=R()*6.28,b=R()*3.14,sp=(big?220:120)*(.4+R());F.add({x,y,z,vx:Math.cos(a)*Math.sin(b)*sp,vy:Math.cos(b)*sp+40,vz:Math.sin(a)*Math.sin(b)*sp,t:0,life:.6+R()*.8,s0:3,s1:1,c:[1,.8,.4],a:1,add:1,drag:.6})}
   FJE.flash=Math.max(FJE.flash||0,big?1:.5);FJE.flashPos=[x,y,z]}
 
+/* ================= SKY ACES: finding each other (map, guide arrow, coloured trails, LOOK camera) and friendly guide planes ================= */
+const FJ_TRAIL={X:[.45,.75,1],O:[1,.5,.22],AI:[.72,.35,.95],G1:[.35,1,.5],G2:[1,.62,.15],G3:[.85,.45,1]};
+const fjName=e=>e.kind==="remote"?fjOther():e.cols.nm;
+const fjCss=(c,a)=>`rgba(${Math.round(c[0]*255)},${Math.round(c[1]*255)},${Math.round(c[2]*255)},${a==null?1:a})`;
+const fjKm=d=>d<1000?Math.round(d)+" m":(d/1000).toFixed(1)+" km";
+/* who the arrow points at: the enemy in a fight, the other phone when flying together, the nearest guide in free flight */
+function fjFocus(){const G=FJG,me=G&&G.me;if(!me)return null;let best=null,bd=1e9;for(const e of G.jets){if(e===me||e.dead)continue;const d=e.p.distanceTo(me.p);if(d<bd){bd=d;best=e}}return best}
+/* a coloured smoke trail behind every other plane, so you can follow it across the sky */
+function fjBeacon(j,dt){if(j.dead||j.kind==="me"||!FJE)return;j.bT=(j.bT||0)-dt;if(j.bT>0)return;j.bT=.05;const c=FJ_TRAIL[j.who]||[1,1,1],t=new THREE.Vector3(0,.4,-10).applyEuler(j.mesh.rotation).add(j.p);
+  FJE.fx.add({x:t.x,y:t.y,z:t.z,vx:0,vy:1.5,vz:0,t:0,life:5,s0:4,s1:24,c,a:.55,drag:.6})}
+/* ---------- the big "which way?" arrow round the gun sight ---------- */
+function fjPointer(x,W,H,me,e,aim){if(!e||me.dead)return;const to=e.p.clone().sub(me.p),dist=to.length(),want=Math.atan2(to.x,to.z);let dy=want-me.yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));/* + = to my left */
+  if(FJG.peace&&dist<400)return;const dp=Math.atan2(to.y,Math.hypot(to.x,to.z))-me.pitch,s=fjProj(e.p),cx=aim.front?aim.x:W/2,cy=aim.front?aim.y:H/2,on=s.front&&s.x>W*.06&&s.x<W*.94&&s.y>H*.08&&s.y<H*.92;
+  let ax,ay;if(on){ax=s.x-cx;ay=s.y-cy;if(Math.hypot(ax,ay)<Math.min(W,H)*.2)return}else{ax=-dy;ay=Math.abs(dy)>1.9?0:-dp}const l=Math.hypot(ax,ay)||1;ax/=l;ay/=l;
+  const col=FJ_TRAIL[e.who]||[1,1,1],R=Math.min(W,H)*.17,px=cx+ax*R,py=cy+ay*R,pu=1+.12*Math.sin(FJG.t*8);
+  x.save();x.translate(px,py);x.rotate(Math.atan2(ay,ax));x.scale(pu,pu);x.lineJoin="round";x.lineWidth=4;x.strokeStyle="rgba(0,0,0,.55)";x.fillStyle=fjCss(col,.95);
+  for(const o of[0,-13]){x.beginPath();x.moveTo(o+16,0);x.lineTo(o-4,-15);x.lineTo(o+2,0);x.lineTo(o-4,15);x.closePath();x.stroke();x.fill()}x.restore();
+  const behind=Math.abs(dy)>1.9,lr=dy>0?"LEFT":"RIGHT",nm=fjName(e).toUpperCase();let say;
+  if(behind)say=`${nm} IS BEHIND YOU! TURN ${lr}`;else if(!on&&Math.abs(dy)>.3)say=`TURN ${lr} · ${nm} ${fjKm(dist)}`;else if(!on)say=`${dp>0?"CLIMB":"DIVE"} · ${nm} ${fjKm(dist)}`;else say=null;
+  if(say){x.textAlign="center";x.font="900 15px system-ui,sans-serif";x.lineWidth=4;x.strokeStyle="rgba(0,0,0,.6)";const ty=behind?H*.33:Math.min(H*.8,cy+R+34);x.strokeText(say,W/2,ty);x.fillStyle=fjCss(col);x.fillText(say,W/2,ty)}}
+/* ---------- the radar (top right): coloured arrows for planes, tap it for the big map ---------- */
+function fjRadar(x,W,H,me){const G=FJG,RR=52,rx=W-62,ry=62,RANGE=4000;x.fillStyle="rgba(0,20,10,.6)";x.beginPath();x.arc(rx,ry,RR,0,7);x.fill();x.strokeStyle="rgba(140,255,170,.55)";x.lineWidth=1;x.beginPath();x.arc(rx,ry,RR,0,7);x.moveTo(rx+RR/2,ry);x.arc(rx,ry,RR/2,0,7);x.stroke();
+  const rot=-me.yaw,at=p=>{const dx=p.x-me.p.x,dz=p.z-me.p.z,qx=dx*Math.cos(rot)+dz*Math.sin(rot),qz=-dx*Math.sin(rot)+dz*Math.cos(rot);let px=-qx/RANGE*RR,py=-qz/RANGE*RR;const l=Math.hypot(px,py),out=l>RR-7;if(out){px*=(RR-7)/l;py*=(RR-7)/l}return[rx+px,ry+py,out]};
+  for(const u of FJR.pu)if(u.g.visible){const[a,b]=at(u.g.position);x.fillStyle="rgba(120,200,255,.55)";x.fillRect(a-1,b-1,2,2)}
+  for(const m of G.mis){const[a,b]=at(m.p);x.fillStyle=m.tgt===me?"#ff5a46":"#fff";x.beginPath();x.arc(a,b,2.2,0,7);x.fill()}
+  for(const e of G.jets){if(e===me||e.dead)continue;const[a,b,out]=at(e.p);x.save();x.translate(a,b);x.rotate(-(e.yaw-me.yaw));x.fillStyle=fjCss(FJ_TRAIL[e.who]||[1,1,1]);x.strokeStyle=out?"#fff":"rgba(0,0,0,.6)";x.lineWidth=1.5;x.beginPath();x.moveTo(0,-8);x.lineTo(6,6);x.lineTo(0,3);x.lineTo(-6,6);x.closePath();x.fill();x.stroke();x.restore()}
+  x.fillStyle="#fff";x.beginPath();x.moveTo(rx,ry-7);x.lineTo(rx+5,ry+5);x.lineTo(rx,ry+2);x.lineTo(rx-5,ry+5);x.fill();
+  x.textAlign="center";x.font="900 10px system-ui,sans-serif";x.fillStyle="rgba(255,255,255,.9)";x.fillText("🗺️ TAP FOR MAP",rx,ry+RR+13)}
+/* ---------- the big map of the island ---------- */
+function fjMapImg(){if(FJR.mapImg)return FJR.mapImg;const W=FJW,N=FJ_N,H=W.H,C=W.col,L=W.L,A=W.A,c=document.createElement("canvas");c.width=c.height=N;const x=c.getContext("2d"),im=x.createImageData(N,N);
+  for(let mj=0;mj<N;mj++)for(let mi=0;mi<N;mi++){const i=N-1-mi,j=N-1-mj,k=j*N+i,o=(mj*N+mi)*4,h=H[k];let r,g,b;
+    if(h<0){const d=Math.min(1,-h/160);r=.30-.2*d;g=.62-.3*d;b=.78-.25*d}else{const i1=Math.min(N-1,i+1),i0=Math.max(0,i-1),j1=Math.min(N-1,j+1),j0=Math.max(0,j-1),sl=(H[j*N+i1]-H[j*N+i0])*.0028+(H[j0*N+i]-H[j1*N+i])*.0028,sh=Math.max(.45,Math.min(1.35,1+sl));
+      const lt=(.62+.38*(L?L[k]:1))*(A?.75+.25*A[k]:1)*sh;r=C[k*3]*lt*1.15;g=C[k*3+1]*lt*1.15;b=C[k*3+2]*lt*1.15}
+    im.data[o]=Math.min(255,r*255);im.data[o+1]=Math.min(255,g*255);im.data[o+2]=Math.min(255,b*255);im.data[o+3]=255}
+  x.putImageData(im,0,0);return FJR.mapImg=c}
+function fjMapOpen(on){const G=FJG;if(!G)return;G.mapOn=on?1:0;const w=$("#fjmapw");if(w)w.classList.toggle("on",!!on);if(on){sfx("tap");const n=$("#fjmapn");if(n)n.textContent=G.live?"✈️ Autopilot is flying for you · tap to close":"⏸ Paused · tap anywhere to close"}}
+function fjMapDraw(){const G=FJG,c=$("#fjmapc");if(!c||!G.mapOn)return;const r=$("#fjc").getBoundingClientRect(),M=Math.floor(Math.min(r.width*.96,r.height*.86)),dpr=G.dpr||1;
+  if(c.width!==Math.round(M*dpr)){c.width=c.height=Math.round(M*dpr);c.style.width=c.style.height=M+"px"}const x=c.getContext("2d");x.setTransform(dpr,0,0,dpr,0,0);x.imageSmoothingEnabled=true;
+  const wm=(px,pz)=>[(FJ_HALF-px)/FJ_S*M,(FJ_HALF-pz)/FJ_S*M];x.save();x.beginPath();x.roundRect?x.roundRect(0,0,M,M,18):x.rect(0,0,M,M);x.clip();x.drawImage(fjMapImg(),0,0,M,M);
+  /* rivers and valley names */x.lineCap="round";for(let v=0;v<FJ_VAL.length;v++){x.strokeStyle="rgba(90,170,255,.85)";x.lineWidth=2;x.beginPath();for(let t=0;t<=1.0001;t+=.02){const p=fjValPt(v,Math.min(1,t)),[a,b]=wm(p.x,p.z);t?x.lineTo(a,b):x.moveTo(a,b)}x.stroke()}
+  const lab=(t,a,b,sz,col)=>{x.font=`900 ${sz}px system-ui,sans-serif`;x.textAlign="center";const hw=x.measureText(t).width/2+4;a=Math.max(hw,Math.min(M-hw,a));b=Math.max(sz+2,Math.min(M-4,b));x.lineWidth=3.5;x.strokeStyle="rgba(0,0,0,.65)";x.strokeText(t,a,b);x.fillStyle=col||"#fff";x.fillText(t,a,b)},fs=Math.max(10,M/40);
+  for(let v=0;v<FJ_VAL.length;v++){const p=fjValPt(v,[.4,.3,.25][v]||.5),[a,b]=wm(p.x,p.z);lab(FJ_VAL[v].nm.toUpperCase(),a,b-10,fs,"#e8f4ff")}
+  if(FJW.arch){const[a,b]=wm(FJW.arch.cx,FJW.arch.cz);lab("🌉 ARCH",a,b+4,fs*.95,"#ffe58a")}if(FJW.tun){const p=FJW.tun.pts[FJW.tun.pts.length>>1],[a,b]=wm(p.x,p.z);lab("🕳️ TUNNEL",a,b+4,fs*.95,"#ffe58a")}
+  for(const u of FJR.pu)if(u.g.visible){const[a,b]=wm(u.g.position.x,u.g.position.z);x.fillStyle="rgba(120,210,255,.9)";x.strokeStyle="#fff";x.lineWidth=1;x.beginPath();x.arc(a,b,3,0,7);x.fill();x.stroke()}
+  for(const m of G.mis){const[a,b]=wm(m.p.x,m.p.z);x.fillStyle="#ff5a46";x.beginPath();x.arc(a,b,2.5,0,7);x.fill()}
+  /* the planes: an arrow pointing the way each one is flying */const me=G.me;
+  for(const e of G.jets){if(e.dead)continue;const[a,b]=wm(e.p.x,e.p.z),mine=e===me,col=mine?[1,1,1]:FJ_TRAIL[e.who]||[1,1,1],z=mine?11:10;
+    if(mine){const k=(G.t*1.5)%1;x.strokeStyle=`rgba(255,255,255,${1-k})`;x.lineWidth=2;x.beginPath();x.arc(a,b,10+k*22,0,7);x.stroke()}
+    x.save();x.translate(a,b);x.rotate(-e.yaw);x.fillStyle=fjCss(col);x.strokeStyle="rgba(0,0,0,.7)";x.lineWidth=2;x.beginPath();x.moveTo(0,-z);x.lineTo(z*.75,z*.7);x.lineTo(0,z*.3);x.lineTo(-z*.75,z*.7);x.closePath();x.stroke();x.fill();x.restore();
+    lab(mine?"YOU":(e.cols.badge+" "+fjName(e)).toUpperCase()+(me?" · "+fjKm(e.p.distanceTo(me.p)):""),a,b-z-6,fs*.95,fjCss(col))}
+  x.restore();x.strokeStyle="rgba(255,255,255,.5)";x.lineWidth=2;x.beginPath();x.roundRect?x.roundRect(1,1,M-2,M-2,18):x.rect(1,1,M-2,M-2);x.stroke()}
+/* while the map is open in a live flight, the autopilot flies level and keeps clear of the ground */
+function fjAutopilot(me){let pull=0;for(const t of[.6,1.4,2.6]){const q=me.p.clone().addScaledVector(me.v,t),h=Math.max(0,fjH(q.x,q.z));if(q.y<h+160)pull=1}me.stick.x=-me.bank*1.5;me.stick.y=pull?-.9:Math.max(-1,Math.min(1,me.pitch*2.5));me.fire=0;me.bo=0}
+/* ---------- the LOOK camera: from behind your plane, looking at the other one ---------- */
+function fjLookCam(dt,me,t){const cam=FJR.cam,d=me.p.clone().sub(t.p).normalize(),want=me.p.clone().addScaledVector(d,46).add(new THREE.Vector3(0,14,0)),minY=Math.max(0,fjH(want.x,want.z))+6;if(want.y<minY)want.y=minY;
+  cam.position.lerp(want,1-Math.exp(-dt*6));cam.up.set(0,1,0);cam.lookAt(t.p);cam.fov+=(66-cam.fov)*Math.min(1,dt*3);cam.updateProjectionMatrix()}
+/* ---------- re-spawning close to the action (fights start and restart within sight) ---------- */
+function fjRespawn(j){const G=FJG,o=G.jets.find(e=>e!==j&&!e.dead&&(j.kind==="me"?e.kind!=="guide":e.kind==="me"));
+  if(!o||G.sub==="free"){fjSpawn(j,j.kind==="me"?0:1);return}
+  if(G.peace){/* flying together: come back just behind your friend */fjSpawn(j,0);const f=new THREE.Vector3(Math.sin(o.yaw),0,Math.cos(o.yaw));j.p.copy(o.p).addScaledVector(f,-260).add(new THREE.Vector3(0,40,0));j.yaw=o.yaw}
+  else{fjSpawn(j,0);const a=Math.random()*Math.PI*2;j.p.set(o.p.x+Math.sin(a)*2000,0,o.p.z+Math.cos(a)*2000);j.yaw=Math.atan2(o.p.x-j.p.x,o.p.z-j.p.z)}
+  j.p.y=Math.max(j.p.y,o.p.y,fjH(j.p.x,j.p.z)+500,600);j.mesh.position.copy(j.p)}
+/* flying together: start side by side, Dad on the left, Cass on the right */
+function fjFormation(j,who){fjSpawn(j,0);const z=-3600,h=Math.max(1500,fjH(0,z)+700);j.p.set(who==="X"?55:-55,h,who==="X"?z:z-35);j.yaw=0;j.pitch=0;j.bank=0;j.inv=3}
+/* ---------- free flight: friendly guide planes that cruise the valleys (follow them!) ---------- */
+function fjGuidePath(vi){const P=[],A=fjValPt(vi,0),B=fjValPt(vi,1);
+  P.push([A.x-A.dx*900,A.fl+380,A.z-A.dz*900]);for(let t=0;t<=1.0001;t+=.02){const p=fjValPt(vi,Math.min(1,t));P.push([p.x,p.fl+90,p.z])}P.push([B.x+B.dx*700,B.fl+380,B.z+B.dz*700]);
+  /* the way back: up high, swinging out to one side */const e=P[P.length-1],s=P[0],nx=-(s[2]-e[2]),nz=s[0]-e[0],nl=Math.hypot(nx,nz)||1;for(let k=1;k<10;k++){const t=k/10,sw=Math.sin(t*Math.PI)*1400;P.push([e[0]+(s[0]-e[0])*t+nx/nl*sw,900,e[2]+(s[2]-e[2])*t+nz/nl*sw])}
+  /* smooth it (closed Catmull-Rom), then even 20 m steps */const S=[],n=P.length;for(let i=0;i<n;i++){const a=P[(i-1+n)%n],b=P[i],c=P[(i+1)%n],d=P[(i+2)%n];for(let k=0;k<12;k++){const t=k/12,t2=t*t,t3=t2*t,f=q=>.5*(2*b[q]+(-a[q]+c[q])*t+(2*a[q]-5*b[q]+4*c[q]-d[q])*t2+(-a[q]+3*b[q]-3*c[q]+d[q])*t3);S.push([f(0),f(1),f(2)])}}
+  const R=[S[0]];let acc=0;for(let i=1;i<=S.length;i++){const p=S[i%S.length],q=S[i-1],l=Math.hypot(p[0]-q[0],p[1]-q[1],p[2]-q[2]);acc+=l;while(acc>=20){acc-=20;const k=1-acc/l;R.push([q[0]+(p[0]-q[0])*k,q[1]+(p[1]-q[1])*k,q[2]+(p[2]-q[2])*k])}}
+  /* keep clear of the ground: climb early, come down gently */const m=R.length,need=R.map(p=>Math.max(0,fjH(p[0],p[2]))+70),y=R.map((p,i)=>Math.max(p[1],need[i]));
+  for(let pass=0;pass<2;pass++){for(let i=m*2;i>=0;i--){const a=i%m,b=(i+1)%m;y[a]=Math.max(y[a],y[b]-9)}for(let i=0;i<m*2;i++){const a=(i+1)%m,b=i%m;y[a]=Math.max(y[a],y[b]-9)}}
+  return R.map((p,i)=>[p[0],y[i],p[2]])}
+function fjGuides(){const G=FJG,out=[];const keys=["G1","G2","G3"];for(let v=0;v<3;v++){const who=keys[v],j=fjJet(who,"guide");j.path=fjGuidePath(v);j.s=Math.random()*j.path.length*20;j.gs=165;j.inv=99;j.hp=j.hpM=999;fjGuideStep(j,0);G.jets.push(j);out.push(j)}return out}
+function fjGuideStep(j,dt){const P=j.path,n=P.length;j.s=(j.s+j.gs*dt)%(n*20);const f=j.s/20,i=Math.floor(f)%n,k=f-Math.floor(f),a=P[i],b=P[(i+1)%n],c=P[(i+3)%n];
+  j.p.set(a[0]+(b[0]-a[0])*k,a[1]+(b[1]-a[1])*k,a[2]+(b[2]-a[2])*k);const dx=c[0]-j.p.x,dy=c[1]-j.p.y,dz=c[2]-j.p.z,hl=Math.hypot(dx,dz);
+  const yaw=Math.atan2(dx,dz),pitch=Math.atan2(dy,hl);let dyaw=yaw-j.yaw;dyaw=Math.atan2(Math.sin(dyaw),Math.cos(dyaw));const rate=dt>0?dyaw/dt:0;
+  j.yaw=yaw;j.pitch+=(pitch-j.pitch)*Math.min(1,dt*4);j.bank+=(Math.max(-1.1,Math.min(1.1,-rate*1.6))-j.bank)*Math.min(1,dt*3);j.spd=j.gs;j.v.set(Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),Math.cos(yaw)*Math.cos(pitch)).multiplyScalar(j.gs);
+  j.mesh.position.copy(j.p);j.mesh.rotation.set(-j.pitch,j.yaw,j.bank,"YXZ");j.mesh.userData.flames.forEach(fl=>{const s=.4*(.85+Math.random()*.3);fl.scale.set(1,s,1);fl.position.z=-8.85-2*s})}
+
 /* ================= SKY ACES: the game =================
    Menu → fly. Modes: vs the computer (Easy / Medium / Ace), live vs the other phone, free flight.
    Flying: left thumb steers (push up = climb, sideways = bank and turn; let go and it levels out).
@@ -4229,10 +4318,10 @@ let FJG=null,FJR=null;
 const FJ_KO=5,FJ_V=new Array(8).fill(0);
 const fjCass=()=>me()==="O";
 function vJet(){g2Shell("fjc",`<canvas id="fjh"></canvas><div class="fjload" id="hpload">Building the island… <b id="fjpct">0%</b></div><div class="fjmenu" id="fjm"></div><div class="fjmsg" id="fjmsg"></div>
-  <div class="fjctl" id="fjctl"><div class="fjstk" id="fjstk"><i></i></div><button class="fjb fjgun" id="fjgun">GUN</button><button class="fjb fjmis" id="fjmis">MISSILE<small id="fjmn"></small></button><button class="fjb fjfl" id="fjfl">FLARE<small id="fjfn"></small></button><button class="fjb fjbo" id="fjbo">BOOST</button></div>`);
+  <div class="fjctl" id="fjctl"><div class="fjstk" id="fjstk"><i></i></div><button class="fjb fjgun" id="fjgun">GUN</button><button class="fjb fjmis" id="fjmis">MISSILE<small id="fjmn"></small></button><button class="fjb fjfl" id="fjfl">FLARE<small id="fjfn"></small></button><button class="fjb fjbo" id="fjbo">BOOST</button><button class="fjb fjlook" id="fjlook">👁️<small>LOOK</small></button><button class="fjb fjmapb" id="fjmapb" aria-label="Map"></button></div><div class="fjmapw" id="fjmapw"><canvas id="fjmapc"></canvas><div class="fjmapn" id="fjmapn"></div></div>`);
   $("#g2q").onclick=()=>{fjLeave()};
   hpThree(()=>{if(!$("#fjc"))return;try{fjStart()}catch(e){console.error(e);const m=$("#hpload");if(m)m.textContent="Something went wrong building the island."}})}
-function fjLeave(){const G=FJG;if(G&&G.mode==="fly"&&G.live&&!G.over){if(!confirm("Leave the dogfight? "+fjOther()+" wins if you leave."))return;fjLiveQuit()}if(G&&G.mode==="fly"){fjMenu();return}fjQuit()}
+function fjLeave(){const G=FJG;if(G&&G.mode==="fly"&&G.sub==="together")fjLiveQuit();if(G&&G.mode==="fly"&&G.sub==="live"&&!G.over){if(!confirm("Leave the dogfight? "+fjOther()+" wins if you leave."))return;fjLiveQuit()}if(G&&G.mode==="fly"){fjMenu();return}fjQuit()}
 function fjQuit(){g2Stop();if(FJG){FJG.dead=1;fjSound(0)}FJG=null;g=null;view()}
 const fjOther=()=>me()==="X"?"Cass":"Dad";
 function fjStart(){const T=THREE;
@@ -4252,37 +4341,39 @@ function fjSize(){if(!FJR||!$("#fjc"))return;const r=$("#fjc").getBoundingClient
 /* ---------- the menu ---------- */
 function fjMenu(){const G=FJG;if(!G)return;G.mode="menu";G.live=0;G.over=0;fjClear();fjSound(0);$("#fjctl").classList.remove("on");const S=fjSet();
   $("#fjm").className="fjmenu on";$("#fjm").innerHTML=`<div class="fjtitle">SKY<b>ACES</b></div>
-    <div class="fjrow"><button class="fjbig fjlive" id="fjL">⚔️ LIVE vs ${fjOther().toUpperCase()}</button></div>
+    <div class="fjrow"><button class="fjbig fjlive" id="fjL">⚔️ LIVE vs ${fjOther().toUpperCase()}</button><button class="fjbig fjtog" id="fjT">🤝 FLY WITH ${fjOther().toUpperCase()}</button></div>
     <div class="fjrow"><span class="fjlab">VS COMPUTER</span>${["EASY","MEDIUM","ACE"].map((d,i)=>`<button class="fjbig fjai" data-d="${i}">${["🙂","😎","☠️"][i]} ${d}</button>`).join("")}</div>
-    <div class="fjrow"><button class="fjbig fjfree" id="fjF">🏔️ FREE FLIGHT</button><button class="fjsm" id="fjinv">Stick: ${S.inv?"pull back = climb":"push up = climb"}</button></div>
+    <div class="fjrow"><button class="fjbig fjfree" id="fjF">🏔️ FREE FLIGHT · NO FIGHTING</button><button class="fjsm" id="fjinv">Stick: ${S.inv?"pull back = climb":"push up = climb"}</button></div>
     <div class="fjtally">${fjTally()}</div>`;
-  $("#fjL").onclick=()=>{sfx("tap");fjLiveAsk()};$("#fjF").onclick=()=>{sfx("tap");fjPlay({mode:"free"})};$("#fjinv").onclick=()=>{S.inv=!S.inv;fjSave(S);fjMenu()};
+  $("#fjL").onclick=()=>{sfx("tap");fjLiveAsk()};$("#fjT").onclick=()=>{sfx("tap");fjLiveAsk(1)};$("#fjF").onclick=()=>{sfx("tap");fjPlay({mode:"free"})};$("#fjinv").onclick=()=>{S.inv=!S.inv;fjSave(S);fjMenu()};
   document.querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{sfx("tap");fjPlay({mode:"ai",diff:+b.dataset.d})});
   /* a slow tour of the island behind the menu */G.tour=G.tour||0}
 const fjSet=()=>{try{return JSON.parse(localStorage.getItem("fj_"+me())||"{}")}catch(e){return{}}},fjSave=S=>{try{localStorage.setItem("fj_"+me(),JSON.stringify(S))}catch(e){}};
 const FJD={live:null,win:{}};
 const fjTally=()=>{const w=FJD.win||{},S=fjSet();return`🏆 Live wins: Dad <b>${w.X||0}</b> · Cass <b>${w.O||0}</b>${S.aiw?` · Computer aces beaten: <b>${S.aiw}</b>`:""}`};
-function fjClear(){const G=FJG;for(const j of G.jets)FJR.scene.remove(j.mesh);G.jets=[];G.bul.length=0;for(const m of G.mis)FJR.scene.remove(m.mesh);G.mis=[];G.flr=[];if(FJE)FJE.fx.list.length=0}
+function fjClear(){const G=FJG;G.mapOn=0;const mw=$("#fjmapw");if(mw)mw.classList.remove("on");G.btn.look=0;for(const j of G.jets)FJR.scene.remove(j.mesh);G.jets=[];G.bul.length=0;for(const m of G.mis)FJR.scene.remove(m.mesh);G.mis=[];G.flr=[];if(FJE)FJE.fx.list.length=0}
 /* ---------- starting a flight ---------- */
-function fjPlay(o){const G=FJG;fjClear();G.mode="fly";G.sub=o.mode;G.diff=o.diff||0;G.live=o.mode==="live";G.over=0;G.t=0;G.score={me:0,them:0};$("#fjm").className="fjmenu";$("#fjctl").classList.add("on");
+function fjPlay(o){const G=FJG;fjClear();G.mode="fly";G.sub=o.mode;G.diff=o.diff||0;G.live=o.mode==="live"||o.mode==="together";G.peace=o.mode==="free"||o.mode==="together";G.over=0;G.t=0;G.score={me:0,them:0};$("#fjm").className="fjmenu";$("#fjctl").classList.add("on");$("#fjctl").classList.toggle("peace",G.peace);
   const mine=fjJet(me(),"me");G.me=mine;G.jets.push(mine);fjSpawn(mine,o.spawn||0);
   if(o.mode==="ai"){const e=fjJet("AI","ai");e.diff=G.diff;G.jets.push(e);fjSpawn(e,1);fjMsg(["🙂 EASY","😎 MEDIUM","☠️ ACE"][G.diff]+" — FIRST TO "+FJ_KO+"!",3)}
   else if(o.mode==="live"){const e=fjJet(me()==="X"?"O":"X","remote");G.jets.push(e);G.foe=e;fjSpawn(e,o.spawn?0:1);fjMsg("⚔️ FIRST TO "+FJ_KO+"! GOOD LUCK!",3)}
-  else fjMsg("🏔️ Explore! Try the arch over Dragon Canyon and the tunnel in Thunder Gorge",4);
+  else if(o.mode==="together"){const th=me()==="X"?"O":"X",e=fjJet(th,"remote");G.jets.push(e);G.foe=e;fjFormation(mine,me());fjFormation(e,th);fjMsg("🤝 FLYING WITH "+fjOther().toUpperCase()+" — no fighting! 🗺️ Tap the radar for the map",4)}
+  else{fjGuides();fjMsg("🏔️ NO FIGHTING — follow Comet, Blaze and Zap through the valleys! 🗺️ Tap the radar for the map",4.5)}
   G.cam=null;G.inv=!!fjSet().inv;fjSound(1)}
 function fjJet(who,kind){const cols=FJ_COLS[who]||FJ_COLS.AI,m=fjJetModel(cols,FJR.env);FJR.scene.add(m);const cass=who==="O";
   return{who,kind,cols,mesh:m,p:new THREE.Vector3(),yaw:0,pitch:0,bank:0,spd:170,boost:1,hp:cass?130:100,hpM:cass?130:100,mis:6,fl:8,lockT:0,lock:null,dead:0,rt:0,inv:0,gunT:0,misT:0,flT:0,regM:0,regF:0,stick:{x:0,y:0},fire:0,bo:0,cass,trail:[[],[]],v:new THREE.Vector3(),kills:0,smoke:0}}
 /* spawn points: high above the island, facing the middle; the two sides start apart */
-function fjSpawn(j,side){const a=(side?Math.PI:0)+(Math.random()-.5)*.6,r=3800,x=Math.sin(a)*r,z=-Math.cos(a)*r*.7-600;j.p.set(x,Math.max(1700,fjH(x,z)+900),z);j.yaw=Math.atan2(-x,-z-600);j.pitch=0;j.bank=0;j.spd=170;j.hp=j.hpM;j.dead=0;j.inv=3;j.lockT=0;j.lock=null;j.mesh.visible=true;j.smoke=0;
+function fjSpawn(j,side){const a=(side?Math.PI:0)+(Math.random()-.5)*.6,r=FJG&&!FJG.peace?1500:3800,x=Math.sin(a)*r,z=-Math.cos(a)*r*.7-600;j.p.set(x,Math.max(1700,fjH(x,z)+900),z);j.yaw=Math.atan2(-x,-z-600);j.pitch=0;j.bank=0;j.spd=170;j.hp=j.hpM;j.dead=0;j.inv=3;j.lockT=0;j.lock=null;j.mesh.visible=true;j.smoke=0;
   j.mis=Math.max(j.mis,4);j.fl=Math.max(j.fl,6);j.mesh.userData.missiles.forEach((m,i)=>m.visible=i<j.mis)}
 /* ---------- input: a floating stick on the left half, buttons on the right ---------- */
 function fjInput(){const G=FJG,el=$("#fjc"),stk=$("#fjstk"),knob=stk.querySelector("i");let sid=null,o0=null;
   const setS=(x,y)=>{G.stick.x=x;G.stick.y=y;knob.style.transform=`translate(${x*46}px,${y*46}px)`};
-  el.addEventListener("pointerdown",e=>{if(G.mode!=="fly"||e.target.closest(".fjb,.fjmenu,.dfx"))return;if(e.clientX<innerWidth*.5&&sid==null){sid=e.pointerId;o0=[e.clientX,e.clientY];stk.style.left=(e.clientX-70)+"px";stk.style.top=(e.clientY-70)+"px";stk.classList.add("act");setS(0,0)}});
+  el.addEventListener("pointerdown",e=>{if(G.mode!=="fly"||e.target.closest(".fjb,.fjmenu,.dfx,.fjmapw"))return;if(e.clientX<innerWidth*.5&&sid==null){sid=e.pointerId;o0=[e.clientX,e.clientY];stk.style.left=(e.clientX-70)+"px";stk.style.top=(e.clientY-70)+"px";stk.classList.add("act");setS(0,0)}});
   el.addEventListener("pointermove",e=>{if(e.pointerId!==sid)return;const dx=(e.clientX-o0[0])/55,dy=(e.clientY-o0[1])/55,l=Math.hypot(dx,dy),k=l>1?1/l:1;setS(dx*k,dy*k)});
   const up=e=>{if(e.pointerId!==sid)return;sid=null;setS(0,0);stk.classList.remove("act");stk.style.left="";stk.style.top=""};el.addEventListener("pointerup",up);el.addEventListener("pointercancel",up);
   const hold=(id,k)=>{const b=$(id);b.onpointerdown=e=>{e.preventDefault();e.stopPropagation();G.btn[k]=1;if(k==="mis")fjFireMissile(G.me);if(k==="fl")fjFlares(G.me)};const r=e=>{G.btn[k]=0};b.onpointerup=r;b.onpointercancel=r;b.onpointerleave=r};
-  hold("#fjgun","gun");hold("#fjmis","mis");hold("#fjfl","fl");hold("#fjbo","bo");
+  hold("#fjgun","gun");hold("#fjmis","mis");hold("#fjfl","fl");hold("#fjbo","bo");hold("#fjlook","look");
+  $("#fjmapb").onpointerdown=e=>{e.preventDefault();e.stopPropagation();fjMapOpen(!G.mapOn)};$("#fjmapw").onpointerdown=e=>{e.preventDefault();e.stopPropagation();fjMapOpen(false)};
   window.onkeydown=e=>{if(!FJG)return;G.keys[e.key]=1;if(G.mode!=="fly")return;if(e.key==="m"||e.key==="M")fjFireMissile(G.me);if(e.key==="f"||e.key==="F")fjFlares(G.me);if(e.key===" ")e.preventDefault()};window.onkeyup=e=>{if(FJG)G.keys[e.key]=0}}
 /* ---------- the flight model (simple and friendly: bank to turn, levels itself, no stalling) ---------- */
 function fjFly(j,dt){const sx=j.stick.x,sy=j.stick.y,cass=j.cass;
@@ -4327,7 +4418,7 @@ function fjLockStep(j,dt){const G=FJG;if(j.dead){j.lockT=0;j.lock=null;return}co
   if(j.kind==="me"){if(j.lock&&!j.lockBeep){j.lockBeep=1;sfx("sp")}if(!j.lock)j.lockBeep=0}}
 /* can a missile see from a to b (not behind a mountain)? */
 function fjLos(a,b){for(let i=1;i<10;i++){const t=i/10,x=a.x+(b.x-a.x)*t,y=a.y+(b.y-a.y)*t,z=a.z+(b.z-a.z)*t;if(y<fjH(x,z)+5)return false}return true}
-function fjFireMissile(j){const G=FJG;if(!G||G.mode!=="fly"||!j||j.dead||j.mis<=0||j.misT>0)return;j.misT=.6;j.mis--;const side=j.mis%2?-1:1;
+function fjFireMissile(j){const G=FJG;if(!G||G.peace||G.mode!=="fly"||!j||j.dead||j.mis<=0||j.misT>0)return;j.misT=.6;j.mis--;const side=j.mis%2?-1:1;
   const ms=j.mesh.userData.missiles;ms.forEach((m,i)=>m.visible=i<j.mis);const p=j.p.clone().add(new THREE.Vector3(side*3.2,-1.2,0).applyEuler(j.mesh.rotation)),v=j.v.clone();
   const mesh=fjMissileModel(FJR.env);mesh.scale.setScalar(1.6);FJR.scene.add(mesh);const m={p,v,spd:j.spd,own:j,tgt:j.lock||null,life:8,mesh,id:Math.random().toString(36).slice(2,8),age:0,lost:0};G.mis.push(m);
   if(j.kind==="me"){sfx("rev");fjMsg(m.tgt?"🚀 FOX TWO!":"🚀 MISSILE AWAY (no lock)",1)}if(G.live&&j.kind==="me")fjLiveSend(1)}
@@ -4348,7 +4439,7 @@ function fjMisStep(dt){const G=FJG;for(let i=G.mis.length-1;i>=0;i--){const m=G.
     if(!boom&&!tg)for(const j of G.jets){if(j===m.own||j.dead||j.inv>0)continue;if(m.p.distanceTo(j.p)<16){boom=true;fjHit(j,m.own,j.cass?42:55,"missile",m.p);break}}
     if(boom){fjBoom(m.p.x,m.p.y,m.p.z,0);FJR.scene.remove(m.mesh);G.mis.splice(i,1);if(Math.hypot(m.p.x-G.me.p.x,m.p.y-G.me.p.y,m.p.z-G.me.p.z)<900)sfx("b_boom")}}}
 /* flares: bright decoys that pull missiles away */
-function fjFlares(j){const G=FJG;if(!G||G.mode!=="fly"||!j||j.dead||j.fl<=0||j.flT>0)return;j.flT=1;j.fl--;const right=new THREE.Vector3(1,0,0).applyEuler(j.mesh.rotation);
+function fjFlares(j){const G=FJG;if(!G||(G.peace&&j===G.me)||G.mode!=="fly"||!j||j.dead||j.fl<=0||j.flT>0)return;j.flT=1;j.fl--;const right=new THREE.Vector3(1,0,0).applyEuler(j.mesh.rotation);
   for(let i=0;i<6;i++){const s=i%2?1:-1,f={p:j.p.clone(),v:j.v.clone().multiplyScalar(.45).addScaledVector(right,s*(50+i*12)).add(new THREE.Vector3(0,-20-i*8,0)),life:3,flare:true,own:j};G.flr.push(f)}
   /* missiles chasing this jet may go for the flares instead */
   for(const m of G.mis){if(m.tgt!==j)continue;const d=m.p.distanceTo(j.p);if(d<1400&&Math.random()<(j.cass?.85:.7)){m.tgt=G.flr[G.flr.length-1-(Math.random()*6|0)];if(j.kind==="me")fjMsg("✨ FLARES WORKED!",1.2)}}
@@ -4364,11 +4455,11 @@ function fjHit(j,by,dmg,how,at){const G=FJG;if(j.dead||j.inv>0)return;
   if(j.hp<=0)fjDown(j,by,how)}
 function fjDown(j,by,how){const G=FJG;if(j.dead)return;j.dead=1;j.rt=3.5;j.hp=0;fjBoom(j.p.x,j.p.y,j.p.z,1);j.mesh.visible=false;if(Math.hypot(j.p.x-G.me.p.x,j.p.y-G.me.p.y,j.p.z-G.me.p.z)<2500)sfx("b_boom");
   /* a parachute floats down from a knocked-out jet */FJE.chute={p:j.p.clone(),t:0};
-  if(G.sub==="free"){if(j.kind==="me")fjMsg("💥 CRASHED! Back in the air in a moment…",3);return}
+  if(G.peace){if(j.kind==="me"){fjMsg("💥 CRASHED! Back in the air in a moment…",3);if(G.live){G.myDeaths=(G.myDeaths||0)+1;fjLiveSend(2)}}return}
   if(j.kind==="me"){G.score.them++;G.myDeaths=(G.myDeaths||0)+1;fjMsg(how==="ground"||how==="water"?"💥 CRASHED INTO THE "+(how==="water"?"SEA":"GROUND")+"!":how==="arch"?"💥 HIT THE ARCH!":how==="tunnel"?"💥 HIT THE TUNNEL WALL!":"💥 SHOT DOWN!",2.5);if(G.live)fjLiveSend(2)}
   else if(j.kind==="ai"){G.score.me++;fjMsg(how==="ground"||how==="water"||how==="arch"?"😆 THE SHADOW CRASHED! +1":"🎯 SPLASH ONE! +1",2.5);sfx("win")}
   fjCheckEnd()}
-function fjCheckEnd(){const G=FJG;if(G.over||G.sub==="free")return;if(G.score.me>=FJ_KO||G.score.them>=FJ_KO){G.over=1;const win=G.score.me>=FJ_KO;setTimeout(()=>fjEnd(win),1800)}}
+function fjCheckEnd(){const G=FJG;if(G.over||G.peace)return;if(G.score.me>=FJ_KO||G.score.them>=FJ_KO){G.over=1;const win=G.score.me>=FJ_KO;setTimeout(()=>fjEnd(win),1800)}}
 function fjEnd(win,why){const G=FJG;if(!G||G.mode!=="fly")return;G.mode="end";fjSound(0);$("#fjctl").classList.remove("on");sfx(win?"win":"lose");
   if(win&&G.sub==="ai"&&G.diff===2){const S=fjSet();S.aiw=(S.aiw||0)+1;fjSave(S)}if(G.live&&win)fjLiveWin();
   const them=G.live?fjOther():"THE SHADOW";$("#fjm").className="fjmenu on";$("#fjm").innerHTML=`<div class="fjtitle">${win?"🏆 YOU WIN!":"💥 "+them.toUpperCase()+" WINS"}</div><div class="fjscore">${G.score.me} – ${G.score.them}</div>${why?`<p class="fjsay">${why}</p>`:""}
@@ -4398,18 +4489,18 @@ function fjPuStep(dt){const G=FJG;for(const u of FJR.pu){u.ring.rotation.y+=dt*1
 /* ---------- each frame ---------- */
 function fjFrame(dt){const G=FJG;if(!G||G.dead||!FJR||!FJR.built)return;G.t+=dt;FJW.U.time.value=G.t;const cam=FJR.cam;
   if(FJW.falls)FJW.falls.tex.offset.y=(G.t*.9)%1;
-  if(G.mode==="fly"||G.mode==="end"){fjUpdate(dt);fjCamera(dt);fjEngineSound()}
+  if(G.mode==="fly"||G.mode==="end"){if(!(G.mapOn&&!G.live))fjUpdate(dt);fjCamera(dt);fjEngineSound()}
   else fjTour(dt);
   if(FJE){FJE.fx.smoke.material.uniforms.sc.value=FJE.fx.glow.material.uniforms.sc.value=(G.H||400)*(G.dpr||1)/(2*Math.tan(cam.fov*Math.PI/360));FJE.fx.step(dt,cam);FJE.flash=Math.max(0,(FJE.flash||0)-dt*2.5);
     if(FJE.chute){FJE.chute.t+=dt;if(FJE.chute.t>9)FJE.chute=null}}
-  FJR.r.render(FJR.scene,cam);fjHud(dt)}
+  FJR.r.render(FJR.scene,cam);fjHud(dt);if(G.mapOn)fjMapDraw()}
 /* everything that moves (no drawing) */
 function fjUpdate(dt){const G=FJG;const me=G.me;
-    /* my controls */if(me&&!me.dead&&G.mode==="fly"){const k=G.keys;let sx=G.stick.x,sy=G.stick.y;if(k.ArrowLeft||k.a)sx=-1;if(k.ArrowRight||k.d)sx=1;if(k.ArrowUp||k.w)sy=-1;if(k.ArrowDown||k.s)sy=1;me.stick.x=sx;me.stick.y=sy;me.fire=G.btn.gun||k[" "]?1:0;me.bo=G.btn.bo||k.Shift?1:0;
+    /* my controls */if(me&&!me.dead&&G.mode==="fly"){const k=G.keys;let sx=G.stick.x,sy=G.stick.y;if(k.ArrowLeft||k.a)sx=-1;if(k.ArrowRight||k.d)sx=1;if(k.ArrowUp||k.w)sy=-1;if(k.ArrowDown||k.s)sy=1;me.stick.x=sx;me.stick.y=sy;me.fire=!G.peace&&(G.btn.gun||k[" "])?1:0;me.bo=G.btn.bo||k.Shift?1:0;if(G.mapOn)fjAutopilot(me);
       /* Cass gets an automatic pull-up if he's about to hit the ground */const ah=me.p.clone().addScaledVector(me.v,me.cass?1.1:.7),gh=Math.max(0,fjH(ah.x,ah.z));me.warn=ah.y<gh+40;if(me.cass&&ah.y<gh+25)me.stick.y=Math.min(me.stick.y,-.9)}
-    for(const j of G.jets){if(j.kind==="remote")continue;j.inv=Math.max(0,j.inv-dt);j.misT=Math.max(0,j.misT-dt);j.flT=Math.max(0,j.flT-dt);
-      if(j.dead){j.rt-=dt;if(j.rt<=0&&!G.over&&G.mode==="fly"){fjSpawn(j,j.kind==="me"?0:1);if(j.kind==="me"){G.cam=null;fjMsg("✈️ BACK IN THE AIR!",1.5)}}continue}
-      if(j.kind==="ai")fjAI(j,dt);fjFly(j,dt);fjLockStep(j,dt);fjGun(j,dt);
+    for(const j of G.jets){fjBeacon(j,dt);if(j.kind==="remote")continue;if(j.kind==="guide"){fjGuideStep(j,dt);continue}j.inv=Math.max(0,j.inv-dt);j.misT=Math.max(0,j.misT-dt);j.flT=Math.max(0,j.flT-dt);
+      if(j.dead){j.rt-=dt;if(j.rt<=0&&!G.over&&G.mode==="fly"){fjRespawn(j);if(j.kind==="me"){G.cam=null;fjMsg("✈️ BACK IN THE AIR!",1.5)}}continue}
+      if(j.kind==="ai")fjAI(j,dt);fjFly(j,dt);if(!G.peace){fjLockStep(j,dt);fjGun(j,dt)}
       /* slowly re-arm */j.regM+=dt;if(j.regM>12&&j.mis<6){j.regM=0;j.mis++;j.mesh.userData.missiles.forEach((m,i)=>m.visible=i<j.mis)}j.regF+=dt;if(j.regF>7&&j.fl<8){j.regF=0;j.fl++}
       const hit=fjCrash(j);if(hit&&j.inv<=0)fjDown(j,null,hit);else if(hit){j.pitch=Math.max(j.pitch,.5);j.p.y=Math.max(j.p.y,fjH(j.p.x,j.p.z)+6)}
       fjBonus(j);fjTrails(j,dt);if(j.hp<j.hpM*.45&&Math.random()<.6)FJE.fx.add({x:j.p.x,y:j.p.y,z:j.p.z,vx:0,vy:4,vz:0,t:0,life:2.2,s0:5,s1:26,c:[.2,.2,.22],a:.6,drag:.5})}
@@ -4419,7 +4510,7 @@ function fjUpdate(dt){const G=FJG;const me=G.me;
 /* wingtip vapour trails when turning hard or going fast */
 function fjTrails(j,dt){const pull=Math.abs(j.bank)>.7||Math.abs(j.stick.y)>.6||j.spd>240;if(!pull||Math.random()>.85)return;for(const s of[-1,1]){const tip=new THREE.Vector3(s*7.3,-.1,-4.8).applyEuler(j.mesh.rotation).add(j.p);
   FJE.fx.add({x:tip.x,y:tip.y,z:tip.z,vx:0,vy:0,vz:0,t:0,life:.9,s0:1.6,s1:4,c:[1,1,1],a:.45,drag:1})}}
-function fjCamera(dt){const G=FJG,cam=FJR.cam,me=G.me;if(!me)return;let tgt=me.p;if(me.dead){/* watch the wreck from a little way off */const a=G.t*.4;const want=new THREE.Vector3(me.p.x+Math.cos(a)*120,me.p.y+50,me.p.z+Math.sin(a)*120);cam.position.lerp(want,1-Math.exp(-dt*2));cam.lookAt(me.p);return}
+function fjCamera(dt){const G=FJG,cam=FJR.cam,me=G.me;if(!me)return;let tgt=me.p;if(!me.dead&&(G.btn.look||G.keys.l||G.keys.L)){const t=fjFocus();if(t){fjLookCam(dt,me,t);return}}if(me.dead){/* watch the wreck from a little way off */const a=G.t*.4;const want=new THREE.Vector3(me.p.x+Math.cos(a)*120,me.p.y+50,me.p.z+Math.sin(a)*120);cam.position.lerp(want,1-Math.exp(-dt*2));cam.lookAt(me.p);return}
   const cp=Math.cos(me.pitch),f=new THREE.Vector3(Math.sin(me.yaw)*cp,Math.sin(me.pitch),Math.cos(me.yaw)*cp),want=me.p.clone().addScaledVector(f,-34).add(new THREE.Vector3(0,9+Math.max(0,-me.pitch)*6,0));
   const minY=Math.max(0,fjH(want.x,want.z))+6;if(want.y<minY)want.y=minY;
   if(!G.cam){cam.position.copy(want);G.cam=1}else cam.position.lerp(want,1-Math.exp(-dt*7));
@@ -4440,26 +4531,25 @@ function fjHud(dt){const G=FJG,c=$("#fjh");if(!c||!G.W)return;const x=c.getConte
   if(G.mode!=="fly")return;const me=G.me;if(!me)return;
   /* hit: red edges */if(me.hitT>0){me.hitT-=dt;const g=x.createRadialGradient(W/2,H/2,Math.min(W,H)*.35,W/2,H/2,Math.max(W,H)*.7);g.addColorStop(0,"rgba(255,0,0,0)");g.addColorStop(1,`rgba(255,40,20,${me.hitT*1.6})`);x.fillStyle=g;x.fillRect(0,0,W,H)}
   const ink="rgba(140,255,170,.92)",warnC="rgba(255,90,70,.95)";x.lineWidth=2;x.font="800 13px system-ui,sans-serif";x.textAlign="center";
-  /* score */const them=G.live?fjOther():G.sub==="ai"?"SHADOW":"";if(them){x.fillStyle="rgba(0,0,0,.4)";x.beginPath();const nw=W<560,sw=nw?170:220,sy=nw?64:10;x.roundRect?x.roundRect(W/2-sw/2,sy,sw,30,15):x.rect(W/2-sw/2,sy,sw,30);x.fill();x.font=`900 ${nw?15:17}px system-ui,sans-serif`;x.fillStyle="#fff";x.fillText(`YOU ${G.score.me} – ${G.score.them} ${them.toUpperCase()}`,W/2,sy+21)}
+  /* score */const them=G.sub==="together"?"":G.live?fjOther():G.sub==="ai"?"SHADOW":"";if(G.sub==="together"){const nw=W<560,sy=nw?64:10;x.fillStyle="rgba(0,0,0,.4)";x.beginPath();x.roundRect?x.roundRect(W/2-100,sy,200,30,15):x.rect(W/2-100,sy,200,30);x.fill();x.font="900 15px system-ui,sans-serif";x.fillStyle="#fff";x.fillText("🤝 FLYING WITH "+fjOther().toUpperCase(),W/2,sy+21)}if(them){x.fillStyle="rgba(0,0,0,.4)";x.beginPath();const nw=W<560,sw=nw?170:220,sy=nw?64:10;x.roundRect?x.roundRect(W/2-sw/2,sy,sw,30,15):x.rect(W/2-sw/2,sy,sw,30);x.fill();x.font=`900 ${nw?15:17}px system-ui,sans-serif`;x.fillStyle="#fff";x.fillText(`YOU ${G.score.me} – ${G.score.them} ${them.toUpperCase()}`,W/2,sy+21)}
   /* health and boost */x.textAlign="left";x.font="800 11px system-ui,sans-serif";x.fillStyle="rgba(0,0,0,.45)";x.fillRect(58,14,150,30);const hp=Math.max(0,me.hp/me.hpM);x.fillStyle=hp<.35?warnC:"#5ee17a";x.fillRect(62,18,142*hp,10);x.fillStyle="#ffd23f";x.fillRect(62,32,142*me.boost,6);x.fillStyle="#fff";x.fillText("ARMOUR",62,54);
   if(me.inv>0){x.strokeStyle="rgba(120,200,255,.8)";x.lineWidth=3;x.beginPath();x.arc(W/2,H/2,Math.min(W,H)*.42,0,7);x.stroke();x.lineWidth=2;x.textAlign="center";x.fillStyle="rgba(150,210,255,.95)";x.fillText("🛡️ SHIELD",W/2,H*.5+Math.min(W,H)*.42+14)}
   /* speed and height */x.textAlign="left";x.fillStyle=ink;x.font="800 13px system-ui,sans-serif";x.fillText(Math.round(me.spd*3.6)+" km/h",14,H*.42);x.fillText(Math.round(me.p.y-Math.max(0,fjH(me.p.x,me.p.z)))+" m up",14,H*.42+18);
   /* gun sight: where the bullets go */const cp=Math.cos(me.pitch),f=new THREE.Vector3(Math.sin(me.yaw)*cp,Math.sin(me.pitch),Math.cos(me.yaw)*cp),aim=fjProj(me.p.clone().addScaledVector(f,700));
   if(aim.front){x.strokeStyle=ink;x.beginPath();x.arc(aim.x,aim.y,14,0,7);x.stroke();x.beginPath();x.moveTo(aim.x-24,aim.y);x.lineTo(aim.x-16,aim.y);x.moveTo(aim.x+16,aim.y);x.lineTo(aim.x+24,aim.y);x.moveTo(aim.x,aim.y-24);x.lineTo(aim.x,aim.y-16);x.stroke();x.fillStyle=ink;x.fillRect(aim.x-1.5,aim.y-1.5,3,3)}
-  /* other jets */for(const e of G.jets){if(e===me||e.dead)continue;const s=fjProj(e.p),dist=Math.round(e.p.distanceTo(me.p)),locking=me.lockTgt===e&&me.lockT>0,locked=me.lock===e;
+  /* other jets */const foc=fjFocus();for(const e of G.jets){if(e===me||e.dead)continue;const s=fjProj(e.p),dist=Math.round(e.p.distanceTo(me.p)),locking=me.lockTgt===e&&me.lockT>0,locked=me.lock===e;
     if(s.front&&s.x>0&&s.x<W&&s.y>0&&s.y<H){const z=Math.max(14,Math.min(40,2600/Math.max(1,dist)*8));x.strokeStyle=locked?warnC:"rgba(255,220,120,.95)";x.lineWidth=2;x.beginPath();x.moveTo(s.x,s.y-z);x.lineTo(s.x+z,s.y);x.lineTo(s.x,s.y+z);x.lineTo(s.x-z,s.y);x.closePath();x.stroke();
-      x.textAlign="center";x.fillStyle=locked?warnC:"rgba(255,220,120,.95)";x.font="800 11px system-ui,sans-serif";x.fillText((e.kind==="remote"?fjOther():"SHADOW").toUpperCase()+" "+dist+"m",s.x,s.y+z+14);
+      x.textAlign="center";x.fillStyle=locked?warnC:"rgba(255,220,120,.95)";x.font="800 11px system-ui,sans-serif";x.fillText(fjName(e).toUpperCase()+" "+fjKm(dist),s.x,s.y+z+14);
       if(locking&&!locked){const k=1-me.lockT/me.lockNeed;x.strokeStyle="rgba(255,120,80,.9)";x.beginPath();x.arc(s.x,s.y,z+10+k*60,0,7);x.stroke()}
       if(locked){x.font="900 13px system-ui,sans-serif";x.fillText("LOCKED — FIRE MISSILE!",s.x,s.y-z-10);x.beginPath();x.arc(s.x,s.y,z+8,0,7);x.stroke()}}
-    else{/* an arrow round the edge pointing to them */const c2=FJR.cam,rel=e.p.clone().sub(c2.position).applyQuaternion(c2.quaternion.clone().invert());let ax=rel.x,ay=-rel.y;const l=Math.hypot(ax,ay)||1;ax/=l;ay/=l;const R=Math.min(W,H)*.42,px=W/2+ax*R,py=H/2+ay*R;
+    else if(e!==foc){/* an arrow round the edge pointing to them */const c2=FJR.cam,rel=e.p.clone().sub(c2.position).applyQuaternion(c2.quaternion.clone().invert());let ax=rel.x,ay=-rel.y;const l=Math.hypot(ax,ay)||1;ax/=l;ay/=l;const R=Math.min(W,H)*.42,px=W/2+ax*R,py=H/2+ay*R;
       x.save();x.translate(px,py);x.rotate(Math.atan2(ay,ax));x.fillStyle="rgba(255,220,120,.95)";x.beginPath();x.moveTo(16,0);x.lineTo(-8,-10);x.lineTo(-8,10);x.fill();x.restore();x.textAlign="center";x.fillStyle="rgba(255,220,120,.95)";x.fillText(dist+"m",px-ax*24,py-ay*24+4)}}
+  /* the big arrow: which way to turn to find them */fjPointer(x,W,H,me,foc,aim);if(foc&&(G.btn.look||G.keys.l||G.keys.L)){x.textAlign="center";x.font="900 14px system-ui,sans-serif";x.fillStyle="#fff";x.fillText("👁️ LOOKING AT "+fjName(foc).toUpperCase()+" · "+fjKm(foc.p.distanceTo(me.p)),W/2,H-18)}
   /* missile coming! */const inc=G.mis.filter(m=>m.tgt===me);if(inc.length){const on=Math.floor(G.t*6)%2;x.textAlign="center";x.font="900 22px system-ui,sans-serif";x.fillStyle=on?warnC:"#fff";x.fillText("⚠ MISSILE! — FLARES!",W/2,H*.24);
     if(G.t-(G.mwT||0)>.35){G.mwT=G.t;sfx("tap")}for(const m of inc){const c2=FJR.cam,rel=m.p.clone().sub(c2.position).applyQuaternion(c2.quaternion.clone().invert());let ax=rel.x,ay=-rel.y;const l=Math.hypot(ax,ay)||1;const R=Math.min(W,H)*.36;x.fillStyle=warnC;x.beginPath();x.arc(W/2+ax/l*R,H/2+ay/l*R,7,0,7);x.fill()}
     $("#fjfl").classList.toggle("hot",on===1)}else $("#fjfl").classList.remove("hot");
   if(me.warn&&!me.dead){x.textAlign="center";x.font="900 24px system-ui,sans-serif";x.fillStyle=Math.floor(G.t*5)%2?warnC:"#fff";x.fillText("PULL UP!",W/2,H*.68)}
-  /* radar (top right): you in the middle, pointing up */const rx=W-62,ry=62,RR=48;x.fillStyle="rgba(0,20,10,.55)";x.beginPath();x.arc(rx,ry,RR,0,7);x.fill();x.strokeStyle="rgba(140,255,170,.5)";x.lineWidth=1;x.beginPath();x.arc(rx,ry,RR,0,7);x.arc(rx,ry,RR/2,0,7);x.stroke();
-  const rot=-me.yaw,dot=(p,col,r)=>{const dx=p.x-me.p.x,dz=p.z-me.p.z,qx=dx*Math.cos(rot)+dz*Math.sin(rot),qz=-dx*Math.sin(rot)+dz*Math.cos(rot);let px=-qx/5000*RR,py=-qz/5000*RR;const l=Math.hypot(px,py);if(l>RR-4){px*=(RR-4)/l;py*=(RR-4)/l}x.fillStyle=col;x.beginPath();x.arc(rx+px,ry+py,r,0,7);x.fill()};
-  x.fillStyle="#8cffaa";x.beginPath();x.moveTo(rx,ry-6);x.lineTo(rx+4,ry+4);x.lineTo(rx-4,ry+4);x.fill();for(const e of G.jets)if(e!==me&&!e.dead)dot(e.p,"#ffcf5a",4);for(const m of G.mis)dot(m.p,m.tgt===me?"#ff5a46":"#ffffff",2);for(const u of FJR.pu)if(u.g.visible)dot(u.g.position,"rgba(120,200,255,.8)",2);
+  /* radar (top right): tap it for the map */fjRadar(x,W,H,me);
   /* the parachute after a knock-out */if(FJE.chute){const ch=FJE.chute,pp=ch.p.clone().add(new THREE.Vector3(0,-ch.t*22,0)),s=fjProj(pp);if(s.front){const d=Math.max(1,pp.distanceTo(FJR.cam.position)),z=Math.max(6,Math.min(30,3000/d));x.fillStyle="#ff7a3c";x.beginPath();x.arc(s.x,s.y,z,Math.PI,0);x.fill();x.strokeStyle="#fff";x.lineWidth=1;x.beginPath();x.moveTo(s.x-z,s.y);x.lineTo(s.x,s.y+z*1.3);x.lineTo(s.x+z,s.y);x.stroke();x.fillStyle="#333";x.fillRect(s.x-z*.12,s.y+z*1.2,z*.24,z*.35)}}
   /* button counts */const mn=$("#fjmn"),fn=$("#fjfn");if(mn)mn.textContent=me.mis;if(fn)fn.textContent=me.fl;$("#fjmis").classList.toggle("ready",!!me.lock);$("#fjmis").classList.toggle("empty",me.mis<=0)}
 /* ---------- sound: a jet roar that rises with the boost, and gun bursts ---------- */
@@ -4477,32 +4567,32 @@ function fjListen(){if(typeof GNAME!=="undefined")GNAME.jet="SKY ACES";
   db.doc("games/fjl").onSnapshot(s=>{FJD.live=s.exists?s.data():null;fjOnLive()},er);
   for(const k of["X","O"])db.doc("games/fjp_"+k).onSnapshot(s=>{if(k!==me()&&s.exists)fjOnPos(s.data())},er);
   db.doc("games/fjwin").onSnapshot(s=>{FJD.win=s.exists?s.data():{}},er)}
-function fjLiveNew(c){return db.doc("games/fjl").set({id:c&&c.id||Date.now(),at:Date.now(),rX:0,rO:0,s:0,qX:0,qO:0})}
-function fjLiveAsk(){if(typeof chSend!=="function"){fjLiveNew({id:Date.now()});return}chSend("jet");fjMsg("⚔️ Challenge sent to "+fjOther()+"!",2.5)}
+function fjLiveNew(c){return db.doc("games/fjl").set({id:c&&c.id||Date.now(),at:Date.now(),rX:0,rO:0,s:0,qX:0,qO:0,fr:c&&c.mode==="team"?1:0})}
+function fjLiveAsk(team){if(typeof chSend!=="function"){fjLiveNew({id:Date.now(),mode:team?"team":""});return}chSend("jet",team?{mode:"team"}:null);fjMsg((team?"🤝 Invite":"⚔️ Challenge")+" sent to "+fjOther()+"!",2.5)}
 const fjLiveFresh=()=>{const L=FJD.live;return!!(L&&L.id&&Date.now()-(L.at||0)<15*60000&&!L.qX&&!L.qO&&fjSet().done!==L.id)};
 const fjThem=()=>me()==="X"?"O":"X";
 function fjOnLive(){const G=FJG,L=FJD.live,th=fjThem();if(!G||typeof g==="undefined"||g!=="jet"||!FJR||!FJR.built)return;
-  if(G.mode==="fly"&&G.live){if(L&&L.id===G.lid&&L["q"+th]&&!G.over){G.over=1;fjEnd(true,fjOther()+" left the dogfight.")}return}
+  if(G.mode==="fly"&&G.live){if(L&&L.id===G.lid&&L["q"+th]&&!G.over){if(G.sub==="together")return fjSoloOn(fjOther()+" has landed 👋 — keep exploring!");G.over=1;fjEnd(true,fjOther()+" left the dogfight.")}return}
   if(G.mode==="lobby"){if(!L||L.id!==G.lid||L["q"+th]){if(L&&L["q"+th])fjMsg(fjOther()+" left",2);const S=fjSet();if(L)S.done=L.id;fjSave(S);return fjMenu()}fjLobbyUI();if(L.s&&L.rX&&L.rO)fjLiveGo();return}
   if((G.mode==="menu"||G.mode==="end")&&fjLiveFresh())fjLobby()}
 function fjLobby(){const G=FJG,L=FJD.live;G.mode="lobby";G.lid=L.id;G.lobKey=null;fjClear();$("#fjctl").classList.remove("on");fjLobbyUI();if(L.s&&L.rX&&L.rO)fjLiveGo()}
 function fjLobbyUI(){const G=FJG,L=FJD.live,th=fjThem();if(!L)return;const mine=L["r"+me()],theirs=L["r"+th],key=[mine,theirs].join();if(G.lobKey===key)return;G.lobKey=key;
-  $("#fjm").className="fjmenu on";$("#fjm").innerHTML=`<div class="fjtitle">LIVE<b>DOGFIGHT</b></div><p class="fjsay">You vs ${fjOther()} — first to ${FJ_KO} knock-outs. Use the valleys to hide from missiles!</p>
+  $("#fjm").className="fjmenu on";$("#fjm").innerHTML=L.fr?`<div class="fjtitle">FLY<b>TOGETHER</b></div><p class="fjsay">You and ${fjOther()} side by side — no fighting, just fly! Tap the radar for a map showing where you both are.</p>`:`<div class="fjtitle">LIVE<b>DOGFIGHT</b></div><p class="fjsay">You vs ${fjOther()} — first to ${FJ_KO} knock-outs. Use the valleys to hide from missiles!</p>`;$("#fjm").innerHTML+=`
     <p class="fjsay">${theirs?"✅ <b>"+fjOther()+"</b> is READY!":"⏳ Waiting for <b>"+fjOther()+"</b>…"}</p>
     <div class="fjrow"><button class="fjbig fjfree" id="fjLq">✖ LEAVE</button>${mine?`<button class="fjbig" disabled>${theirs?"GET READY…":"WAITING…"}</button>`:`<button class="fjbig fjlive" id="fjR">READY! ✈️</button>`}</div>`;
   $("#fjLq").onclick=()=>{const S=fjSet();S.done=L.id;fjSave(S);db.doc("games/fjl").update({["q"+me()]:1}).catch(er);fjMenu()};
   const r=$("#fjR");if(r)r.onclick=()=>{sfx("win");const L=FJD.live;db.doc("games/fjl").update({["r"+me()]:1,...(L&&L["r"+th]?{s:Date.now()+4500}:{})}).catch(er)}}
-function fjLiveGo(){const G=FJG,L=FJD.live;if(G.mode==="fly"&&G.lid===L.id)return;G.lid=L.id;fjPlay({mode:"live",spawn:me()==="X"?0:1});G.lid=L.id;G.startAt=L.s;G.seq=0;G.evs=[];G.evDone=0;G.fcSent=0;G.foeFc=0;G.myDeaths=0;G.netT=0;G.lastPkt=Date.now();G.mine={};
+function fjLiveGo(){const G=FJG,L=FJD.live;if(G.mode==="fly"&&G.lid===L.id)return;G.lid=L.id;fjPlay({mode:L.fr?"together":"live",spawn:me()==="X"?0:1});G.lid=L.id;G.startAt=L.s;G.seq=0;G.evs=[];G.evDone=0;G.fcSent=0;G.foeFc=0;G.myDeaths=0;G.netT=0;G.lastPkt=Date.now();G.mine={};
   const S=fjSet();S.done=L.id;fjSave(S);G.foe.net=null}
 /* during the fight */
 function fjLiveStep(dt){const G=FJG,F=G.foe,me=G.me;if(!F)return;
-  /* the countdown: everyone frozen in the air until it starts */const left=(G.startAt-Date.now())/1000;if(left>0){me.inv=Math.max(me.inv,3);const n=Math.ceil(left);if(n!==G.cd){G.cd=n;fjMsg(String(n),.9);sfx("tap")}}else if(G.cd){G.cd=0;fjMsg("⚔️ FIGHT!",1.2);sfx("b_boom")}
+  /* the countdown: everyone frozen in the air until it starts */const left=(G.startAt-Date.now())/1000;if(left>0){me.inv=Math.max(me.inv,3);const n=Math.ceil(left);if(n!==G.cd){G.cd=n;fjMsg(String(n),.9);sfx("tap")}}else if(G.cd){G.cd=0;fjMsg(G.peace?"🤝 GO! FOLLOW ME!":"⚔️ FIGHT!",1.2);sfx(G.peace?"win":"b_boom")}
   const n=F.net;if(n){const age=Math.min(.6,(Date.now()-n.at)/1000),tx=n.p[0]+n.v[0]*age,ty=n.p[1]+n.v[1]*age,tz=n.p[2]+n.v[2]*age,k=1-Math.exp(-dt*8);
     if(F.p.distanceTo(new THREE.Vector3(tx,ty,tz))>400)F.p.set(tx,ty,tz);else{F.p.x+=(tx-F.p.x)*k;F.p.y+=(ty-F.p.y)*k;F.p.z+=(tz-F.p.z)*k}
     const lerpA=(a,b)=>{let d=b-a;d=Math.atan2(Math.sin(d),Math.cos(d));return a+d*k};F.pitch=lerpA(F.pitch,n.r[0]);F.yaw=lerpA(F.yaw,n.r[1]);F.bank=lerpA(F.bank,n.r[2]);F.v.set(...n.v);F.spd=n.s;F.bo=n.bo;F.hp=n.hp;F.hpM=n.hm;F.inv=n.inv?1:0;
     F.mesh.position.copy(F.p);F.mesh.rotation.set(-F.pitch,F.yaw,F.bank,"YXZ");F.mesh.visible=!F.dead;F.mesh.userData.flames.forEach(f=>{const s=(F.bo?1:.35)*(.85+Math.random()*.3);f.scale.set(1,s,1);f.position.z=-8.85-2*s});
     if(!F.dead)fjTrails(F,dt);if(n.gf&&!F.dead){F.gunT-=dt;if(F.gunT<=0){F.gunT=.075;const f=F.v.clone().normalize();for(const s of[-1,1]){const off=new THREE.Vector3(s*1.4,-.2,4).applyEuler(F.mesh.rotation);G.bul.push({p:F.p.clone().add(off),v:f.clone().multiplyScalar(1100).add(F.v),life:1.1,own:F,vis:1})}}}}
-  if(Date.now()-G.lastPkt>12000&&!G.over&&left<=0){G.over=1;fjEnd(false,"Lost touch with "+fjOther()+"'s phone.")}
+  if(Date.now()-G.lastPkt>12000&&!G.over&&left<=0){if(G.peace)return fjSoloOn("Lost touch with "+fjOther()+"'s phone — flying on your own now");G.over=1;fjEnd(false,"Lost touch with "+fjOther()+"'s phone.")}
   fjLiveSend(0)}
 /* my jet, a few times a second (straight away when something happens) */
 function fjLiveSend(force){const G=FJG;if(!G||!G.live||!G.me)return;const now=performance.now();if(!force&&now-G.netT<160)return;if(force===1&&now-G.netT<70)return;G.netT=now;const j=G.me,r=v=>Math.round(v*10)/10;
@@ -4514,14 +4604,16 @@ function fjLiveHit(dmg,how){const G=FJG;G.evSeq=(G.evSeq||0)+1;G.evs.push({n:G.e
 function fjOnPos(d){const G=FJG;if(!G||!G.live||d.id!==G.lid||!G.foe)return;const F=G.foe,me=G.me;G.lastPkt=Date.now();
   if(!F.net)F.p.set(...d.p);F.net={...d,at:Date.now()};
   /* hits they landed on me */for(const e of d.ev||[])if(e.n>G.evDone){G.evDone=e.n;if(!me.dead&&me.inv<=0){me.hp-=e.d;me.hitT=.25;G.shake=Math.max(G.shake||0,e.h==="missile"?1:.25);if(e.h==="missile")fjBoom(me.p.x,me.p.y,me.p.z,0);if(me.hp<=0)fjDown(me,F,e.h)}}
-  /* they went down */if(d.dead&&!F.dead){F.dead=1;fjBoom(F.p.x,F.p.y,F.p.z,1);F.mesh.visible=false;FJE.chute={p:F.p.clone(),t:0};sfx("win");fjMsg("🎯 "+fjOther().toUpperCase()+" IS DOWN! +1",2.5)}else if(!d.dead&&F.dead){F.dead=0;F.p.set(...d.p)}
-  if((d.dn||0)!==G.score.me){G.score.me=d.dn||0;fjCheckEnd()}
+  /* they went down */if(d.dead&&!F.dead){F.dead=1;fjBoom(F.p.x,F.p.y,F.p.z,1);F.mesh.visible=false;FJE.chute={p:F.p.clone(),t:0};if(G.peace)fjMsg("💥 "+fjOther().toUpperCase()+" CRASHED! Back in a moment…",2.5);else{sfx("win");fjMsg("🎯 "+fjOther().toUpperCase()+" IS DOWN! +1",2.5)}}else if(!d.dead&&F.dead){F.dead=0;F.p.set(...d.p)}
+  if(!G.peace&&(d.dn||0)!==G.score.me){G.score.me=d.dn||0;fjCheckEnd()}
   /* their flares: may pull my missiles away */if((d.fc||0)>G.foeFc){G.foeFc=d.fc;F.fl=99;F.flT=0;fjFlares(F)}
   /* their missiles in the air: show them (and warn me) */const seen={};for(const q of d.ms||[]){seen[q[0]]=1;let m=G.mis.find(m=>m.id===q[0]&&m.remote);if(!m){const mesh=fjMissileModel(FJR.env);mesh.scale.setScalar(1.6);FJR.scene.add(mesh);m={id:q[0],remote:1,own:F,p:new THREE.Vector3(),v:new THREE.Vector3(),spd:0,mesh,life:9,age:0};G.mis.push(m)}
     m.p.set(q[1],q[2],q[3]);m.v.set(q[4],q[5],q[6]);m.tgt=q[7]?me:null;m.seen=Date.now()}
   for(const m of G.mis)if(m.remote&&!seen[m.id]&&Date.now()-m.seen>400){m.life=0;m.quiet=1}}
 function fjLiveQuit(){const G=FJG;if(G&&G.lid)db.doc("games/fjl").update({["q"+me()]:1}).catch(er)}
 function fjLiveWin(){const w=FJD.win||{};db.doc("games/fjwin").update({[me()]:(w[me()]||0)+1}).catch(er)}
+/* flying together and the other phone leaves: carry on alone (with the guide planes) */
+function fjSoloOn(why){const G=FJG;if(!G)return;const F=G.foe;if(F){FJR.scene.remove(F.mesh);G.jets=G.jets.filter(j=>j!==F)}G.foe=null;G.live=0;G.sub="free";G.peace=1;G.over=0;fjGuides();fjMsg(why,3.5)}
 
 /*FJ-END*/</script>
 <script>
