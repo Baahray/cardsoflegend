@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta name="app-build" content="17 Nov 14:28 PT"><meta charset="utf-8">
+<html lang="en"><head><meta name="app-build" content="17 Nov 15:56 PT"><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Legends"><meta name="theme-color" content="#14102e">
@@ -4528,6 +4528,14 @@ function fjCaveBuild(W,scene){fjCaveE();
     const it={parts:[[wm,0,[l.r*1.12,l.r*1.12,6]]],x:p.x,y:p.y,z:p.z,yaw,alive:1,kind:"wall",hp:14,r:l.r*1.05,top:p.y+l.r,base:"#ffffff",ht:l.r};FJTW.items.push(it);fjPut(it);fjGridAdd(p.x,p.z,l.r,it);K.wall=it;K.wallAx=t.clone()}
   /* cut the cliff open where the tunnels come out (the land is not drawn inside these) */const mouths=[[L[0].P[0],L[0].P[Math.min(L[0].P.length-1,14)],L[0].r],[L[4].P[L[4].P.length-1],L[4].P[Math.max(0,L[4].P.length-15)],L[4].r]];
   mouths.forEach(([a,b,r],i)=>{const d=a.clone().sub(b).normalize();U.mA.value[i].set(a.x+d.x*40,a.y+d.y*40,a.z+d.z*40,r*.9);U.mB.value[i].set(b.x,b.y,b.z,0)});
+  /* dress the way in so it can't be missed: a big timber entrance, lanterns, a sign and a warm glow */{const l=L[0],P=l.P,m=P[0],t=P[3].clone().sub(P[0]).normalize(),yaw=Math.atan2(t.x,t.z),r=l.r,g=new T.Group(),wood=new T.MeshLambertMaterial({color:0x5a3a1c,emissive:0x2a1608});
+    g.position.copy(m);g.rotation.y=yaw;for(const sx of[-1,1]){const post=new T.Mesh(new T.BoxGeometry(5,r*2.3,5),wood);post.position.set(sx*(r+3),r*.35,-6);g.add(post);
+      const lan=new T.Mesh(new T.SphereGeometry(2.6,10,8),new T.MeshBasicMaterial({color:0xffc060}));lan.position.set(sx*(r-2),r*.95,-12);g.add(lan)}
+    const lint=new T.Mesh(new T.BoxGeometry(r*2+16,6,6),wood);lint.position.set(0,r*1.5,-6);g.add(lint);
+    const sc=document.createElement("canvas");sc.width=512;sc.height=128;const sx2=sc.getContext("2d");sx2.fillStyle="#3b2410";sx2.fillRect(0,0,512,128);sx2.strokeStyle="#c9a24a";sx2.lineWidth=8;sx2.strokeRect(6,6,500,116);sx2.fillStyle="#ffd36a";sx2.font="900 64px Arial";sx2.textAlign="center";sx2.textBaseline="middle";sx2.fillText("⛏ OLD MINE",256,68);
+    const stx=new T.CanvasTexture(sc);stx.encoding=T.sRGBEncoding;const sign=new T.Mesh(new T.PlaneGeometry(r*1.9,r*.48),new T.MeshBasicMaterial({map:stx}));sign.position.set(0,r*1.5,-9.2);sign.rotation.y=Math.PI;g.add(sign);
+    const gl=document.createElement("canvas");gl.width=gl.height=128;const gx=gl.getContext("2d"),gg=gx.createRadialGradient(64,64,0,64,64,64);gg.addColorStop(0,"rgba(255,190,90,.75)");gg.addColorStop(1,"rgba(255,140,40,0)");gx.fillStyle=gg;gx.fillRect(0,0,128,128);
+    const glow=new T.Sprite(new T.SpriteMaterial({map:new T.CanvasTexture(gl),transparent:true,depthWrite:false,blending:T.AdditiveBlending}));glow.scale.set(r*3.2,r*3.2,1);glow.position.set(0,0,-14);g.add(glow);scene.add(g);K.door=m.clone()}
   /* the portal to space, in the middle of the cavern */K.portal=fjPortal(scene,C,L[1].P[L[1].P.length-8].clone().sub(C).normalize());
   /* box round the whole mine, for quick checks */const bb=new T.Box3();for(const l of L)for(const p of l.P)bb.expandByPoint(p);bb.expandByScalar(FJ_CAV.R+20);K.bb=bb}
 /* a swirling ring; facing along n */
@@ -4546,7 +4554,7 @@ function fjCaveAt(p){const K=FJK;if(!K||!K.bb.containsPoint(p))return null;let b
       const open=(i===P.length-2&&t>1&&l.e.mouth==="b")||(i===0&&t<0&&l.e.mouth==="a");if(open)continue;t=Math.max(0,Math.min(1,t));const dx=a.x+abx*t-p.x,dy=a.y+aby*t-p.y,dz=a.z+abz*t-p.z,d=Math.sqrt(dx*dx+dy*dy+dz*dz),f=d/l.r;
       if(f<1&&(!best||f<best.f))best={f,l,ax:new THREE.Vector3(a.x+abx*t,a.y+aby*t,a.z+abz*t),r:l.r,t:(i+t)/(P.length-1)}}}return best}
 /* each frame for my jet: inside the mine, the rock walls count (not the land above), the speed is held down, and a nudge keeps you off the walls */
-function fjCaveStep(me,dt){const K=FJK,G=FJG;if(!K)return;if(G.zone==="space"){me.cave=null;return}FJW.U.jetP.value.copy(me.p);const c=fjCaveAt(me.p);me.cave=c;
+function fjCaveStep(me,dt){const K=FJK,G=FJG;if(!K)return;if(G.zone==="space"){me.cave=null;return}if(!K.found&&!K.hint&&K.door&&me.p.distanceTo(K.door)<2500){K.hint=1;fjMsg("⛏️ There's a secret mine somewhere along this canyon… look for the lanterns!",3.5)}FJW.U.jetP.value.copy(me.p);const c=fjCaveAt(me.p);me.cave=c;
   if(c&&!K.found&&me.p.y<fjH(me.p.x,me.p.z)-20){K.found=1;fjMsg("⛏️ A SECRET MINE! Follow the tunnels…",2.5);sfx("win")}
   if(c&&c.cav&&!K.cavSeen){K.cavSeen=1;fjMsg("💎 THE CRYSTAL CAVERN! What's that glowing ring…?",3)}
   if(c&&!me.dead){/* push away from the wall when close (stronger for Cass) */const off=me.p.clone().sub(c.ax),d=off.length(),lim=c.cav?.8:.55;if(c.f>lim&&d>0){const k=(c.f-lim)/(1-lim)*(me.cass?1.6:1),right=new THREE.Vector3(-Math.cos(me.yaw),0,Math.sin(me.yaw)),toAx=off.multiplyScalar(-1/d),inv=G.inv?-1:1;
@@ -4558,8 +4566,12 @@ function fjCaveCrash(j){const c=j.cave;if(!c)return undefined;if(c.f>.97)return"
 /* a bullet or missile inside the tunnels doesn't hit the land above */
 const fjInCave=p=>!!(FJK&&FJK.bb.containsPoint(p)&&fjCaveAt(p));
 /* on the map, once found */
-function fjCaveMap(x,wm,M){const K=FJK;if(!K||!K.found)return;x.save();x.setLineDash([6,5]);x.strokeStyle="rgba(255,190,90,.95)";x.lineWidth=Math.max(2,M/200);for(const l of K.L){x.beginPath();l.P.forEach((p,i)=>{const[a,b]=wm(p.x,p.z);i?x.lineTo(a,b):x.moveTo(a,b)});x.stroke()}x.restore();
+function fjCaveMap(x,wm,M){const K=FJK;if(!K)return;if(!K.found){const[a,b]=wm(K.door.x,K.door.z);x.font="900 13px system-ui";x.textAlign="center";x.lineWidth=3.5;x.strokeStyle="rgba(0,0,0,.65)";x.strokeText("⛏️ SECRET MINE?",a,b-6);x.fillStyle="#ffd36a";x.fillText("⛏️ SECRET MINE?",a,b-6);x.fillStyle="#ffd36a";x.beginPath();x.arc(a,b+2,4,0,7);x.fill();return}x.save();x.setLineDash([6,5]);x.strokeStyle="rgba(255,190,90,.95)";x.lineWidth=Math.max(2,M/200);for(const l of K.L){x.beginPath();l.P.forEach((p,i)=>{const[a,b]=wm(p.x,p.z);i?x.lineTo(a,b):x.moveTo(a,b)});x.stroke()}x.restore();
   const[a,b]=wm(FJ_CN.C[0],FJ_CN.C[2]);x.font="900 12px system-ui";x.textAlign="center";x.fillStyle="#d9b8ff";x.fillText("💎 CAVERN",a,b-8)}
+/* a marker on screen when you're near the way in (until you've been inside) */
+function fjCaveHud(x,W,H,me){const K=FJK,G=FJG;if(!K||!K.door||K.found||G.zone==="space"||me.dead)return;const d=me.p.distanceTo(K.door);if(d>3500)return;const s=fjProj(K.door);if(!s.front)return;
+  const pu=1+.15*Math.sin(G.t*6);x.save();x.translate(s.x,s.y);x.scale(pu,pu);x.strokeStyle="#ffc861";x.lineWidth=3;x.beginPath();x.moveTo(0,-16);x.lineTo(16,0);x.lineTo(0,16);x.lineTo(-16,0);x.closePath();x.stroke();x.restore();
+  x.textAlign="center";x.font="900 13px system-ui,sans-serif";x.lineWidth=3.5;x.strokeStyle="rgba(0,0,0,.6)";const t=(K.wall&&K.wall.alive?"⛏️ SECRET MINE — SHOOT THE WALL! ":"⛏️ SECRET MINE ")+fjKm(d);const tw=x.measureText(t).width/2+6,tx=Math.max(tw,Math.min(W-tw-120,s.x));x.strokeText(t,tx,s.y+32);x.fillStyle="#ffd36a";x.fillText(t,tx,s.y+32)}
 
 /* ================= SKY ACES: SPACE — through the portal in the crystal cavern =================
    A nebula sky, a ringed gas giant, an asteroid belt, alien saucers that strafe and fire green lasers, and a huge
@@ -5176,7 +5188,7 @@ function fjHud(dt){const G=FJG,c=$("#fjh");if(!c||!G.W)return;const x=c.getConte
       if(locked){x.font="900 13px system-ui,sans-serif";x.fillText("LOCKED — FIRE MISSILE!",s.x,s.y-z-10);x.beginPath();x.arc(s.x,s.y,z+8,0,7);x.stroke()}}
     else if(e!==foc){/* an arrow round the edge pointing to them */const c2=FJR.cam,rel=e.p.clone().sub(c2.position).applyQuaternion(c2.quaternion.clone().invert());let ax=rel.x,ay=-rel.y;const l=Math.hypot(ax,ay)||1;ax/=l;ay/=l;const R=Math.min(W,H)*.42,px=W/2+ax*R,py=H/2+ay*R;
       x.save();x.translate(px,py);x.rotate(Math.atan2(ay,ax));x.fillStyle="rgba(255,220,120,.95)";x.beginPath();x.moveTo(16,0);x.lineTo(-8,-10);x.lineTo(-8,10);x.fill();x.restore();x.textAlign="center";x.fillStyle="rgba(255,220,120,.95)";x.fillText(dist+"m",px-ax*24,py-ay*24+4)}}
-  /* the big arrow: which way to turn to find them */fjPointer(x,W,H,me,foc,aim);if(foc&&(G.btn.look||G.keys.l||G.keys.L)){x.textAlign="center";x.font="900 14px system-ui,sans-serif";x.fillStyle="#fff";x.fillText("👁️ LOOKING AT "+fjName(foc).toUpperCase()+" · "+fjKm(foc.p.distanceTo(me.p)),W/2,H-18)}
+  /* the big arrow: which way to turn to find them */fjPointer(x,W,H,me,foc,aim);fjCaveHud(x,W,H,me);if(foc&&(G.btn.look||G.keys.l||G.keys.L)){x.textAlign="center";x.font="900 14px system-ui,sans-serif";x.fillStyle="#fff";x.fillText("👁️ LOOKING AT "+fjName(foc).toUpperCase()+" · "+fjKm(foc.p.distanceTo(me.p)),W/2,H-18)}
   /* missile coming! */const inc=G.mis.filter(m=>m.tgt===me);if(inc.length){const on=Math.floor(G.t*6)%2;x.textAlign="center";x.font="900 22px system-ui,sans-serif";x.fillStyle=on?warnC:"#fff";x.fillText("⚠ MISSILE! — FLARES!",W/2,H*.24);
     if(G.t-(G.mwT||0)>.35){G.mwT=G.t;sfx("tap")}for(const m of inc){const c2=FJR.cam,rel=m.p.clone().sub(c2.position).applyQuaternion(c2.quaternion.clone().invert());let ax=rel.x,ay=-rel.y;const l=Math.hypot(ax,ay)||1;const R=Math.min(W,H)*.36;x.fillStyle=warnC;x.beginPath();x.arc(W/2+ax/l*R,H/2+ay/l*R,7,0,7);x.fill()}
     $("#fjfl").classList.toggle("hot",on===1)}else $("#fjfl").classList.remove("hot");
