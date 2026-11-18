@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta name="app-build" content="17 Nov 20:01 PT"><meta charset="utf-8">
+<html lang="en"><head><meta name="app-build" content="18 Nov 05:44 PT"><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Legends"><meta name="theme-color" content="#14102e">
@@ -928,6 +928,8 @@ body.dfon{overflow:hidden}
 .fjctl.air .fjgun,.fjctl.air .fjmis,.fjctl.air .fjfl,.fjctl.air .fjbo{display:none}
 .fjmon{background:linear-gradient(135deg,#b91c1c,#f97316)}.fjair{background:linear-gradient(135deg,#0ea5e9,#6366f1)}
 .fjview{top:calc(10px + env(safe-area-inset-top,0px));right:calc(128px + env(safe-area-inset-right,0px));width:50px;height:50px;font-size:18px;background:radial-gradient(circle at 40% 35%,#e9d5ff,#6d28d9)}.fjview small{font-size:8px;margin-top:1px}
+.fjhero{background:linear-gradient(135deg,#7e22ce,#f59e0b)}
+.fjctl.hero .fjfl{display:flex!important}
 
 /*FJ-END*/
 </style></head><body><main>
@@ -4591,7 +4593,7 @@ function fjTownShot(a,b,own){const TW=FJTW;if(!TW)return false;const dx=b.x-a.x,
       if(ok&&t0<best){best=t0;hit=o;isB=1}}
     else if(o.parts&&o.alive){const t=fjSegT(a,dx,dy,dz,o.x,o.y+(o.top-o.y)/2,o.z);if(t.d<o.r&&t.t<best){best=t.t;hit=o;isB=0}}}}
   for(const o of TW.dyn){if(!o.alive)continue;const mx=o.x-a.x,mz=o.z-a.z;if(mx*mx+mz*mz>(Math.hypot(dx,dz)+o.r+10)**2)continue;const t=fjSegT(a,dx,dy,dz,o.x,o.y+1.2,o.z);if(t.d<o.r&&t.t<best){best=t.t;hit=o;isB=0}}
-  if(!hit)return false;const at=new THREE.Vector3(a.x+dx*best,a.y+dy*best,a.z+dz*best);if(own&&own.kind!=="me")return true;if(isB)fjBldHit(hit,1,at);else fjItemHit(hit,1,at);return true}
+  if(!hit)return false;const at=new THREE.Vector3(a.x+dx*best,a.y+dy*best,a.z+dz*best);FJTW.lastAt=at;FJTW.lastHit=hit;FJTW.lastB=isB;if(own&&own.kind!=="me")return true;if(isB)fjBldHit(hit,1,at);else fjItemHit(hit,1,at);return true}
 function fjSegT(a,dx,dy,dz,x,y,z){const L2=dx*dx+dy*dy+dz*dz||1;let t=((x-a.x)*dx+(y-a.y)*dy+(z-a.z)*dz)/L2;t=Math.max(0,Math.min(1,t));const px=a.x+dx*t-x,py=a.y+dy*t-y,pz=a.z+dz*t-z;return{t,d:Math.hypot(px,py,pz)}}
 /* a missile went bang here */
 function fjTownBlast(p,own){const TW=FJTW;if(!TW)return;const mine=own&&own.kind==="me";fjScare(p.x,p.z,250);if(!mine)return;
@@ -5287,6 +5289,118 @@ function fjMonChoice(){$("#fjm").className="fjmenu on";$("#fjm").innerHTML=`<div
   const ok=k=>{const I=FJI.find(q=>q.id===FJ_MONS[k].isle);if(I&&I.ready)return 1;fjMsg("🏝️ That island is still loading — try again in a moment",2);return 0};
   document.querySelectorAll("[data-ms]").forEach(b=>b.onclick=()=>{sfx("tap");if(ok(b.dataset.ms))fjPlay({mode:"monster",mon:b.dataset.ms})});document.querySelectorAll("[data-mt]").forEach(b=>b.onclick=()=>{sfx("tap");if(ok(b.dataset.mt))fjLiveAsk("monster",b.dataset.mt)});$("#fjMx").onclick=()=>{sfx("tap");fjMenu()}}
 
+/* ================= SKY ACES: SUPER CASS and SUPER DAD =================
+   Our own heroes (own suits, capes and badges). They fly, hover, land on the ground or on rooftops, walk and run,
+   and nothing can hurt them — big hits just knock them back. Laser eyes, super punch, super speed. */
+const FJ_HERO_DEF={X:{suit:"#0f766e",cape:"#f59e0b",skin:"#d9a07a",hair:"#4a3020",badge:"🦅",long:0},O:{suit:"#7e22ce",cape:"#f472b6",skin:"#d9a07a",hair:"#4a3020",badge:"🐉",long:1}};
+const FJ_SKINS=["#f6d5c0","#e8b896","#d9a07a","#b97a52","#8d5a3b","#5e3b26"],FJ_HAIRS=["#1c1410","#4a3020","#7a4a25","#b07a3a","#e0c27a","#c0472a","#9aa0a6"];
+const fjHeroOn=()=>!!fjSet().heroOn;
+const fjHeroName=w=>"SUPER "+(w==="O"?"CASS":"DAD");
+function fjHeroDesign(who){if(who===me()){const S=fjSet();if(S.hero)return Object.assign({},FJ_HERO_DEF[who]||FJ_HERO_DEF.X,S.hero)}else if(FJD.hero&&FJD.hero[who])return Object.assign({},FJ_HERO_DEF[who]||FJ_HERO_DEF.X,FJD.hero[who]);return Object.assign({},FJ_HERO_DEF[who]||FJ_HERO_DEF.X)}
+/* ---------- the body ---------- */
+function fjHeroMesh(d,who){const T=THREE,g=new T.Group(),body=new T.Group();g.add(body);const kid=who==="O",S=(kid?.88:1)*1.35;body.scale.setScalar(S);
+  const suit=new T.MeshStandardMaterial({color:d.suit,roughness:.4,metalness:.2,envMap:FJR.env,envMapIntensity:.6}),cm=new T.MeshStandardMaterial({color:d.cape,roughness:.75,side:T.DoubleSide}),skin=new T.MeshStandardMaterial({color:d.skin,roughness:.8}),hair=new T.MeshStandardMaterial({color:d.hair,roughness:.95}),boot=new T.MeshStandardMaterial({color:d.cape,roughness:.45,metalness:.25,envMap:FJR.env,envMapIntensity:.5});
+  const add=(geo,mat,x,y,z,par)=>{const m=new T.Mesh(geo,mat);m.position.set(x,y,z);(par||body).add(m);return m};
+  add(new T.CylinderGeometry(.2,.15,.62,14),suit,0,.36,0).scale.z=.75;add(new T.SphereGeometry(.2,14,8,0,Math.PI*2,0,Math.PI/2),suit,0,.66,0).scale.set(1,.45,.75);add(new T.CylinderGeometry(.158,.158,.07,14),boot,0,.07,0).scale.z=.78;
+  /* chest badge */const cv=document.createElement("canvas");cv.width=cv.height=128;const x=cv.getContext("2d");x.fillStyle=d.cape;x.beginPath();x.moveTo(64,6);x.lineTo(122,30);x.lineTo(108,92);x.lineTo(64,124);x.lineTo(20,92);x.lineTo(6,30);x.closePath();x.fill();x.lineWidth=6;x.strokeStyle="#fff";x.stroke();x.font="64px serif";x.textAlign="center";x.textBaseline="middle";x.fillText(d.badge,64,66);
+  const bt=new T.CanvasTexture(cv);bt.encoding=T.sRGBEncoding;add(new T.PlaneGeometry(.2,.2),new T.MeshBasicMaterial({map:bt,transparent:true}),0,.47,.152);
+  add(new T.CylinderGeometry(.05,.055,.1,8),skin,0,.72,0);const head=add(new T.SphereGeometry(.12,16,12),skin,0,.86,.01);head.scale.set(.92,1.05,1);
+  const eyeM=new T.MeshBasicMaterial({color:0x222222}),eyes=[add(new T.SphereGeometry(.016,6,4),eyeM,-.042,.88,.115),add(new T.SphereGeometry(.016,6,4),eyeM,.042,.88,.115)];
+  add(new T.SphereGeometry(.128,14,8,0,Math.PI*2,0,Math.PI*.55),hair,0,.875,-.008).scale.set(.97,1,1.04);if(d.long){const pt=add(new T.CylinderGeometry(.045,.02,.36,8),hair,0,.74,-.14);pt.rotation.x=.35;add(new T.SphereGeometry(.05,8,6),hair,0,.9,-.12);for(const s of[-1,1]){const sh=add(new T.BoxGeometry(.03,.2,.1),hair,s*.11,.78,-.02);sh.rotation.z=s*.1}}
+  const limb=(px,py,len1,len2,r1,r2,matA,matB,endGeo,endMat,endY)=>{const G0=new T.Group();G0.position.set(px,py,0);body.add(G0);add(new T.CylinderGeometry(r1,r1*.9,len1,8).translate(0,-len1/2,0),matA,0,0,0,G0);const low=new T.Group();low.position.y=-len1;G0.add(low);add(new T.CylinderGeometry(r2,r2*.85,len2,8).translate(0,-len2/2,0),matB,0,0,0,low);add(endGeo,endMat,0,endY,0,low);G0.userData.low=low;return G0};
+  const arms=[-1,1].map(s=>limb(s*.25,.62,.29,.27,.052,.045,suit,suit,new T.SphereGeometry(.062,8,6),boot,-.3)),legs=[-1,1].map(s=>limb(s*.095,.03,.43,.42,.075,.06,suit,suit,new T.BoxGeometry(.11,.12,.23).translate(0,0,.045),boot,-.46));
+  arms.forEach((a,i)=>a.rotation.z=(i?1:-1)*.08);
+  /* the cape: a chain of panels hanging from the shoulders */const cape=[];let par=new T.Group();par.position.set(0,.64,-.13);body.add(par);for(let i=0;i<7;i++){const w=.44+i*.05,h=.16,seg=new T.Group();seg.position.y=i?-h:0;par.add(seg);add(new T.PlaneGeometry(w,h+.01).translate(0,-h/2,0),cm,0,0,0,seg);cape.push(seg);par=seg}
+  g.userData={body,arms,legs,cape,eyes,S,stand:.98*S,flames:[],missiles:[],noz:[],fz:-1,tips:[],hero:1};return g}
+/* ---------- turning a player into a hero (and back) ---------- */
+function fjHeroify(j){const sc=j.mesh.parent||FJR.scene;sc.remove(j.mesh);j.mesh=fjHeroMesh(fjHeroDesign(j.who),j.who);sc.add(j.mesh);j.hero=1;j.mis=0;j.fl=0;j.hs={ground:0,lean:0,ph:0,punchCD:0,punchT:0,dash:0,stun:0,launch:0,landing:0,t:0};j.tp={nm:"Hero",spd:1,turn:1,hp:1,lock:1,mis:0};j.cols={...j.cols,nm:fjHeroName(j.who)}}
+function fjHeroButtons(on){const set=(id,h)=>{const b=$(id);if(b&&b.dataset.h!==h){b.dataset.h=h;b.innerHTML=h}};
+  if(on){set("#fjgun","👀<small>LASER</small>");set("#fjmis","👊<small>PUNCH</small><small id=\"fjmn\"></small>");set("#fjbo","⚡<small>SUPER SPEED</small>")}
+  else{set("#fjgun","GUN");set("#fjmis","MISSILE<small id=\"fjmn\"></small>");set("#fjfl","FLARE<small id=\"fjfn\"></small>");set("#fjbo","BOOST")}
+  const t=document.querySelectorAll("#fjthr button");if(t.length===3){t[0].textContent=on?"SUPER":"MAX";t[1].textContent=on?"FLY":"CRUISE";t[2].textContent=on?"HOVER":"LOW"}$("#fjctl").classList.toggle("hero",!!on)}
+/* ---------- moving ---------- */
+function fjHeroSurf(x,z,y){if(FJG.zone==="space")return-1e9;let s=Math.max(0,fjH(x,z));const cell=fjGridAt(x,z);if(cell)for(const o of cell){if(o.ex!=null&&o.alive&&o.coll<0&&Math.abs(x-o.x)<o.ex&&Math.abs(z-o.z)<o.ez&&o.topNow<y+4)s=Math.max(s,o.topNow)}return s}
+function fjHeroBld(p){const cell=fjGridAt(p.x,p.z);if(!cell)return null;for(const o of cell){if(o.ex!=null){if(o.alive&&o.coll<0&&p.y<o.topNow-1&&Math.abs(p.x-o.x)<o.ex&&Math.abs(p.z-o.z)<o.ez)return o}}return null}
+function fjFlyHero(j,dt){const G=FJG,H=j.hs,sx=j.stick.x,sy=j.stick.y*(G.inv?-1:1),U=j.mesh.userData,stand=U.stand;H.t+=dt;H.punchCD=Math.max(0,H.punchCD-dt);H.punchT=Math.max(0,H.punchT-dt);
+  if(H.stun>0){H.stun-=dt;j.p.addScaledVector(H.kb,dt);H.kb.multiplyScalar(Math.pow(.15,dt));j.yaw+=dt*6*H.stun;const s0=fjHeroSurf(j.p.x,j.p.z,j.p.y);if(j.p.y<s0+stand)j.p.y=s0+stand;j.v.copy(H.kb);fjHeroPlace(j,dt);return}
+  if(H.ground){j.yaw-=sx*2.4*dt;const run=j.bo?1:0,want=-sy*(run?18:6.5);j.spd+=(want-j.spd)*Math.min(1,dt*6);const fx=Math.sin(j.yaw),fz=Math.cos(j.yaw),nx=j.p.x+fx*j.spd*dt,nz=j.p.z+fz*j.spd*dt,ny=j.p.y-stand,s=fjHeroSurf(nx,nz,ny);
+    if(s>ny+3){j.spd=0}else{j.p.x=nx;j.p.z=nz;if(s<ny-2.5){H.ground=0;j.v.set(fx*j.spd,0,fz*j.spd)}else j.p.y=s+stand}j.v.set(fx*j.spd,0,fz*j.spd);j.pitch=0;j.bank=0;H.ph+=Math.abs(j.spd)*dt*2.3}
+  else{const thr=j.thr==null?1:j.thr,hover=thr===0&&!j.bo&&H.dash<=0;
+    if(hover){j.yaw-=sx*1.9*dt;const fwd=-sy*0;j.spd+=(0-j.spd)*Math.min(1,dt*2);let vy=H.launch>0?50:H.landing?-75:-sy*28;if(!H.launch&&!H.landing&&Math.abs(sy)<.05)vy=Math.sin(H.t*2)*.6;H.launch=Math.max(0,H.launch-dt);j.pitch+=(0-j.pitch)*Math.min(1,dt*3);j.bank+=(-sx*.3-j.bank)*Math.min(1,dt*3);
+      j.v.set(Math.sin(j.yaw)*j.spd,vy,Math.cos(j.yaw)*j.spd)}
+    else{H.landing=0;j.bank+=(sx*1.15-j.bank)*Math.min(1,dt*3);j.yaw-=(Math.sin(j.bank)*1.7+sx*.4)*dt;j.pitch+=-sy*1.5*dt;if(Math.abs(sy)<.05)j.pitch*=Math.pow(.7,dt);j.pitch=Math.max(-1.35,Math.min(1.35,j.pitch));
+      const tgt=[30,110,230][thr]+(j.bo?320:0)+(H.dash>0?160:0);j.spd+=(tgt-j.spd)*Math.min(1,dt*(H.dash>0?8:1.6));const cp=Math.cos(j.pitch);j.v.set(Math.sin(j.yaw)*cp*j.spd,Math.sin(j.pitch)*j.spd,Math.cos(j.yaw)*cp*j.spd)}
+    if(H.launch>0&&!hover){H.launch=0}j.p.addScaledVector(j.v,dt);
+    /* the ground and rooftops: land gently, or skim */if(!j.cave){const s=fjHeroSurf(j.p.x,j.p.z,j.p.y-stand);if(j.p.y<s+stand){const hard=j.v.y<-35||H.landing;j.p.y=s+stand;if(hover||j.spd<45||H.landing){H.ground=1;H.landing=0;j.spd=0;if(hard)fjHeroSlam(j);else sfx("tap")}else{j.pitch=Math.max(j.pitch,.12)}}}
+    /* flying into a building: fast = smash through it, slow = bump */const b=fjHeroBld(j.p);if(b){if(j.spd>90||H.dash>0){b.dmg=.99;fjBldHit(b,b.hp*3,j.p.clone());G.shake=Math.max(G.shake||0,.5);if(G.t-(H.smT||0)>2){H.smT=G.t;fjMsg("💥 SMASHED RIGHT THROUGH!",1.2)}}else{j.p.addScaledVector(j.v,-dt*1.5);j.spd*=.2}}}
+  H.dash=Math.max(0,H.dash-dt);if(H.dashHit&&H.dash<=0){H.dashHit=0;fjHeroImpact(j)}
+  /* the edge of the world, and the sky */if(G.zone!=="space"){const wc=[FJ_WB.x0+FJ_WB.S/2,FJ_WB.z0+FJ_WB.S/2];if(Math.max(Math.abs(j.p.x-wc[0]),Math.abs(j.p.z-wc[1]))>FJ_WB.S/2-2500){const w2=Math.atan2(wc[0]-j.p.x,wc[1]-j.p.z);let d=w2-j.yaw;d=Math.atan2(Math.sin(d),Math.cos(d));j.yaw+=d*dt}if(j.p.y>6000){j.p.y=6000;j.pitch=Math.min(j.pitch,0)}}
+  fjHeroPlace(j,dt)}
+function fjHeroPlace(j,dt){const H=j.hs;j.mesh.position.copy(j.p);if(H.ground)j.mesh.rotation.set(0,j.yaw,0,"YXZ");else j.mesh.rotation.set(-j.pitch*Math.min(1,H.lean*1.2),j.yaw,j.bank,"YXZ");fjHeroPose(j,dt)}
+/* landing hard: a superhero landing — crouch, shockwave, dust */
+function fjHeroSlam(j){const G=FJG,p=j.p;j.hs.crouch=.6;G.shake=Math.max(G.shake||0,.7);sfx("b_boom");for(let k=0;k<26;k++){const a=k/26*6.28;FJE.fx.add({x:p.x,y:p.y-j.mesh.userData.stand+.5,z:p.z,vx:Math.cos(a)*45,vy:3,vz:Math.sin(a)*45,t:0,life:1.6,s0:4,s1:14,c:[.6,.56,.5],a:.7,drag:.35})}
+  fjScare(p.x,p.z,120);if(G.t-(j.hs.slT||0)>3){j.hs.slT=G.t;fjMsg("🦸 SUPER LANDING!",1)}}
+/* ---------- posing: standing, walking, hovering, flying, punching, cape in the wind ---------- */
+function fjHeroPose(j,dt){const U=j.mesh.userData,H=j.hs||(j.hs={ground:0,lean:0,ph:0,t:0}),v=j.v?j.v.length():0,fly=!H.ground;H.t=(H.t||0)+dt;
+  const fast=fly?Math.min(1,Math.max(0,(v-15)/45)):0;H.lean+=((fly?fast:0)-H.lean)*Math.min(1,dt*3);U.body.rotation.x=H.lean*Math.PI/2;
+  const[aL,aR]=U.arms,[lL,lR]=U.legs;let al=0,ar=0,azl=-.08,azr=.08,ll=0,lr=0,kl=0,kr=0,bl=0,br=0;
+  if(!fly){if(!j.hs.ph)j.hs.ph=0;if(j.kind==="remote")H.ph+=v*dt*2.3;const w=Math.min(1,v/3),a=Math.sin(H.ph)*w*.7;ll=a;lr=-a;al=-a*.9;ar=a*.9;kl=Math.max(0,-Math.cos(H.ph))*w*.6;kr=Math.max(0,Math.cos(H.ph))*w*.6;bl=-.25*w;br=-.25*w;if(v<.5){azl=-.35;azr=.35;bl=-1.2;br=-1.2;al=.3;ar=.3}}
+  else{const hv=1-fast;ar=-Math.PI*fast+hv*.0;al=fast*.15;azl=-.08-hv*.5;azr=.08+hv*.5-fast*.08;ll=.05*fast+Math.sin(H.t*2)*.08*hv;lr=-.02;kl=.25*hv+.15*fast;kr=.1*hv;bl=-.1;br=-.1}
+  if(H.crouch>0){H.crouch-=dt;const c=Math.min(1,H.crouch*3);ll=-1.1*c;lr=-.6*c;kl=1.8*c;kr=1.2*c;al=-.6*c;azr=.9*c;U.body.position.y=-.35*c*U.S}else U.body.position.y=0;
+  if(H.punchT>0){const p=Math.sin((1-H.punchT/.35)*Math.PI);if(fly&&fast>.5)al=-Math.PI*p;else{al=-Math.PI/2*p-.1;azl=-.05;bl=-.2*(1-p)}}
+  const ease=Math.min(1,dt*10);aL.rotation.x+=(al-aL.rotation.x)*ease;aR.rotation.x+=(ar-aR.rotation.x)*ease;aL.rotation.z+=(azl-aL.rotation.z)*ease;aR.rotation.z+=(azr-aR.rotation.z)*ease;aL.userData.low.rotation.x+=(bl-aL.userData.low.rotation.x)*ease;aR.userData.low.rotation.x+=(br-aR.userData.low.rotation.x)*ease;
+  lL.rotation.x+=(ll-lL.rotation.x)*ease;lR.rotation.x+=(lr-lR.rotation.x)*ease;lL.userData.low.rotation.x+=(kl-lL.userData.low.rotation.x)*ease;lR.userData.low.rotation.x+=(kr-lR.userData.low.rotation.x)*ease;
+  /* cape: hangs when still, streams out behind when moving, ripples faster the faster you go */const wind=Math.min(1,v/40),spd=fly?(.4+fast*1.4):(.5+wind);
+  U.cape.forEach((s,i)=>{const base=fly?(i===0?.18+.1*fast:.02)+wind*(.12-fast*.1):(i===0?.1+wind*.9:.02+wind*.08),fl=Math.sin(H.t*7*spd-i*.9)*(.05+.13*Math.max(wind,fast*.8));s.rotation.x=base+fl;s.rotation.z=(fly?-j.bank*.08:0)+Math.sin(H.t*3-i)*.02*wind});
+  /* glowing eyes when firing */const firing=j.kind==="me"?!!j.fire&&!H.stun:!!(j.net&&j.net.gf);U.eyes.forEach(e=>e.material.color.setHex(firing?0xff2222:0x222222));if(j.kind!=="me")fjHeroBeam(j,firing?j.p.clone().add(fjHeroFwd(j).multiplyScalar(700)):null)}
+const fjHeroFwd=j=>{const cp=Math.cos(j.pitch);return j.hs&&j.hs.ground?new THREE.Vector3(Math.sin(j.yaw),-.03,Math.cos(j.yaw)).normalize():new THREE.Vector3(Math.sin(j.yaw)*cp,Math.sin(j.pitch),Math.cos(j.yaw)*cp)};
+function fjHeroEyes(j){j.mesh.updateMatrixWorld(true);const w=new THREE.Vector3(),U=j.mesh.userData;U.eyes[0].getWorldPosition(w);const w2=new THREE.Vector3();U.eyes[1].getWorldPosition(w2);return[w,w2]}
+/* ---------- the laser beams ---------- */
+function fjHeroBeam(j,end){if(!j.beam){const T=THREE,g=new T.Group(),core=new T.MeshBasicMaterial({color:0xffe0e0,transparent:true,opacity:.95,blending:T.AdditiveBlending,depthWrite:false}),glow=new T.MeshBasicMaterial({color:0xff1a1a,transparent:true,opacity:.45,blending:T.AdditiveBlending,depthWrite:false}),geo=r=>new T.CylinderGeometry(r,r,1,6,1,true).rotateX(Math.PI/2).translate(0,0,.5);
+    j.beam=[0,1].map(()=>{const b=new T.Group();b.add(new T.Mesh(geo(.035),core),new T.Mesh(geo(.16),glow));g.add(b);return b});j.beamG=g}
+  const sc=fjScn();if(j.beamG.parent!==sc){if(j.beamG.parent)j.beamG.parent.remove(j.beamG);sc.add(j.beamG)}j.beamG.visible=!!end&&j.mesh.visible!==false||!!end&&j.kind==="me";if(!end)return;
+  fjHeroEyes(j).forEach((e,i)=>{const b=j.beam[i];b.position.copy(e);b.lookAt(end);b.scale.set(1,1,e.distanceTo(end))})}
+/* ---------- powers each frame ---------- */
+function fjHeroPowers(j,dt){const G=FJG,H=j.hs;if(!j.fire||H.stun>0||j.dead){fjHeroBeam(j,null);return}
+  const eyes=fjHeroEyes(j),o=eyes[0].clone().lerp(eyes[1],.5);let dir=fjHeroFwd(j);
+  /* help aim: lock onto a monster / target close to where you're facing */const t=j.kind==="me"?fjFocus():null;if(t&&t.p&&t.kind!=="home"&&t.kind!=="remote"&&t.kind!=="guide"){const to=t.p.clone().sub(o),d=to.length();if(d<1600&&to.normalize().angleTo(dir)<.4)dir=to}
+  let L=1500,hitJ=null;/* the land */if(G.zone!=="space")for(let s=20;s<L;s+=20){const q=o.clone().addScaledVector(dir,s);if(q.y<fjH(q.x,q.z)&&!fjInCave(q)){L=s;break}}
+  for(const e of G.jets){if(e===j||e.dead||!fjSameZone(e,j)||e.kind==="remote"||e.kind==="guide"||e.kind==="home")continue;const r=e.hitR||10,to=e.p.clone().sub(o),s=to.dot(dir);if(s<0||s>L)continue;const d=to.addScaledVector(dir,-s).length();if(d<r){L=s-(e.kind==="monster"?Math.sqrt(Math.max(0,r*r-d*d))*.6:0);hitJ=e}}
+  let end=o.clone().addScaledVector(dir,L);if(G.zone!=="space"&&FJTW){const peek={kind:"peek"};for(let s=0;s<L;s+=60){const a=o.clone().addScaledVector(dir,s),b=o.clone().addScaledVector(dir,Math.min(L,s+62));FJTW.lastAt=null;if(fjTownShot(a,b,peek)&&FJTW.lastAt){end=FJTW.lastAt.clone();hitJ=null;const h=FJTW.lastHit;if(j.kind==="me"&&h){if(FJTW.lastB)fjBldHit(h,Math.max(1,h.hp*.55*dt),end.clone());else fjItemHit(h,60*dt+1,end.clone())}break}}}
+  if(hitJ&&j.kind!=="remote"){const at=end.clone();if(hitJ.kind==="monster"){const w=new THREE.Vector3();for(const e of hitJ.mesh.userData.weak){e.getWorldPosition(w);if(w.distanceTo(o)<L+60&&w.clone().sub(o).normalize().angleTo(dir)<.03){at.copy(w);end.copy(w)}}}fjHit(hitJ,j,95*dt,"gun",at)}
+  if(Math.random()<.6)FJE.fx.add({x:end.x,y:end.y,z:end.z,vx:(Math.random()-.5)*10,vy:Math.random()*8,vz:(Math.random()-.5)*10,t:0,life:.35,s0:3,s1:1,c:[1,.4,.2],a:1,add:1,drag:.9});if(Math.random()<.2)FJE.fx.add({x:end.x,y:end.y,z:end.z,vx:0,vy:4,vz:0,t:0,life:1.4,s0:3,s1:10,c:[.25,.22,.2],a:.5,drag:.5});
+  fjHeroBeam(j,end)}
+function fjHeroPunch(j){const G=FJG,H=j.hs;if(H.punchCD>0||H.stun>0||j.dead)return;H.punchCD=.55;H.punchT=.35;sfx("hit");if(!H.ground){H.dash=.3;H.dashHit=1}fjHeroImpact(j)}
+/* a super punch lands: monsters, buildings, vehicles nearby in front */
+function fjHeroImpact(j){const G=FJG,f=fjHeroFwd(j),at=j.p.clone().addScaledVector(f,12);let n=0;
+  for(const e of G.jets){if(e===j||e.dead||!fjSameZone(e,j)||e.kind==="remote"||e.kind==="guide")continue;const r=(e.hitR||10)+30;if(e.p.distanceTo(at)<r){let hp=at.clone();if(e.kind==="monster"){const w=new THREE.Vector3();for(const q of e.mesh.userData.weak){q.getWorldPosition(w);if(w.distanceTo(j.p)<45)hp=w.clone()}}fjHit(e,j,90,"missile",hp);n++}}
+  if(G.zone!=="space"){const seen=new Set();for(let a=-1;a<=1;a++)for(let b=-1;b<=1;b++){const cell=fjGridAt(at.x+a*30,at.z+b*30);if(!cell)continue;for(const o of cell){if(seen.has(o))continue;seen.add(o);
+      if(o.ex!=null){if(o.alive&&o.coll<0&&Math.abs(at.x-o.x)<o.ex+18&&Math.abs(at.z-o.z)<o.ez+18&&at.y<o.topNow+10&&at.y>o.g-5){o.dmg=.99;fjBldHit(o,o.hp*3,at.clone());n++}}else if(o.parts&&o.alive&&o.top&&Math.hypot(at.x-o.x,at.z-o.z)<(o.r||8)+20){fjItemDown(o,1);n++}}}
+    for(const o of FJTW.dyn)if(o.alive&&Math.hypot(at.x-o.x,at.y-o.y,at.z-o.z)<26){fjItemDown(o,1);n++}if(typeof FJ_NC!=="undefined"&&FJ_NC.cars)for(const c of FJ_NC.cars)if(c.on&&Math.hypot(at.x-c.x,at.z-c.z)<22&&Math.abs(at.y-FJ_NC.lv)<12){c.on=0;fjBoom(c.x,FJ_NC.lv+1,c.z,0);n++}}
+  if(n){G.shake=Math.max(G.shake||0,.6);for(let k=0;k<18;k++){const a=k/18*6.28;FJE.fx.add({x:at.x,y:at.y,z:at.z,vx:Math.cos(a)*40,vy:Math.sin(a)*40,vz:0,t:0,life:.5,s0:6,s1:16,c:[1,.9,.6],a:.9,add:1,drag:.6})}fjMsg(["💥 POW!","💥 KA-POW!","💥 WHAM!","💥 SUPER PUNCH!"][Math.floor(Math.random()*4)],.9);sfx("b_boom")}}
+function fjHeroFlyBtn(j){const H=j.hs;if(H.stun>0)return;if(H.ground){H.ground=0;H.launch=.7;fjThrSet(0,1);j.p.y+=.5;sfx("win");fjMsg("🚀 TAKE OFF! Speed lever: HOVER · FLY · SUPER",2)}else{H.landing=1;fjThrSet(0,1);fjMsg("⬇️ Coming in to land…",1)}}
+/* a big hit can't hurt a hero, but it knocks you back */
+function fjHeroHit(j,how){const G=FJG,H=j.hs;if(j.kind!=="me"||H.stun>0)return;if(how==="monster"||how==="flak"||how==="alien"||how==="missile"){H.stun=.9;H.ground=0;H.kb=fjHeroFwd(j).multiplyScalar(-90).add(new THREE.Vector3(0,35,0));G.shake=Math.max(G.shake||0,.6);if(G.t-(H.immT||0)>3){H.immT=G.t;fjMsg("😵 WHACK! Knocked back — but heroes can't be hurt!",1.6)}}}
+/* ---------- the hero shop ---------- */
+function fjHeroShop(tab){const G=FJG;if(G.mode!=="heroshop"){fjClear();G.mode="heroshop";$("#fjctl").classList.remove("on");G.hd=fjHeroDesign(me());fjHeroShopModel()}G.htab=tab||G.htab||"suit";const d=G.hd,t=G.htab,S=fjSet();
+  const sw=(k,list)=>list.map(c=>`<button class="fjsw${d[k]===c?" on":""}" data-k="${k}" data-c="${c}" style="background:${c}"></button>`).join("");
+  const body=t==="suit"?`<div class="fjsws">${sw("suit",FJ_PAL)}</div>`:t==="cape"?`<div class="fjsws">${sw("cape",FJ_PAL)}</div>`:t==="look"?`<div class="fjlab">SKIN</div><div class="fjsws">${sw("skin",FJ_SKINS)}</div><div class="fjlab">HAIR</div><div class="fjsws">${sw("hair",FJ_HAIRS)}</div><div class="fjpats"><button class="fjpat${!d.long?" on":""}" data-long="0">Short hair</button><button class="fjpat${d.long?" on":""}" data-long="1">Long hair</button></div>`
+    :`<div class="fjpats">${FJ_BADGES.map(b=>`<button class="fjbad${d.badge===b?" on":""}" data-b="${b}">${b}</button>`).join("")}</div>`;
+  $("#fjm").className="fjmenu on fjhang";$("#fjm").innerHTML=`<div class="fjht">🦸 ${fjHeroName(me())}</div>
+    <div class="fjtabs">${[["suit","🦸 SUIT"],["cape","🧣 CAPE"],["look","🙂 LOOK"],["bad","🏅 BADGE"]].map(([k,n])=>`<button class="fjtab${t===k?" on":""}" data-tab="${k}">${n}</button>`).join("")}</div><div class="fjhb">${body}</div>
+    <div class="fjrow"><button class="fjbig ${S.heroOn?"fjtog":"fjsm"}" id="fjHon">${S.heroOn?"✅ PLAYING AS HERO":"✈️ PLAYING AS JET — tap to be the hero"}</button></div>
+    <div class="fjrow"><button class="fjsm" id="fjHx">✖ Back</button><button class="fjbig fjfree" id="fjHs">✅ SAVE</button></div>`;
+  const re=()=>{sfx("tap");fjHeroShopModel();fjHeroShop()};document.querySelectorAll(".fjtab").forEach(b=>b.onclick=()=>{sfx("tap");fjHeroShop(b.dataset.tab)});document.querySelectorAll(".fjsw").forEach(b=>b.onclick=()=>{d[b.dataset.k]=b.dataset.c;re()});
+  document.querySelectorAll("[data-long]").forEach(b=>b.onclick=()=>{d.long=+b.dataset.long;re()});document.querySelectorAll(".fjbad").forEach(b=>b.onclick=()=>{d.badge=b.dataset.b;re()});
+  $("#fjHon").onclick=()=>{const S2=fjSet();S2.heroOn=!S2.heroOn;fjSave(S2);sfx("tap");fjHeroShop()};$("#fjHx").onclick=()=>{sfx("tap");fjMenu()};
+  $("#fjHs").onclick=()=>{const S2=fjSet();S2.hero={suit:d.suit,cape:d.cape,skin:d.skin,hair:d.hair,badge:d.badge,long:d.long?1:0};S2.heroOn=true;fjSave(S2);db.doc("games/fjhero_"+me()).set(S2.hero).catch(er);sfx("win");fjMenu();fjMsg("🦸 "+fjHeroName(me())+" is ready! Free Flight, Fly Together and Monster Attack",3)}}
+function fjHeroShopModel(){const G=FJG;if(G.hj)FJR.scene.remove(G.hj);FJR.scene.add(fjStudio());G.hj=fjHeroMesh(G.hd,me());G.hj.position.set(0,2600-4.2,0);FJR.scene.add(G.hj);G.hjA=G.hjA||0;G.hjH={ground:1,lean:0,ph:0,t:0}}
+function fjHeroShopCam(dt){const G=FJG,cam=FJR.cam,h=G.hj;if(!h)return;G.hjA+=dt*.5;h.rotation.set(0,G.hjA,0);const fake={mesh:h,hs:G.hjH,v:new THREE.Vector3(Math.sin(G.t*.5)>.6?30:0,0,0),kind:"shop",pitch:0,yaw:0,bank:0};fjHeroPose(fake,dt);
+  const W=G.W||800,H=G.H||400,wide=W>H*1.2;cam.position.set(3.2,2600-2.6,5.2);cam.lookAt(0,2600-3.1,0);cam.fov=wide?40:50;cam.aspect=W/H;if(wide)cam.setViewOffset(W,H,W*.22,0,W,H);else if(H>W*1.1)cam.setViewOffset(W,H,0,H*.24,W,H);else cam.clearViewOffset();cam.updateProjectionMatrix()}
+/* live: the other phone is a hero (or not) */
+function fjHeroRemote(F,d){const th=F.who;if(d.hz&&!F.hero){const sc=F.mesh.parent||FJR.scene;sc.remove(F.mesh);F.mesh=fjHeroMesh(fjHeroDesign(th),th);sc.add(F.mesh);F.hero=1;F.hs={ground:0,lean:0,ph:0,t:0};F.cols={...F.cols,nm:fjHeroName(th)}}
+  else if(!d.hz&&F.hero){const sc=F.mesh.parent||FJR.scene;sc.remove(F.mesh);if(F.beamG&&F.beamG.parent)F.beamG.parent.remove(F.beamG);F.mesh=fjJetBuild({...fjDesign(th),num:th==="X"?"D1":"C1"},FJR.env);sc.add(F.mesh);F.hero=0}if(F.hero)F.hs.ground=!!d.hg}
+
 /* ================= SKY ACES: the jets and the effects =================
    Our own fighter design (not a real aircraft): a sleek body with a bubble canopy, delta wings, twin canted tails,
    two engines with afterburner flames, and missiles under the wings. Painted with a two-tone pattern and a squadron badge. */
@@ -5631,20 +5745,20 @@ function fjMenu(){const G=FJG;if(!G)return;G.mode="menu";G.live=0;G.over=0;fjCle
   $("#fjm").className="fjmenu on";$("#fjm").innerHTML=`<div class="fjtitle">SKY<b>ACES</b></div>
     <div class="fjrow"><button class="fjbig fjlive" id="fjL">⚔️ LIVE vs ${fjOther().toUpperCase()}</button><button class="fjbig fjtog" id="fjT">🤝 FLY WITH ${fjOther().toUpperCase()}</button></div>
     <div class="fjrow"><span class="fjlab">VS COMPUTER</span>${["EASY","MEDIUM","ACE"].map((d,i)=>`<button class="fjbig fjai" data-d="${i}">${["🙂","😎","☠️"][i]} ${d}</button>`).join("")}</div>
-    <div class="fjrow"><button class="fjbig fjfree" id="fjF">🏔️ FREE FLIGHT</button><button class="fjbig fjmon" id="fjMon">🦀 MONSTER ATTACK</button><button class="fjbig fjair" id="fjAir">🛬 AIRLINE PILOT</button><button class="fjbig fjhg" id="fjHg">✈️ MY JET</button></div>
+    <div class="fjrow"><button class="fjbig fjfree" id="fjF">🏔️ FREE FLIGHT</button><button class="fjbig fjmon" id="fjMon">🦀 MONSTER ATTACK</button><button class="fjbig fjair" id="fjAir">🛬 AIRLINE PILOT</button><button class="fjbig fjhg" id="fjHg">✈️ MY JET</button><button class="fjbig fjhero" id="fjHe">🦸 SUPER HERO${S.heroOn?" ✅":""}</button></div>
     <div class="fjrow"><button class="fjsm" id="fjctlb">${S.ctl==="tilt"?"📱 Steer: tilt phone":"🕹️ Steer: joystick"}</button><button class="fjsm" id="fjinv">${S.ctl==="tilt"?(S.inv?"Tip towards you = dive":"Tip away = dive"):(S.inv?"Pull back = climb":"Push up = climb")}</button><button class="fjsm" id="fjnite">${S.night?"🌙 Night":"☀️ Day"}</button><button class="fjsm" id="fjori">${S.orient==="up"?"↕️ Screen: upright":"↔️ Screen: sideways"}</button><button class="fjsm" id="fjq">${fjQ()==="high"?"✨ Graphics: High":"⚡ Graphics: Low"}</button></div>
     <div class="fjtally">${fjTally()}</div>`;
-  $("#fjL").onclick=()=>{sfx("tap");fjLiveAsk()};$("#fjT").onclick=()=>{sfx("tap");fjLiveAsk(1)};$("#fjF").onclick=()=>{sfx("tap");fjWhere()};const novaOK=()=>{const I=FJI.find(q=>q.id==="nova");if(I&&I.ready)return 1;fjMsg("🏙️ Novaria is still loading — try again in a few seconds",2);return 0};$("#fjMon").onclick=()=>{sfx("tap");if(novaOK())fjMonChoice()};$("#fjAir").onclick=()=>{sfx("tap");if(novaOK())fjPlay({mode:"airline"})};$("#fjq").onclick=()=>{S.q=fjQ()==="high"?"low":"high";fjSave(S);sfx("tap");FJR.r.setPixelRatio(Math.min(S.q==="high"?1.75:1,window.devicePixelRatio||1));fjSize();fjMenu()};$("#fjinv").onclick=()=>{S.inv=!S.inv;fjSave(S);fjMenu()};$("#fjHg").onclick=()=>{sfx("tap");fjHangar("jet")};$("#fjori").onclick=()=>{S.orient=S.orient==="up"?"side":"up";fjSave(S);sfx("tap");fjSize();fjMenu();fjMsg(S.orient==="up"?"↕️ Hold the phone upright":"↔️ Turn the phone sideways",2)};$("#fjnite").onclick=()=>{S.night=!S.night;fjSave(S);fjTime(S.night);sfx("tap");fjMenu()};
+  $("#fjL").onclick=()=>{sfx("tap");fjLiveAsk()};$("#fjT").onclick=()=>{sfx("tap");fjLiveAsk(1)};$("#fjF").onclick=()=>{sfx("tap");fjWhere()};const novaOK=()=>{const I=FJI.find(q=>q.id==="nova");if(I&&I.ready)return 1;fjMsg("🏙️ Novaria is still loading — try again in a few seconds",2);return 0};$("#fjMon").onclick=()=>{sfx("tap");if(novaOK())fjMonChoice()};$("#fjAir").onclick=()=>{sfx("tap");if(novaOK())fjPlay({mode:"airline"})};$("#fjq").onclick=()=>{S.q=fjQ()==="high"?"low":"high";fjSave(S);sfx("tap");FJR.r.setPixelRatio(Math.min(S.q==="high"?1.75:1,window.devicePixelRatio||1));fjSize();fjMenu()};$("#fjinv").onclick=()=>{S.inv=!S.inv;fjSave(S);fjMenu()};$("#fjHg").onclick=()=>{sfx("tap");fjHangar("jet")};$("#fjHe").onclick=()=>{sfx("tap");fjHeroShop("suit")};$("#fjori").onclick=()=>{S.orient=S.orient==="up"?"side":"up";fjSave(S);sfx("tap");fjSize();fjMenu();fjMsg(S.orient==="up"?"↕️ Hold the phone upright":"↔️ Turn the phone sideways",2)};$("#fjnite").onclick=()=>{S.night=!S.night;fjSave(S);fjTime(S.night);sfx("tap");fjMenu()};
   $("#fjctlb").onclick=()=>{if(S.ctl==="tilt"){S.ctl="stick";fjSave(S);fjMenu();return}fjTiltAsk(ok=>{if(!ok){fjMsg("📱 Tilt isn't allowed on this phone — using the joystick",2.5);return}S.ctl="tilt";fjSave(S);fjTiltStart();fjMenu();fjMsg("📱 Hold the phone sideways how you like — that's straight and level",3)})};
   document.querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{sfx("tap");fjPlay({mode:"ai",diff:+b.dataset.d})});
   /* a slow tour of the island behind the menu */G.tour=G.tour||0}
 const fjSet=()=>{try{return JSON.parse(localStorage.getItem("fj_"+me())||"{}")}catch(e){return{}}},fjSave=S=>{try{localStorage.setItem("fj_"+me(),JSON.stringify(S))}catch(e){}};
 const FJD={live:null,win:{}};
 const fjTally=()=>{const w=FJD.win||{},S=fjSet();return`🏆 Live wins: Dad <b>${w.X||0}</b> · Cass <b>${w.O||0}</b>${S.aiw?` · Computer aces beaten: <b>${S.aiw}</b>`:""}`};
-function fjClear(){const G=FJG;G.mon=null;G.monShots=[];G.air=null;G.wp=null;if(FJR.paxM)FJR.paxM.visible=false;for(const j of G.jets)if(j.mesh&&j.mesh.parent&&j.mesh.parent!==FJR.scene)j.mesh.parent.remove(j.mesh);if(FJSP){FJSP.las=[];FJSP.inited=0;FJSP.mother=null;FJSP.kills=0}if(G.zone==="space"){G.zone="earth";if(FJE.fxE)FJE.fx=FJE.fxE;if(FJR.bmE)FJR.bm=FJR.bmE}if(G.hj){FJR.scene.remove(G.hj);G.hj=null}if(FJR.studio)FJR.scene.remove(FJR.studio);if(FJR.cam&&FJR.cam.view){FJR.cam.clearViewOffset();FJR.cam.updateProjectionMatrix()}G.mapOn=0;const mw=$("#fjmapw");if(mw)mw.classList.remove("on");G.btn.look=0;for(const j of G.jets)FJR.scene.remove(j.mesh);G.jets=[];G.bul.length=0;for(const m of G.mis)if(m.mesh.parent)m.mesh.parent.remove(m.mesh);G.mis=[];G.flr=[];if(FJE)FJE.fx.list.length=0}
+function fjClear(){const G=FJG;for(const j of G.jets||[])if(j.beamG&&j.beamG.parent)j.beamG.parent.remove(j.beamG);G.mon=null;G.monShots=[];G.air=null;G.wp=null;if(FJR.paxM)FJR.paxM.visible=false;for(const j of G.jets)if(j.mesh&&j.mesh.parent&&j.mesh.parent!==FJR.scene)j.mesh.parent.remove(j.mesh);if(FJSP){FJSP.las=[];FJSP.inited=0;FJSP.mother=null;FJSP.kills=0}if(G.zone==="space"){G.zone="earth";if(FJE.fxE)FJE.fx=FJE.fxE;if(FJR.bmE)FJR.bm=FJR.bmE}if(G.hj){FJR.scene.remove(G.hj);G.hj=null}if(FJR.studio)FJR.scene.remove(FJR.studio);if(FJR.cam&&FJR.cam.view){FJR.cam.clearViewOffset();FJR.cam.updateProjectionMatrix()}G.mapOn=0;const mw=$("#fjmapw");if(mw)mw.classList.remove("on");G.btn.look=0;for(const j of G.jets)FJR.scene.remove(j.mesh);G.jets=[];G.bul.length=0;for(const m of G.mis)if(m.mesh.parent)m.mesh.parent.remove(m.mesh);G.mis=[];G.flr=[];if(FJE)FJE.fx.list.length=0}
 /* ---------- starting a flight ---------- */
 function fjPlay(o){const G=FJG;fjClear();G.mode="fly";G.sub=o.mode;G.diff=o.diff||0;G.live=o.mode==="live"||o.mode==="together"||!!o.net;G.peace=o.mode==="free"||o.mode==="together"||o.mode==="airline"||o.mode==="monster";$("#fjctl").classList.toggle("air",o.mode==="airline");$("#fjctl").classList.toggle("duel",o.mode==="live");{const b=$("#fjslow");if(b)b.classList.toggle("on",!!G.slow)}G.over=0;G.t=0;G.score={me:0,them:0};$("#fjm").className="fjmenu";$("#fjctl").classList.add("on");$("#fjctl").classList.toggle("peace",G.peace);
-  const mine=fjJet(me(),"me");G.me=mine;G.jets.push(mine);fjSpawn(mine,o.spawn||0);
+  const mine=fjJet(me(),"me");G.me=mine;G.jets.push(mine);fjSpawn(mine,o.spawn||0);{const hok=fjHeroOn()&&["free","together","monster"].includes(o.mode);if(hok)fjHeroify(mine);fjHeroButtons(hok)}
   if(o.mode==="ai"){const e=fjJet("AI","ai");e.diff=G.diff;G.jets.push(e);fjSpawn(e,1);fjMsg(["🙂 EASY","😎 MEDIUM","☠️ ACE"][G.diff]+" — FIRST TO "+FJ_KO+"!",3)}
   else if(o.mode==="live"){const e=fjJet(me()==="X"?"O":"X","remote");G.jets.push(e);G.foe=e;fjSpawn(e,o.spawn?0:1);fjMsg("⚔️ FIRST TO "+FJ_KO+"! GOOD LUCK!",3)}
   else if(o.mode==="together"){const th=me()==="X"?"O":"X",e=fjJet(th,"remote");G.jets.push(e);G.foe=e;fjFormation(mine,me());fjFormation(e,th);fjMsg("🤝 FLYING WITH "+fjOther().toUpperCase()+" — no fighting! 🗺️ Tap the radar for the map",4)}
@@ -5670,7 +5784,7 @@ function fjInput(){const G=FJG,el=$("#fjc"),stk=$("#fjstk"),knob=stk.querySelect
   $("#fjmapb").onpointerdown=e=>{e.preventDefault();e.stopPropagation();fjMapOpen(!G.mapOn)};$("#fjmapw").onpointerdown=e=>{e.preventDefault();e.stopPropagation();fjMapTap(e)};
   window.onkeydown=e=>{if(!FJG)return;G.keys[e.key]=1;if(G.mode!=="fly")return;if(e.key==="m"||e.key==="M")fjFireMissile(G.me);if(e.key==="v"||e.key==="V")fjViewNext();if(e.key==="1"||e.key==="2"||e.key==="3")fjThrSet(+e.key-1);if(e.key==="f"||e.key==="F")fjFlares(G.me);if(e.key===" ")e.preventDefault()};window.onkeyup=e=>{if(FJG)G.keys[e.key]=0}}
 /* ---------- the flight model (simple and friendly: bank to turn, levels itself, no stalling) ---------- */
-function fjFly(j,dt){if(j.air)return fjFlyAir(j,dt);const sx=j.stick.x,sy=j.stick.y,cass=j.cass;
+function fjFly(j,dt){if(j.hero)return fjFlyHero(j,dt);if(j.air)return fjFlyAir(j,dt);const sx=j.stick.x,sy=j.stick.y,cass=j.cass;
   const want=sx*1.25;j.bank+=(want-j.bank)*Math.min(1,dt*(Math.abs(sx)>.05?3.2:2.2));
   const pr=-sy*1.2*(j.kind==="me"&&FJG.inv?-1:1);j.pitch+=pr*dt;if(Math.abs(sy)<.05)j.pitch*=Math.pow(.55,dt);j.pitch=Math.max(-1.25,Math.min(1.25,j.pitch));
   const tp=j.tp||FJ_TYPES.falcon,turn=(Math.sin(j.bank)*(1.05+.25*(j.spd<200?1:0))+sx*.15)*tp.turn;j.yaw-=turn*dt;
@@ -5682,7 +5796,7 @@ function fjFly(j,dt){if(j.air)return fjFlyAir(j,dt);const sx=j.stick.x,sy=j.stic
   j.mesh.position.copy(j.p);j.mesh.rotation.set(-j.pitch,j.yaw,j.bank,"YXZ");
   const fl=j.mesh.userData.flames,thr=j.bo&&j.boost>0?1:.35;fl.forEach(f=>{const s=thr*(.85+Math.random()*.3);f.scale.set(1,s,1);f.position.z=(j.mesh.userData.fz+2)-2*s;f.material.opacity=.55+thr*.45})}
 /* does the jet hit the ground, the arch or the tunnel? returns what it hit */
-function fjCrash(j){if(j.kind==="me"&&FJG.zone==="space")return fjSpaceCrash(j);if(j.kind==="me"){const cc=fjCaveCrash(j);if(cc!==undefined)return cc}const p=j.p,gh=fjH(p.x,p.z);if(p.y<Math.max(gh,0)+3)return gh<0?"water":"ground";{const tc=fjTownCrash(p);if(tc)return tc}
+function fjCrash(j){if(j.hero)return null;if(j.kind==="me"&&FJG.zone==="space")return fjSpaceCrash(j);if(j.kind==="me"){const cc=fjCaveCrash(j);if(cc!==undefined)return cc}const p=j.p,gh=fjH(p.x,p.z);if(p.y<Math.max(gh,0)+3)return gh<0?"water":"ground";{const tc=fjTownCrash(p);if(tc)return tc}
   const A=FJW.arch;if(A&&Math.abs(p.x-A.cx)<A.R+80&&Math.abs(p.z-A.cz)<A.R+80){for(const q of A.pts)if((p.x-q[0])**2+(p.y-q[1])**2+(p.z-q[2])**2<(A.r+4)**2)return"arch"}
   const U=FJW.tun;if(U&&Math.hypot(p.x-U.pts[12].x,p.z-U.pts[12].z)<900){for(const q of U.pts){const dx=p.x-q.x,dz=p.z-q.z,along=dx*q.dx+dz*q.dz;if(Math.abs(along)>42)continue;const s2=Math.abs(-dx*q.dz+dz*q.dx),hw=q.hw,ow=hw+110;
     const inner=s2<hw?q.fl-30+Math.sqrt(1-(s2/hw)**2)*(U.roof+30):-1e9,outer=s2<ow?q.fl-40+Math.sqrt(1-(s2/ow)**2)*(U.roof+150):-1e9;if(p.y<outer&&p.y>inner-4)return"tunnel"}}
@@ -5713,7 +5827,7 @@ function fjLockStep(j,dt){const G=FJG;if(j.dead){j.lockT=0;j.lock=null;return}co
   if(j.kind==="me"){if(j.lock&&!j.lockBeep){j.lockBeep=1;sfx("sp")}if(!j.lock)j.lockBeep=0}}
 /* can a missile see from a to b (not behind a mountain)? */
 function fjLos(a,b){for(let i=1;i<10;i++){const t=i/10,x=a.x+(b.x-a.x)*t,y=a.y+(b.y-a.y)*t,z=a.z+(b.z-a.z)*t;if(y<fjH(x,z)+5)return false}return true}
-function fjFireMissile(j){const G=FJG;if(!G||G.mode!=="fly"||!j||j.dead||j.mis<=0||j.misT>0)return;j.misT=.6;j.mis--;const side=j.mis%2?-1:1;
+function fjFireMissile(j){const G=FJG;if(j&&j.hero)return fjHeroPunch(j);if(!G||G.mode!=="fly"||!j||j.dead||j.mis<=0||j.misT>0)return;j.misT=.6;j.mis--;const side=j.mis%2?-1:1;
   const ms=j.mesh.userData.missiles;ms.forEach((m,i)=>m.visible=i<j.mis);const p=j.p.clone().add(new THREE.Vector3(side*3.2,-1.2,0).applyEuler(j.mesh.rotation)),v=j.v.clone();
   const mesh=fjMissileModel(FJR.env);mesh.scale.setScalar(1.6);fjScn().add(mesh);const m={p,v,spd:j.spd,own:j,tgt:j.lock||null,life:8,mesh,id:Math.random().toString(36).slice(2,8),age:0,lost:0};G.mis.push(m);
   if(j.kind==="me"){sfx("rev");fjMsg(m.tgt?"🚀 FOX TWO!":"🚀 MISSILE AWAY (no lock)",1)}if(G.live&&j.kind==="me")fjLiveSend(1)}
@@ -5734,7 +5848,7 @@ function fjMisStep(dt){const G=FJG;for(let i=G.mis.length-1;i>=0;i--){const m=G.
     if(!boom&&!tg)for(const j of G.jets){if(j===m.own||j.dead||j.inv>0||(G.peace&&j.kind!=="alien"&&j.kind!=="monster")||!fjSameZone(j,m.own))continue;if(m.p.distanceTo(j.p)<(j.hitR?j.hitR+6:16)){boom=true;fjHit(j,m.own,j.cass?42:55,"missile",m.p);break}}
     if(boom){fjBoom(m.p.x,m.p.y,m.p.z,0);if(G.zone!=="space")fjTownBlast(m.p,m.own);(m.mesh.parent&&m.mesh.parent.remove(m.mesh));G.mis.splice(i,1);if(Math.hypot(m.p.x-G.me.p.x,m.p.y-G.me.p.y,m.p.z-G.me.p.z)<900)sfx("b_boom")}}}
 /* flares: bright decoys that pull missiles away */
-function fjFlares(j){const G=FJG;if(!G||(G.peace&&j===G.me)||G.mode!=="fly"||!j||j.dead||j.fl<=0||j.flT>0)return;j.flT=1;j.fl--;const right=new THREE.Vector3(1,0,0).applyEuler(j.mesh.rotation);
+function fjFlares(j){const G=FJG;if(j&&j.hero)return fjHeroFlyBtn(j);if(!G||(G.peace&&j===G.me)||G.mode!=="fly"||!j||j.dead||j.fl<=0||j.flT>0)return;j.flT=1;j.fl--;const right=new THREE.Vector3(1,0,0).applyEuler(j.mesh.rotation);
   for(let i=0;i<6;i++){const s=i%2?1:-1,f={p:j.p.clone(),v:j.v.clone().multiplyScalar(.45).addScaledVector(right,s*(50+i*12)).add(new THREE.Vector3(0,-20-i*8,0)),life:3,flare:true,own:j};G.flr.push(f)}
   /* missiles chasing this jet may go for the flares instead */
   for(const m of G.mis){if(m.tgt!==j)continue;const d=m.p.distanceTo(j.p);if(d<1400&&Math.random()<(j.cass?.85:.7)){m.tgt=G.flr[G.flr.length-1-(Math.random()*6|0)];if(j.kind==="me")fjMsg("✨ FLARES WORKED!",1.2)}}
@@ -5743,12 +5857,12 @@ function fjFlrStep(dt){const G=FJG;for(let i=G.flr.length-1;i>=0;i--){const f=G.
   FJE.fx.add({x:f.p.x,y:f.p.y,z:f.p.z,vx:0,vy:0,vz:0,t:0,life:.12,s0:16,s1:8,c:[1,.95,.75],a:1,add:1,drag:1});if(Math.random()<.6)FJE.fx.add({x:f.p.x,y:f.p.y,z:f.p.z,vx:0,vy:3,vz:0,t:0,life:1.6,s0:4,s1:16,c:[.95,.95,.95],a:.4,drag:.5});
   if(f.life<=0||f.done){G.flr.splice(i,1);for(const m of G.mis)if(m.tgt===f)m.tgt=null}}}
 /* ---------- getting hit ---------- */
-function fjHit(j,by,dmg,how,at){const G=FJG;if(j.kind==="monster")return fjMonHit(j,dmg,how,at);if(j.dead||j.inv>0)return;
+function fjHit(j,by,dmg,how,at){const G=FJG;if(j.kind==="monster")return fjMonHit(j,dmg,how,at);if(j.hero){fjHeroHit(j,how);return}if(j.dead||j.inv>0)return;
   if(j.kind==="remote"){fjLiveHit(dmg,how);if(how==="gun"&&Math.random()<.5)FJE.fx.add({x:at.x,y:at.y,z:at.z,vx:0,vy:0,vz:0,t:0,life:.15,s0:10,s1:4,c:[1,.85,.5],a:1,add:1,drag:1});return}
   j.hp-=dmg;j.hitT=.25;if(how==="gun")FJE.fx.add({x:at.x,y:at.y,z:at.z,vx:j.v.x*.5,vy:j.v.y*.5,vz:j.v.z*.5,t:0,life:.2,s0:8,s1:4,c:[1,.85,.5],a:1,add:1,drag:1});
   if(j.kind==="me"){G.shake=Math.max(G.shake||0,how==="missile"?1:.25);if(how==="missile")sfx("b_boom");else if(Math.random()<.3)sfx("hit")}
   if(j.hp<=0)fjDown(j,by,how)}
-function fjDown(j,by,how){const G=FJG;if(j.kind==="alien")return fjAlienDown(j);if(j.kind==="monster")return fjMonDown(j);if(j.dead)return;j.dead=1;j.rt=3.5;j.hp=0;fjBoom(j.p.x,j.p.y,j.p.z,1);j.mesh.visible=false;if(Math.hypot(j.p.x-G.me.p.x,j.p.y-G.me.p.y,j.p.z-G.me.p.z)<2500)sfx("b_boom");
+function fjDown(j,by,how){const G=FJG;if(j.hero)return;if(j.kind==="alien")return fjAlienDown(j);if(j.kind==="monster")return fjMonDown(j);if(j.dead)return;j.dead=1;j.rt=3.5;j.hp=0;fjBoom(j.p.x,j.p.y,j.p.z,1);j.mesh.visible=false;if(Math.hypot(j.p.x-G.me.p.x,j.p.y-G.me.p.y,j.p.z-G.me.p.z)<2500)sfx("b_boom");
   /* a parachute floats down from a knocked-out jet */FJE.chute={p:j.p.clone(),t:0};
   if(G.zone==="space"&&j.kind==="me"){fjMsg(how==="alien"?"👽 THE ALIENS GOT YOU! Back to Earth…":"💥 CRASHED IN SPACE! Back to Earth…",2.5);return}
   if(G.peace){if(j.kind==="me"){fjMsg(G.sub==="airline"?"💥 CRASH! Everyone floated down safely on parachutes 🪂 — back to the airport…":how==="monster"?"🦀 CLAWDON GOT YOU! Back in a moment…":"💥 CRASHED! Back in the air in a moment…",3);if(G.live){G.myDeaths=(G.myDeaths||0)+1;fjLiveSend(2)}}return}
@@ -5786,17 +5900,17 @@ function fjPuStep(dt){const G=FJG;for(const u of FJR.pu){u.ring.rotation.y+=dt*1
 function fjFrame(dt){const G=FJG;if(!G||G.dead||!FJR||!FJR.built)return;G.t+=dt;FJW.U.time.value=G.t;const cam=FJR.cam;
   if(FJW.falls)FJW.falls.tex.offset.y=(G.t*.9)%1;
   const sd=G.slow&&G.mode==="fly"&&G.sub!=="live"?dt*.4:dt;if(G.zone!=="space")fjIslesStep(sd);if(!(G.mapOn&&!G.live)&&G.mode!=="hangar"&&G.zone!=="space")fjTownStep(sd);if(G.mode==="fly"||G.mode==="end"){if(!(G.mapOn&&!G.live))fjUpdate(sd);fjCamera(dt);fjEngineSound()}
-  else if(G.mode==="hangar")fjHangarCam(dt);else fjTour(dt);
+  else if(G.mode==="hangar")fjHangarCam(dt);else if(G.mode==="heroshop")fjHeroShopCam(dt);else fjTour(dt);
   if(FJE){FJE.fx.smoke.material.uniforms.sc.value=FJE.fx.glow.material.uniforms.sc.value=(G.H||400)*(G.dpr||1)/(2*Math.tan(cam.fov*Math.PI/360));FJE.fx.step(G.slow&&G.mode==="fly"&&G.sub!=="live"?dt*.4:dt,cam);FJE.flash=Math.max(0,(FJE.flash||0)-dt*2.5);
     if(FJE.chute){FJE.chute.t+=dt;if(FJE.chute.t>9)FJE.chute=null}}
-  if(typeof fjShadowPass==="function")fjShadowPass();FJR.r.render(fjScn(),cam);fjHud(dt);if(G.mode==="fly"){const hx=$("#fjh").getContext("2d");if(fjView()==="cockpit"&&!(G.btn.look||G.keys.l||G.keys.L)&&G.me&&!G.me.dead)fjCockpitHud(hx,G.W,G.H);if(G.sub==="airline")fjAirHud(hx,G.W,G.H);if(G.mon)fjMonHud(hx,G.W,G.H);fjSlowHud(hx,G.W,G.H)}if(G.mapOn)fjMapDraw()}
+  if(typeof fjShadowPass==="function")fjShadowPass();FJR.r.render(fjScn(),cam);fjHud(dt);if(G.mode==="fly"){const hx=$("#fjh").getContext("2d");if(fjView()==="cockpit"&&!(G.btn.look||G.keys.l||G.keys.L)&&G.me&&!G.me.dead&&!G.me.hero)fjCockpitHud(hx,G.W,G.H);if(G.sub==="airline")fjAirHud(hx,G.W,G.H);if(G.mon)fjMonHud(hx,G.W,G.H);fjSlowHud(hx,G.W,G.H)}if(G.mapOn)fjMapDraw()}
 /* everything that moves (no drawing) */
 function fjUpdate(dt){const G=FJG;const me=G.me;
     /* my controls */if(me&&!me.dead&&G.mode==="fly"){const k=G.keys;let sx=G.stick.x,sy=G.stick.y;if($("#fjctl").classList.contains("tilt")){const t=fjTiltRead();if(t){sx=t.x;sy=t.y}}if(k.ArrowLeft||k.a)sx=-1;if(k.ArrowRight||k.d)sx=1;if(k.ArrowUp||k.w)sy=-1;if(k.ArrowDown||k.s)sy=1;me.stick.x=sx;me.stick.y=sy;me.fire=(G.btn.gun||k[" "])?1:0;me.bo=G.btn.bo||k.Shift?1:0;if(G.mapOn)fjAutopilot(me);fjCaveStep(me,dt);
-      /* Cass gets an automatic pull-up if he's about to hit the ground */if(!me.cave&&G.zone!=="space"&&!(me.air&&(me.gnd||fjNearStrip(me.p,3000)))){const ah=me.p.clone().addScaledVector(me.v,me.cass?1.1:.7),gh=fjInCave(ah)?-1e9:Math.max(0,fjHT(ah.x,ah.z));me.warn=ah.y<gh+40;if(me.cass&&ah.y<gh+25)me.stick.y=Math.min(me.stick.y,-.9)}else me.warn=0}
+      /* Cass gets an automatic pull-up if he's about to hit the ground */if(!me.cave&&G.zone!=="space"&&!me.hero&&!(me.air&&(me.gnd||fjNearStrip(me.p,3000)))){const ah=me.p.clone().addScaledVector(me.v,me.cass?1.1:.7),gh=fjInCave(ah)?-1e9:Math.max(0,fjHT(ah.x,ah.z));me.warn=ah.y<gh+40;if(me.cass&&ah.y<gh+25)me.stick.y=Math.min(me.stick.y,-.9)}else me.warn=0}
     for(const j of G.jets.slice()){const same=j===me||fjSameZone(j,me);if(!same&&j.kind!=="remote")continue;if(same){fjBeacon(j,dt);fjNavGlow(j)}if(j.kind==="monster"){fjMonStep(j,dt);continue}if(j.kind==="alien"){fjAlienStep(j,dt);continue}if(j.kind==="remote")continue;if(j.kind==="guide"){fjGuideStep(j,dt);continue}j.inv=Math.max(0,j.inv-dt);j.misT=Math.max(0,j.misT-dt);j.flT=Math.max(0,j.flT-dt);
       if(j.dead){j.rt-=dt;if(j.rt<=0&&!G.over&&G.mode==="fly"){if(j.kind==="me"&&G.zone==="space")fjToEarth(1);fjRespawn(j);if(j.kind==="me"){G.cam=null;if(G.sub!=="airline")fjMsg("✈️ BACK IN THE AIR!",1.5)}}continue}
-      if(j.kind==="ai")fjAI(j,dt);fjFly(j,dt);fjLockStep(j,dt);fjGun(j,dt);
+      if(j.kind==="ai")fjAI(j,dt);fjFly(j,dt);if(j.hero)fjHeroPowers(j,dt);else{fjLockStep(j,dt);fjGun(j,dt)}
       /* slowly re-arm */j.regM+=dt;if(j.regM>12&&j.mis<(j.tp?j.tp.mis:6)){j.regM=0;j.mis++;j.mesh.userData.missiles.forEach((m,i)=>m.visible=i<j.mis)}j.regF+=dt;if(j.regF>7&&j.fl<8){j.regF=0;j.fl++}
       const hit=fjCrash(j);if(hit&&j.inv<=0)fjDown(j,null,hit);else if(hit){j.pitch=Math.max(j.pitch,.5);j.p.y=Math.max(j.p.y,fjH(j.p.x,j.p.z)+6)}
       fjBonus(j);fjTrails(j,dt);if(j.hp<j.hpM*.45&&Math.random()<.6)FJE.fx.add({x:j.p.x,y:j.p.y,z:j.p.z,vx:0,vy:4,vz:0,t:0,life:2.2,s0:5,s1:26,c:[.2,.2,.22],a:.6,drag:.5})}
@@ -5804,13 +5918,13 @@ function fjUpdate(dt){const G=FJG;const me=G.me;
     fjBulStep(dt);fjMisStep(dt);fjFlrStep(dt);fjPuStep(dt);
     }
 /* wingtip vapour trails when turning hard or going fast */
-function fjTrails(j,dt){const pull=Math.abs(j.bank)>.7||Math.abs(j.stick.y)>.6||j.spd>240;if(!pull||Math.random()>.85)return;for(const s of[-1,1]){const tip=new THREE.Vector3(s*7.3,-.1,-4.8).applyEuler(j.mesh.rotation).add(j.p);
+function fjTrails(j,dt){if(j.hero)return;const pull=Math.abs(j.bank)>.7||Math.abs(j.stick.y)>.6||j.spd>240;if(!pull||Math.random()>.85)return;for(const s of[-1,1]){const tip=new THREE.Vector3(s*7.3,-.1,-4.8).applyEuler(j.mesh.rotation).add(j.p);
   FJE.fx.add({x:tip.x,y:tip.y,z:tip.z,vx:0,vy:0,vz:0,t:0,life:.9,s0:1.6,s1:4,c:[1,1,1],a:.45,drag:1})}}
 function fjCamera(dt){const G=FJG,cam=FJR.cam,me=G.me;if(!me)return;let tgt=me.p;const vw=fjView(),looking=!me.dead&&(G.btn.look||G.keys.l||G.keys.L);if(!me.dead)me.mesh.visible=!(vw==="cockpit"&&!looking);if(looking){const t=fjFocus();if(t){fjLookCam(dt,me,t);return}}if(me.dead){/* watch the wreck from a little way off */const a=G.t*.4;const want=new THREE.Vector3(me.p.x+Math.cos(a)*120,me.p.y+50,me.p.z+Math.sin(a)*120);cam.position.lerp(want,1-Math.exp(-dt*2));cam.lookAt(me.p);return}if(vw==="cockpit")return fjCockpitCam(dt,me);if(vw==="flyby"&&!me.cave)return fjFlybyCam(dt,me);const far=vw==="far"?1:0;
-  const cp=Math.cos(me.pitch),f=new THREE.Vector3(Math.sin(me.yaw)*cp,Math.sin(me.pitch),Math.cos(me.yaw)*cp),want=me.p.clone().addScaledVector(f,me.air?(far?-170:-95):(far?-85:-34)).add(new THREE.Vector3(0,(me.air?(far?44:24):(far?24:9))+Math.max(0,-me.pitch)*6,0));
-  if(me.cave){for(let k=0;k<5;k++){const cw=fjCaveAt(want);if(cw&&cw.f<.8)break;want.lerp(me.p,.45)}}else if(G.zone!=="space"){const minY=Math.max(0,fjH(want.x,want.z))+6;if(want.y<minY)want.y=minY}
-  if(!G.cam){cam.position.copy(want);G.cam=1}else cam.position.lerp(want,1-Math.exp(-dt*7));
-  const look=me.p.clone().addScaledVector(f,me.air?150:60);cam.up.set(Math.sin(me.bank)*.25*-Math.cos(me.yaw)*0,1,0);cam.lookAt(look);cam.rotateZ(-me.bank*.35);
+  const cp=Math.cos(me.pitch),f=new THREE.Vector3(Math.sin(me.yaw)*cp,Math.sin(me.pitch),Math.cos(me.yaw)*cp),want=me.p.clone().addScaledVector(f,me.hero?(far?-22:-6):me.air?(far?-170:-95):(far?-85:-34)).add(new THREE.Vector3(0,(me.hero?(far?6:1.9):me.air?(far?44:24):(far?24:9))+Math.max(0,-me.pitch)*6,0));
+  if(me.cave){for(let k=0;k<5;k++){const cw=fjCaveAt(want);if(cw&&cw.f<.8)break;want.lerp(me.p,.45)}}else if(G.zone!=="space"){const minY=Math.max(0,me.hero?fjHeroSurf(want.x,want.z,want.y):fjH(want.x,want.z))+(me.hero?1.2:6);if(want.y<minY)want.y=minY}
+  if(!G.cam){cam.position.copy(want);G.cam=1}else cam.position.lerp(want,1-Math.exp(-dt*(me.hero?22:7)));
+  const look=me.p.clone().addScaledVector(f,me.hero?25:me.air?150:60);cam.up.set(Math.sin(me.bank)*.25*-Math.cos(me.yaw)*0,1,0);cam.lookAt(look);cam.rotateZ(-me.bank*.35);
   const fov=66+(me.bo&&me.boost>0?10:0)+(me.spd-175)*.03;cam.fov+=(fov-cam.fov)*Math.min(1,dt*3);
   if(G.shake>0){G.shake=Math.max(0,G.shake-dt*2);cam.position.x+=(Math.random()-.5)*G.shake*3;cam.position.y+=(Math.random()-.5)*G.shake*3}cam.updateProjectionMatrix()}
 /* behind the menu: a slow flight over the island */
@@ -5837,8 +5951,8 @@ function fjHud(dt){const G=FJG,c=$("#fjh");if(!c||!G.W)return;const x=c.getConte
   /* hit: red edges */if(me.hitT>0){me.hitT-=dt;const g=x.createRadialGradient(W/2,H/2,Math.min(W,H)*.35,W/2,H/2,Math.max(W,H)*.7);g.addColorStop(0,"rgba(255,0,0,0)");g.addColorStop(1,`rgba(255,40,20,${me.hitT*1.6})`);x.fillStyle=g;x.fillRect(0,0,W,H)}
   const ink="rgba(140,255,170,.92)",warnC="rgba(255,90,70,.95)";x.lineWidth=2;x.font="800 13px system-ui,sans-serif";x.textAlign="center";
   /* score */const them=G.sub==="together"||G.sub==="monster"?"":G.live?fjOther():G.sub==="ai"?"SHADOW":"";if(G.sub==="together"){const nw=W<560,sy=nw?64:10;x.fillStyle="rgba(0,0,0,.4)";x.beginPath();x.roundRect?x.roundRect(W/2-100,sy,200,30,15):x.rect(W/2-100,sy,200,30);x.fill();x.font="900 15px system-ui,sans-serif";x.fillStyle="#fff";x.fillText("🤝 FLYING WITH "+fjOther().toUpperCase(),W/2,sy+21)}if(them){x.fillStyle="rgba(0,0,0,.4)";x.beginPath();const nw=W<560,sw=nw?170:220,sy=nw?64:10;x.roundRect?x.roundRect(W/2-sw/2,sy,sw,30,15):x.rect(W/2-sw/2,sy,sw,30);x.fill();x.font=`900 ${nw?15:17}px system-ui,sans-serif`;x.fillStyle="#fff";x.fillText(`YOU ${G.score.me} – ${G.score.them} ${them.toUpperCase()}`,W/2,sy+21)}
-  /* health and boost */x.textAlign="left";x.font="800 11px system-ui,sans-serif";x.fillStyle="rgba(0,0,0,.45)";x.fillRect(58,14,150,30);const hp=Math.max(0,me.hp/me.hpM);x.fillStyle=hp<.35?warnC:"#5ee17a";x.fillRect(62,18,142*hp,10);x.fillStyle="#ffd23f";x.fillRect(62,32,142*me.boost,6);x.fillStyle="#fff";x.fillText("ARMOUR",62,54);
-  if(me.inv>0){x.strokeStyle="rgba(120,200,255,.8)";x.lineWidth=3;x.beginPath();x.arc(W/2,H/2,Math.min(W,H)*.42,0,7);x.stroke();x.lineWidth=2;x.textAlign="center";x.fillStyle="rgba(150,210,255,.95)";x.fillText("🛡️ SHIELD",W/2,H*.5+Math.min(W,H)*.42+14)}
+  /* health and boost */x.textAlign="left";x.font="800 11px system-ui,sans-serif";x.fillStyle="rgba(0,0,0,.45)";x.fillRect(58,14,150,30);const hp=Math.max(0,me.hp/me.hpM);x.fillStyle=hp<.35?warnC:"#5ee17a";x.fillRect(62,18,142*hp,10);x.fillStyle="#ffd23f";x.fillRect(62,32,142*me.boost,6);x.fillStyle="#fff";x.fillText(me.hero?"💪 UNBREAKABLE":"ARMOUR",62,54);
+  if(me.inv>0&&!me.hero){x.strokeStyle="rgba(120,200,255,.8)";x.lineWidth=3;x.beginPath();x.arc(W/2,H/2,Math.min(W,H)*.42,0,7);x.stroke();x.lineWidth=2;x.textAlign="center";x.fillStyle="rgba(150,210,255,.95)";x.fillText("🛡️ SHIELD",W/2,H*.5+Math.min(W,H)*.42+14)}
   /* speed and height */x.textAlign="left";x.fillStyle=ink;x.font="800 13px system-ui,sans-serif";{const th=$("#fjthr"),sx=th?(W<560?th.offsetLeft:th.offsetLeft+th.offsetWidth+10):14,sy=th?(W<560?th.offsetTop+th.offsetHeight+18:th.offsetTop+22):86;x.fillText(Math.round(me.spd*3.6)+" km/h",sx,sy);x.fillText(G.zone==="space"?"🚀 IN SPACE":me.cave?"⛏️ IN THE MINE":Math.round(me.p.y-Math.max(0,fjH(me.p.x,me.p.z)))+" m up",sx,sy+18)}
   /* gun sight: where the bullets go */const cp=Math.cos(me.pitch),f=new THREE.Vector3(Math.sin(me.yaw)*cp,Math.sin(me.pitch),Math.cos(me.yaw)*cp),aim=fjProj(me.p.clone().addScaledVector(f,700));
   if(aim.front){x.strokeStyle=ink;x.beginPath();x.arc(aim.x,aim.y,14,0,7);x.stroke();x.beginPath();x.moveTo(aim.x-24,aim.y);x.lineTo(aim.x-16,aim.y);x.moveTo(aim.x+16,aim.y);x.lineTo(aim.x+24,aim.y);x.moveTo(aim.x,aim.y-24);x.lineTo(aim.x,aim.y-16);x.stroke();x.fillStyle=ink;x.fillRect(aim.x-1.5,aim.y-1.5,3,3)}
@@ -5856,7 +5970,7 @@ function fjHud(dt){const G=FJG,c=$("#fjh");if(!c||!G.W)return;const x=c.getConte
   if(me.warn&&!me.dead){x.textAlign="center";x.font="900 24px system-ui,sans-serif";x.fillStyle=Math.floor(G.t*5)%2?warnC:"#fff";x.fillText("PULL UP!",W/2,H*.68)}
   /* radar (top right): tap it for the map */fjRadar(x,W,H,me);
   /* the parachute after a knock-out */if(FJE.chute){const ch=FJE.chute,pp=ch.p.clone().add(new THREE.Vector3(0,-ch.t*22,0)),s=fjProj(pp);if(s.front){const d=Math.max(1,pp.distanceTo(FJR.cam.position)),z=Math.max(6,Math.min(30,3000/d));x.fillStyle="#ff7a3c";x.beginPath();x.arc(s.x,s.y,z,Math.PI,0);x.fill();x.strokeStyle="#fff";x.lineWidth=1;x.beginPath();x.moveTo(s.x-z,s.y);x.lineTo(s.x,s.y+z*1.3);x.lineTo(s.x+z,s.y);x.stroke();x.fillStyle="#333";x.fillRect(s.x-z*.12,s.y+z*1.2,z*.24,z*.35)}}
-  /* button counts */const mn=$("#fjmn"),fn=$("#fjfn");if(mn)mn.textContent=me.mis;if(fn)fn.textContent=me.fl;$("#fjmis").classList.toggle("ready",!!me.lock);$("#fjmis").classList.toggle("empty",me.mis<=0)}
+  /* button counts */const mn=$("#fjmn"),fn=$("#fjfn");if(me.hero){const fb=$("#fjfl"),h=me.hs.ground?"🚀<small>FLY</small>":"⬇️<small>LAND</small>";if(fb&&fb.dataset.h!==h){fb.dataset.h=h;fb.innerHTML=h}if(mn)mn.textContent="";$("#fjmis").classList.remove("ready","empty");return}if(mn)mn.textContent=me.mis;if(fn)fn.textContent=me.fl;$("#fjmis").classList.toggle("ready",!!me.lock);$("#fjmis").classList.toggle("empty",me.mis<=0)}
 /* ---------- sound: a jet roar that rises with the boost, and gun bursts ---------- */
 let FJS=null;function fjSound(on){try{if(!on){if(FJS){FJS.g.gain.setTargetAtTime(0,AC.currentTime,.2)}return}if(typeof SND!=="undefined"&&!SND)return;AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.state!=="running")AC.resume();
   if(!FJS){const n=AC.sampleRate*2,b=AC.createBuffer(1,n,AC.sampleRate),d=b.getChannelData(0);let l=0;for(let i=0;i<n;i++){l=(l+.02*(Math.random()*2-1))/1.02;d[i]=l*3.5}const src=AC.createBufferSource();src.buffer=b;src.loop=true;
@@ -5872,7 +5986,7 @@ function fjListen(){if(typeof GNAME!=="undefined")GNAME.jet="SKY ACES";
   db.doc("games/fjl").onSnapshot(s=>{FJD.live=s.exists?s.data():null;fjOnLive()},er);
   for(const k of["X","O"])db.doc("games/fjp_"+k).onSnapshot(s=>{if(k!==me()&&s.exists)fjOnPos(s.data())},er);
   db.doc("games/fjwin").onSnapshot(s=>{FJD.win=s.exists?s.data():{}},er);
-  FJD.jet=FJD.jet||{};for(const k of["X","O"])db.doc("games/fjjet_"+k).onSnapshot(s=>{if(s.exists)FJD.jet[k]=s.data()},er)}
+  FJD.jet=FJD.jet||{};for(const k of["X","O"])db.doc("games/fjjet_"+k).onSnapshot(s=>{if(s.exists)FJD.jet[k]=s.data()},er);FJD.hero=FJD.hero||{};for(const k of["X","O"])db.doc("games/fjhero_"+k).onSnapshot(s=>{if(s.exists)FJD.hero[k]=s.data()},er)}
 function fjLiveNew(c){return db.doc("games/fjl").set({id:c&&c.id||Date.now(),at:Date.now(),rX:0,rO:0,s:0,qX:0,qO:0,fr:c&&c.mode==="team"?1:c&&c.mode==="monster"?2:0,mk:c&&c.mon||"crab"})}
 function fjLiveAsk(kind,mk){const mode=kind==="monster"?"monster":kind?"team":"",mon=mode==="monster"?(mk||"crab"):undefined;if(typeof chSend!=="function"){fjLiveNew({id:Date.now(),mode,mon});return}chSend("jet",mode?(mon?{mode,mon}:{mode}):null);fjMsg((mode==="monster"?"🦀 Monster team invite":mode?"🤝 Invite":"⚔️ Challenge")+" sent to "+fjOther()+"!",2.5)}
 const fjLiveFresh=()=>{const L=FJD.live;return!!(L&&L.id&&Date.now()-(L.at||0)<15*60000&&!L.qX&&!L.qO&&fjSet().done!==L.id)};
@@ -5897,18 +6011,18 @@ function fjLiveStep(dt){const G=FJG,F=G.foe,me=G.me;if(!F)return;
     if(F.p.distanceTo(new THREE.Vector3(tx,ty,tz))>400)F.p.set(tx,ty,tz);else{F.p.x+=(tx-F.p.x)*k;F.p.y+=(ty-F.p.y)*k;F.p.z+=(tz-F.p.z)*k}
     const lerpA=(a,b)=>{let d=b-a;d=Math.atan2(Math.sin(d),Math.cos(d));return a+d*k};F.pitch=lerpA(F.pitch,n.r[0]);F.yaw=lerpA(F.yaw,n.r[1]);F.bank=lerpA(F.bank,n.r[2]);F.v.set(...n.v);F.spd=n.s;F.bo=n.bo;F.hp=n.hp;F.hpM=n.hm;F.inv=n.inv?1:0;
     F.mesh.position.copy(F.p);F.mesh.rotation.set(-F.pitch,F.yaw,F.bank,"YXZ");F.mesh.visible=!F.dead;F.mesh.userData.flames.forEach(f=>{const s=(F.bo?1:.35)*(.85+Math.random()*.3);f.scale.set(1,s,1);f.position.z=(F.mesh.userData.fz+2)-2*s});
-    if(!F.dead)fjTrails(F,dt);if(n.gf&&!F.dead){F.gunT-=dt;if(F.gunT<=0){F.gunT=.075;const f=F.v.clone().normalize();for(const s of[-1,1]){const off=new THREE.Vector3(s*1.4,-.2,4).applyEuler(F.mesh.rotation);G.bul.push({p:F.p.clone().add(off),v:f.clone().multiplyScalar(1100).add(F.v),life:1.1,own:F,vis:1})}}}}
+    if(F.hero&&F.hs){F.fire=!!n.gf&&!F.dead;fjHeroPlace(F,dt);fjHeroPowers(F,dt)}if(!F.dead)fjTrails(F,dt);if(n.gf&&!F.dead&&!F.hero){F.gunT-=dt;if(F.gunT<=0){F.gunT=.075;const f=F.v.clone().normalize();for(const s of[-1,1]){const off=new THREE.Vector3(s*1.4,-.2,4).applyEuler(F.mesh.rotation);G.bul.push({p:F.p.clone().add(off),v:f.clone().multiplyScalar(1100).add(F.v),life:1.1,own:F,vis:1})}}}}
   if(Date.now()-G.lastPkt>12000&&!G.over&&left<=0){if(G.peace)return fjSoloOn("Lost touch with "+fjOther()+"'s phone — flying on your own now");G.over=1;fjEnd(false,"Lost touch with "+fjOther()+"'s phone.")}
   fjLiveSend(0)}
 /* my jet, a few times a second (straight away when something happens) */
 function fjLiveSend(force){const G=FJG;if(!G||!G.live||!G.me)return;const now=performance.now();if(!force&&now-G.netT<160)return;if(force===1&&now-G.netT<70)return;G.netT=now;const j=G.me,r=v=>Math.round(v*10)/10;
   const ms=G.mis.filter(m=>m.own===j).slice(0,6).map(m=>[m.id,r(m.p.x),r(m.p.y),r(m.p.z),r(m.v.x),r(m.v.y),r(m.v.z),m.tgt&&m.tgt===G.foe?1:0]);
   db.doc("games/fjp_"+me()).set({id:G.lid,k:++G.seq,p:[r(j.p.x),r(j.p.y),r(j.p.z)],v:[r(j.v.x),r(j.v.y),r(j.v.z)],r:[Math.round(j.pitch*1000)/1000,Math.round(j.yaw*1000)/1000,Math.round(j.bank*1000)/1000],s:Math.round(j.spd),bo:j.bo&&j.boost>0?1:0,
-    hp:Math.max(0,Math.round(j.hp)),hm:j.hpM,dead:j.dead?1:0,dn:G.myDeaths||0,inv:j.inv>0?1:0,ev:G.evs.slice(-8),ms,fc:G.fcSent||0,gf:j.fire&&!j.dead?1:0,tz:G.tsync||[],zn:G.zone||"earth",mn:G.mon&&!G.mon.remote?[r(G.mon.p.x),r(G.mon.p.y),r(G.mon.p.z),Math.round(G.mon.yaw*1000)/1000,Math.round(G.mon.hp),G.mon.st==="rise"||G.mon.st==="arrive"?0:1,G.mon.smash,G.mon.dead?1:0,Math.round(G.mon.pitch*1000)/1000,Math.round(G.mon.bank*1000)/1000,Math.round(G.mon.base)]:null}).catch(er)}
+    hp:Math.max(0,Math.round(j.hp)),hm:j.hpM,dead:j.dead?1:0,dn:G.myDeaths||0,inv:j.inv>0?1:0,ev:G.evs.slice(-8),ms,fc:G.fcSent||0,gf:j.fire&&!j.dead?1:0,hz:j.hero?1:0,hg:j.hs&&j.hs.ground?1:0,tz:G.tsync||[],zn:G.zone||"earth",mn:G.mon&&!G.mon.remote?[r(G.mon.p.x),r(G.mon.p.y),r(G.mon.p.z),Math.round(G.mon.yaw*1000)/1000,Math.round(G.mon.hp),G.mon.st==="rise"||G.mon.st==="arrive"?0:1,G.mon.smash,G.mon.dead?1:0,Math.round(G.mon.pitch*1000)/1000,Math.round(G.mon.bank*1000)/1000,Math.round(G.mon.base)]:null}).catch(er)}
 /* I hit them: tell their phone */
 function fjLiveHit(dmg,how){const G=FJG;G.evSeq=(G.evSeq||0)+1;G.evs.push({n:G.evSeq,d:Math.round(dmg*10)/10,h:how});if(G.evs.length>8)G.evs.shift();if(how==="missile")sfx("b_boom");fjLiveSend(1)}
 function fjOnPos(d){const G=FJG;if(!G||!G.live||d.id!==G.lid||!G.foe)return;const F=G.foe,me=G.me;G.lastPkt=Date.now();
-  if(!F.net)F.p.set(...d.p);F.net={...d,at:Date.now()};{const zn=d.zn||"earth";if(fjZoneOf(F)!==zn){F.zone=zn;if(F.mesh.parent)F.mesh.parent.remove(F.mesh);(zn==="space"?fjSpaceBuild().scene:FJR.scene).add(F.mesh);F.p.set(...d.p)}}if(d.tz)fjTownApply(d.tz);
+  if(!F.net)F.p.set(...d.p);F.net={...d,at:Date.now()};fjHeroRemote(F,d);{const zn=d.zn||"earth";if(fjZoneOf(F)!==zn){F.zone=zn;if(F.mesh.parent)F.mesh.parent.remove(F.mesh);(zn==="space"?fjSpaceBuild().scene:FJR.scene).add(F.mesh);F.p.set(...d.p)}}if(d.tz)fjTownApply(d.tz);
   if(d.mn)G.monNet=d.mn;/* hits they landed on me (or on the monster) */for(const e of d.ev||[])if(e.n>G.evDone){G.evDone=e.n;if(e.h==="mon"){if(G.mon&&!G.mon.remote)fjMonHit(G.mon,e.d,"net",null);continue}if(!me.dead&&me.inv<=0){me.hp-=e.d;me.hitT=.25;G.shake=Math.max(G.shake||0,e.h==="missile"?1:.25);if(e.h==="missile")fjBoom(me.p.x,me.p.y,me.p.z,0);if(me.hp<=0)fjDown(me,F,e.h)}}
   /* they went down */if(d.dead&&!F.dead){F.dead=1;fjBoom(F.p.x,F.p.y,F.p.z,1);F.mesh.visible=false;FJE.chute={p:F.p.clone(),t:0};if(G.peace)fjMsg("💥 "+fjOther().toUpperCase()+" CRASHED! Back in a moment…",2.5);else{sfx("win");fjMsg("🎯 "+fjOther().toUpperCase()+" IS DOWN! +1",2.5)}}else if(!d.dead&&F.dead){F.dead=0;F.p.set(...d.p)}
   if(!G.peace&&(d.dn||0)!==G.score.me){G.score.me=d.dn||0;fjCheckEnd()}
