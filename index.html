@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta name="app-build" content="19 Nov 01:47 PT"><meta charset="utf-8">
+<html lang="en"><head><meta name="app-build" content="19 Nov 01:48 PT"><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Legends"><meta name="theme-color" content="#14102e">
@@ -5258,7 +5258,8 @@ function fjGlaDeckY(dk,x,z){let best=null,bd=1e9;for(const b of dk){const u=(x-b
    glasgow.bin.gz holds every building outline (as blocks), road, path, railway, bridge, river, park and tree for the island,
    from OpenStreetMap (© OpenStreetMap contributors, ODbL). If it can't be loaded, the older street-gazetteer Glasgow is used. */
 let FJ_GO={ok:0};
-function fjGloLoad(){if(FJ_GO.p)return FJ_GO.p;FJ_GO.p=(async()=>{try{const r=await fetch("glasgow.bin.gz");if(!r.ok)throw new Error("http "+r.status);let buf=await r.arrayBuffer();let u=new Uint8Array(buf);
+function fjGloLoad(){if(FJ_GO.p)return FJ_GO.p;FJ_GO.p=(async()=>{try{let buf=null;try{const r=await fetch("glasgow.bin.gz");if(r.ok)buf=await r.arrayBuffer()}catch(e){}
+      if(!buf||new Uint8Array(buf)[0]!==0x1f){const r=await fetch("glasgow.json");if(!r.ok)throw new Error("http "+r.status);const b=atob(await r.json()),a=new Uint8Array(b.length);for(let i=0;i<b.length;i++)a[i]=b.charCodeAt(i);buf=a.buffer}let u=new Uint8Array(buf);
       if(u[0]===0x1f&&u[1]===0x8b){if(typeof DecompressionStream==="undefined")throw new Error("no gzip");buf=await new Response(new Blob([buf]).stream().pipeThrough(new DecompressionStream("gzip"))).arrayBuffer();u=new Uint8Array(buf)}
       if(String.fromCharCode(u[0],u[1],u[2],u[3])!=="GLA1")throw new Error("bad file");const hl=new DataView(buf).getUint32(4,true),hdr=JSON.parse(new TextDecoder().decode(u.subarray(8,8+hl))),base=8+hl,A={};
       for(const k in hdr.sec){const[o,n,t]=hdr.sec[k];A[k]=t==="uint16"?new Uint16Array(buf,base+o,n):new Uint8Array(buf,base+o,n)}Object.assign(FJ_GO,A,{hdr,ok:1})}catch(e){FJ_GO.ok=0;FJ_GO.err=String(e)}})();return FJ_GO.p}
