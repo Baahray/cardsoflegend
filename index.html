@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta name="app-build" content="20 Nov 13:13 PT"><meta charset="utf-8">
+<html lang="en"><head><meta name="app-build" content="20 Nov 13:56 PT"><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Legends"><meta name="theme-color" content="#14102e">
@@ -5867,10 +5867,12 @@ function fjUfoRipple(p,j){const T=THREE,C=FJ_UFO_COL[j&&j.who]||FJ_UFO_COL.X,m=n
 function fjUfoRippleStep(dt){const R=FJG.ripples;if(!R)return;for(let i=R.length-1;i>=0;i--){const r=R[i];r.t+=dt;const k=r.t/1.1;r.m.scale.setScalar(10+k*70);r.m.material.opacity=.5*(1-k);r.ring.scale.setScalar(12+k*160);r.ring.material.opacity=.8*(1-k);if(k>=1){r.m.parent.remove(r.m);r.ring.parent.remove(r.ring);R.splice(i,1)}}}
 /* tap on the sky or the ground (right-hand side of the screen) to warp there */
 function fjUfoTapInit(){const el=$("#fjc");if(!el||el.dataset.ufotap)return;el.dataset.ufotap=1;let d0=null;
-  el.addEventListener("pointerdown",e=>{const G=FJG;if(!G||G.mode!=="fly"||!G.me||!(G.me.ufo||G.me.hero)||e.target.closest(".fjb,.fjmenu,.dfx,.fjmapw,.fjthr,.fjufoc"))return;d0={x:e.clientX,y:e.clientY,t:e.timeStamp,id:e.pointerId}});
+  el.addEventListener("pointerdown",e=>{const G=FJG;if(!G||G.mode!=="fly"||!G.me||e.target.closest(".fjb,.fjmenu,.dfx,.fjmapw,.fjthr,.fjufoc"))return;d0={x:e.clientX,y:e.clientY,t:e.timeStamp,id:e.pointerId}});
   el.addEventListener("pointercancel",e=>{if(d0&&e.pointerId===d0.id)d0=null});
   el.addEventListener("pointerup",e=>{const G=FJG;if(!d0||e.pointerId!==d0.id)return;const ok=e.timeStamp-d0.t<380&&Math.hypot(e.clientX-d0.x,e.clientY-d0.y)<16;d0=null;if(!ok||!G.me||G.me.dead||G.mode!=="fly")return;
     const q=fjLocal({clientX:e.clientX,clientY:e.clientY}),left=q.x<G.W*.5;
+    /* a jet: tap an enemy to pick it as the missile target */if(!G.me.ufo&&!G.me.hero){const me=G.me,cam=FJR.cam;cam.updateMatrixWorld();let best=null,bd=left?40:70;for(const t of G.jets){if(t===me||t.dead||!fjSameZone(t,me)||t.kind==="guide"||t.kind==="home"||(G.peace&&t.kind!=="alien"&&t.kind!=="monster"))continue;const n=t.p.clone().project(cam);if(n.z>1||n.z<-1)continue;const d=Math.hypot((n.x+1)/2*G.W-q.x,(1-n.y)/2*G.H-q.y);if(d<bd){bd=d;best=t}}
+      if(best){me.lockPick=best;me.lockPickT=G.t;sfx("tap");fjMsg("🎯 TARGET PICKED — keep it in front of you to lock",1.4)}return}
     /* touched something alive and moving? the aim locks onto it and follows it */const T=fjAimPick(q.x,q.y,left?30:50);if(T){G.lock=T;G.aimT=performance.now();sfx("tap");fjMsg("🎯 LOCKED ON",.7);return}
     if(left)return;G.lock=null;const nx=q.x/G.W*2-1,ny=-(q.y/G.H*2-1);
     if(!G.me.ufo){G.aim={x:Math.max(-.94,Math.min(.94,nx)),y:Math.max(-.9,Math.min(.9,ny))};G.aimT=performance.now();return}
@@ -6423,7 +6425,8 @@ function fjBulStep(dt){const G=FJG,B=G.bul,M=new THREE.Matrix4(),Q=new THREE.Qua
   for(const b of B){if(n>=240)break;Q.setFromUnitVectors(Z,b.v.clone().normalize());M.compose(b.p,Q,S1);FJR.bm.setMatrixAt(n++,M)}FJR.bm.count=n;FJR.bm.instanceMatrix.needsUpdate=true}
 /* ---------- missiles ---------- */
 function fjLockStep(j,dt){const G=FJG;if(j.dead){j.lockT=0;j.lock=null;return}const need=j.cass?.6:j.kind==="ai"?[1.6,1.2,.9][j.diff]:1;let best=null,ba=.36;
-  const f=j.v.clone().normalize();for(const e of G.jets){if(e===j||e.dead||(FJG.peace&&e.kind!=="alien"&&e.kind!=="monster")||!fjSameZone(e,j)||e.kind==="guide")continue;const d=e.p.clone().sub(j.p),L=d.length();if(L>2800||L<60)continue;const a=Math.acos(Math.max(-1,Math.min(1,d.dot(f)/L)));if(a<ba&&fjLos(j.p,e.p)){ba=a;best=e}}
+  const f=j.v.clone().normalize();{const P=j.lockPick;if(P&&(P.dead||!G.jets.includes(P)||G.t-(j.lockPickT||0)>12))j.lockPick=null;else if(P&&fjSameZone(P,j)){const d=P.p.clone().sub(j.p),L=d.length(),a=Math.acos(Math.max(-1,Math.min(1,d.dot(f)/Math.max(1,L))));if(L<3200&&L>40&&a<1.05&&fjLos(j.p,P.p)){best=P;ba=-1}}}
+  for(const e of G.jets){if(e===j||e.dead||(FJG.peace&&e.kind!=="alien"&&e.kind!=="monster")||!fjSameZone(e,j)||e.kind==="guide")continue;const d=e.p.clone().sub(j.p),L=d.length();if(L>2800||L<60)continue;const a=Math.acos(Math.max(-1,Math.min(1,d.dot(f)/L)));if(a<ba&&fjLos(j.p,e.p)){ba=a;best=e}}
   if(best&&best===j.lockTgt){j.lockT+=dt/(best.lockMul||1)}else{j.lockTgt=best;j.lockT=0}j.lock=best&&j.lockT>=need?best:null;j.lockNeed=need;
   if(j.kind==="me"){if(j.lock&&!j.lockBeep){j.lockBeep=1;sfx("sp")}if(!j.lock)j.lockBeep=0}}
 /* can a missile see from a to b (not behind a mountain)? */
@@ -6498,7 +6501,8 @@ function fjPowerups(S){const T=THREE,list=[],kinds=[["mis",0x4fb3ff,"🚀"],["re
 function fjPuStep(dt){const G=FJG;for(const u of FJR.pu){u.ring.rotation.y+=dt*1.6;u.ring.rotation.x=Math.sin(G.t+u.g.position.x)*.4;u.core.rotation.y-=dt*2;if(u.t>0){u.t-=dt;u.g.visible=u.t<=0;continue}
     const j=G.me;if(!j||j.dead)continue;if(j.p.distanceTo(u.g.position)<45){u.t=25;u.g.visible=false;sfx("win");if(u.k==="mis"){j.mis=6;j.mesh.userData.missiles.forEach(m=>m.visible=true);fjMsg("🚀 MISSILES FULL!",1.5)}else if(u.k==="rep"){j.hp=j.hpM;fjMsg("🔧 REPAIRED!",1.5)}else{j.inv=Math.max(j.inv,8);fjMsg("🛡️ SHIELD FOR 8 SECONDS!",1.5)}}}}
 /* ---------- each frame ---------- */
-function fjFrame(dt){const G=FJG;if(!G||G.dead||!FJR||!FJR.built)return;G.t+=dt;FJW.U.time.value=G.t;const cam=FJR.cam;
+function fjFrame(dt){try{fjFrame0(dt)}catch(e){console.error("frame",e);const G=FJG;if(G){G.errN=(G.errN||0)+1}}}
+function fjFrame0(dt){const G=FJG;if(!G||G.dead||!FJR||!FJR.built)return;G.t+=dt;FJW.U.time.value=G.t;const cam=FJR.cam;
   if(FJW.falls)FJW.falls.tex.offset.y=(G.t*.9)%1;
   const sd=(G.slow&&G.mode==="fly"&&G.sub!=="live"?dt*.4:dt)*(G.warp?fjUfoWarpScale():1);if(G.zone!=="space")fjIslesStep(sd);if(!(G.mapOn&&!G.live)&&G.mode!=="hangar"&&G.zone!=="space")fjTownStep(sd);if(G.mode==="fly"||G.mode==="end"){if(!(G.mapOn&&!G.live))fjUpdate(sd);fjSaneCheck();fjCamera(dt);if(G.warp)fjUfoWarpStep(dt);fjUfoRippleStep(dt);fjEngineSound()}
   else if(G.mode==="hangar")fjHangarCam(dt);else if(G.mode==="heroshop")fjHeroShopCam(dt);else fjTour(dt);
@@ -6636,9 +6640,9 @@ function fjLiveStep(dt){const G=FJG,F=G.foe,me=G.me;if(!F)return;
   fjLiveSend(0)}
 /* my jet, a few times a second (straight away when something happens) */
 function fjLiveSend(force){const G=FJG;if(!G||!G.live||!G.me)return;const now=performance.now();if(!force&&now-G.netT<160)return;if(force===1&&now-G.netT<70)return;G.netT=now;const j=G.me,r=v=>Math.round(v*10)/10;
-  const ms=G.mis.filter(m=>m.own===j).slice(0,6).map(m=>[m.id,r(m.p.x),r(m.p.y),r(m.p.z),r(m.v.x),r(m.v.y),r(m.v.z),m.tgt&&m.tgt===G.foe?1:0]);
-  db.doc("games/fjp_"+me()).set({id:G.lid,k:++G.seq,p:[r(j.p.x),r(j.p.y),r(j.p.z)],v:[r(j.v.x),r(j.v.y),r(j.v.z)],r:[Math.round(j.pitch*1000)/1000,Math.round(j.yaw*1000)/1000,Math.round(j.bank*1000)/1000],s:Math.round(j.spd),bo:j.bo&&j.boost>0?1:0,
-    hp:Math.max(0,Math.round(j.hp)),hm:j.hpM,dead:j.dead?1:0,dn:G.myDeaths||0,inv:j.inv>0?1:0,ev:G.evs.slice(-8),ms,fc:G.fcSent||0,gf:j.fire&&!j.dead?1:0,hz:j.hero?1:0,uf:j.ufo?1:0,ap:j.fire&&j.lzEnd?[Math.round(j.lzEnd.x),Math.round(j.lzEnd.y),Math.round(j.lzEnd.z)]:0,ub:j.us&&j.us.beam?1:0,sm:j.man||j.smokeT>0?1:0,mv:j.hero&&j.mvN?[j.mvN,j.man?j.man.k:""]:0,hg:j.hs&&j.hs.ground?1:0,tz:G.tsync||[],zn:G.zone||"earth",mn:G.mon&&!G.mon.remote?[r(G.mon.p.x),r(G.mon.p.y),r(G.mon.p.z),Math.round(G.mon.yaw*1000)/1000,Math.round(G.mon.hp),G.mon.st==="rise"||G.mon.st==="arrive"?0:1,G.mon.smash,G.mon.dead?1:0,Math.round(G.mon.pitch*1000)/1000,Math.round(G.mon.bank*1000)/1000,Math.round(G.mon.base)]:null}).catch(er)}
+  const ms=G.mis.filter(m=>m.own===j).slice(0,6).map(m=>({i:m.id,p:[r(m.p.x),r(m.p.y),r(m.p.z)],v:[r(m.v.x),r(m.v.y),r(m.v.z)],t:m.tgt&&m.tgt===G.foe?1:0}));
+  try{db.doc("games/fjp_"+me()).set({id:G.lid,k:++G.seq,p:[r(j.p.x),r(j.p.y),r(j.p.z)],v:[r(j.v.x),r(j.v.y),r(j.v.z)],r:[Math.round(j.pitch*1000)/1000,Math.round(j.yaw*1000)/1000,Math.round(j.bank*1000)/1000],s:Math.round(j.spd),bo:j.bo&&j.boost>0?1:0,
+    hp:Math.max(0,Math.round(j.hp)),hm:j.hpM,dead:j.dead?1:0,dn:G.myDeaths||0,inv:j.inv>0?1:0,ev:G.evs.slice(-8),ms,fc:G.fcSent||0,gf:j.fire&&!j.dead?1:0,hz:j.hero?1:0,uf:j.ufo?1:0,ap:j.fire&&j.lzEnd?[Math.round(j.lzEnd.x),Math.round(j.lzEnd.y),Math.round(j.lzEnd.z)]:0,ub:j.us&&j.us.beam?1:0,sm:j.man||j.smokeT>0?1:0,mv:j.hero&&j.mvN?[j.mvN,j.man?j.man.k:""]:0,hg:j.hs&&j.hs.ground?1:0,tz:G.tsync||[],zn:G.zone||"earth",mn:G.mon&&!G.mon.remote?[r(G.mon.p.x),r(G.mon.p.y),r(G.mon.p.z),Math.round(G.mon.yaw*1000)/1000,Math.round(G.mon.hp),G.mon.st==="rise"||G.mon.st==="arrive"?0:1,G.mon.smash,G.mon.dead?1:0,Math.round(G.mon.pitch*1000)/1000,Math.round(G.mon.bank*1000)/1000,Math.round(G.mon.base)]:null}).catch(er)}catch(e){console.error("live send",e)}}
 /* I hit them: tell their phone */
 function fjLiveHit(dmg,how){const G=FJG;G.evSeq=(G.evSeq||0)+1;G.evs.push({n:G.evSeq,d:Math.round(dmg*10)/10,h:how});if(G.evs.length>8)G.evs.shift();if(how==="missile")sfx("b_boom");fjLiveSend(1)}
 function fjOnPos(d){const G=FJG;if(!G||!G.live||d.id!==G.lid||!G.foe)return;const F=G.foe,me=G.me;G.lastPkt=Date.now();
@@ -6647,7 +6651,7 @@ function fjOnPos(d){const G=FJG;if(!G||!G.live||d.id!==G.lid||!G.foe)return;cons
   /* they went down */if(d.dead&&!F.dead){F.dead=1;fjBoom(F.p.x,F.p.y,F.p.z,1);F.mesh.visible=false;FJE.chute={p:F.p.clone(),t:0};if(G.peace)fjMsg("💥 "+fjOther().toUpperCase()+" CRASHED! Back in a moment…",2.5);else{sfx("win");fjMsg("🎯 "+fjOther().toUpperCase()+" IS DOWN! +1",2.5)}}else if(!d.dead&&F.dead){F.dead=0;F.p.set(...d.p)}
   if(!G.peace&&(d.dn||0)!==G.score.me){G.score.me=d.dn||0;fjCheckEnd()}
   /* their flares: may pull my missiles away */if((d.fc||0)>G.foeFc){G.foeFc=d.fc;F.fl=99;F.flT=0;fjFlares(F)}
-  /* their missiles in the air: show them (and warn me) */const seen={};for(const q of d.ms||[]){seen[q[0]]=1;let m=G.mis.find(m=>m.id===q[0]&&m.remote);if(!m){const mesh=fjMissileModel(FJR.env);mesh.scale.setScalar(1.6);FJR.scene.add(mesh);m={id:q[0],remote:1,own:F,p:new THREE.Vector3(),v:new THREE.Vector3(),spd:0,mesh,life:9,age:0};G.mis.push(m)}
+  /* their missiles in the air: show them (and warn me) */const seen={};for(const q0 of d.ms||[]){const q=Array.isArray(q0)?q0:q0&&q0.p?[q0.i,...q0.p,...q0.v,q0.t]:null;if(!q)continue;seen[q[0]]=1;let m=G.mis.find(m=>m.id===q[0]&&m.remote);if(!m){const mesh=fjMissileModel(FJR.env);mesh.scale.setScalar(1.6);FJR.scene.add(mesh);m={id:q[0],remote:1,own:F,p:new THREE.Vector3(),v:new THREE.Vector3(),spd:0,mesh,life:9,age:0};G.mis.push(m)}
     m.p.set(q[1],q[2],q[3]);m.v.set(q[4],q[5],q[6]);m.tgt=q[7]?me:null;m.seen=Date.now()}
   for(const m of G.mis)if(m.remote&&!seen[m.id]&&Date.now()-m.seen>400){m.life=0;m.quiet=1}}
 function fjLiveQuit(){const G=FJG;if(G&&G.lid)db.doc("games/fjl").update({["q"+me()]:1}).catch(er)}
