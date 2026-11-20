@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta name="app-build" content="19 Nov 23:07 PT"><meta charset="utf-8">
+<html lang="en"><head><meta name="app-build" content="20 Nov 11:24 PT"><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Legends"><meta name="theme-color" content="#14102e">
@@ -938,15 +938,16 @@ body.dfon{overflow:hidden}
 .fjctl.air .fjroll{right:calc(128px + env(safe-area-inset-right,0px))}.fjctl.air .fjloop{right:calc(186px + env(safe-area-inset-right,0px))}
 
 .fjctl.ufo .fjfl{display:flex!important}.fjctl.ufo .fjgun{background:radial-gradient(circle at 40% 35%,#bbf7d0,#16a34a)}.fjctl.ufo .fjmis{background:radial-gradient(circle at 40% 35%,#a5f3fc,#0e7490)}.fjctl.ufo .fjfl{background:radial-gradient(circle at 40% 35%,#fef08a,#a16207)}
-.fjufoc{position:absolute;left:50%;top:calc(10px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:rgba(10,20,30,.55);color:#e7fff2;font:700 14px Outfit,system-ui,sans-serif;padding:5px 12px;border-radius:16px;pointer-events:none;white-space:nowrap}.fjufoc b{color:#86efac}
+.fjufoc{position:absolute;left:calc(92px + env(safe-area-inset-left,0px));top:calc(158px + env(safe-area-inset-top,0px));display:flex;flex-direction:column;gap:3px;background:rgba(10,20,30,.55);color:#e7fff2;font:700 13px Outfit,system-ui,sans-serif;padding:6px 9px;border-radius:12px;pointer-events:none;white-space:nowrap}.fjufoc span{display:block}.fjufoc b{color:#86efac}
 .fjufo{background:linear-gradient(135deg,#22c55e,#0e7490)!important;color:#fff}
 .fjwarp{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .25s;background:repeating-conic-gradient(from 0deg,rgba(255,255,255,.0) 0deg 4deg,rgba(190,255,250,.55) 4.6deg 5deg),radial-gradient(circle,rgba(0,0,0,0) 18%,rgba(120,255,230,.25) 55%,rgba(255,255,255,.7) 100%);-webkit-mask:radial-gradient(circle,transparent 16%,#000 60%);mask:radial-gradient(circle,transparent 16%,#000 60%);z-index:3}
 .fjwarp.on{opacity:1;animation:fjwarpspin .9s linear}@keyframes fjwarpspin{from{transform:scale(1.4) rotate(0)}to{transform:scale(1) rotate(25deg)}}
 .fjctl.ufo #fjmn,.fjctl.ufo #fjfn{display:none}
 
 .fjaim{position:absolute;width:46px;height:46px;margin:-23px 0 0 -23px;border:2.5px solid rgba(140,220,255,.9);border-radius:50%;pointer-events:none;box-shadow:0 0 8px rgba(80,180,255,.6);z-index:2}
-.fjaim i{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px;border-radius:50%;background:#bdf}.fjaim.fire{border-color:#fff;box-shadow:0 0 14px #5cf}
-.fjlook,.fjslow{bottom:auto!important;top:calc(66px + env(safe-area-inset-top,0px));width:52px;height:52px;font-size:18px}.fjlook{right:calc(128px + env(safe-area-inset-right,0px))}.fjslow{right:calc(184px + env(safe-area-inset-right,0px))}
+.fjaim i{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px;border-radius:50%;background:#bdf}.fjaim.fire{border-color:#fff;box-shadow:0 0 14px #5cf}.fjaim.lock{border-color:#ff6b6b;border-style:dashed;box-shadow:0 0 12px rgba(255,90,90,.8);animation:fjlk 1.2s linear infinite}.fjaim.lock i{background:#ff6b6b}@keyframes fjlk{to{transform:rotate(360deg)}}
+
+@media (max-height:400px),(max-width:400px){.fjlook,.fjslow{bottom:calc(194px + env(safe-area-inset-bottom,0px));width:46px;height:46px;font-size:17px}.fjlook small,.fjslow small{font-size:7px}}
 
 /*FJ-END*/
 </style></head><body><main>
@@ -5233,7 +5234,7 @@ function fjGlaCars(dt){const G=FJ_GC;if(!G.cars)return;const cam=FJR.cam.positio
   const fw=new THREE.Vector3();FJR.cam.getWorldDirection(fw);fw.y=0;fw.normalize();const ad=Math.min(900,Math.max(200,cam.y*2)),fx=cam.x+fw.x*ad,fz=cam.z+fw.z*ad,rng=Math.min(1500,450+cam.y*2);
   for(const c of G.cars){let ln=G.lanes[c.li];if(c.li<0||c.s<0||c.s>ln.L||Math.hypot(c.x-fx,c.z-fz)>rng*1.25){/* put it on a road near you */let ok=0;for(let t=0;t<6&&!ok;t++){const px=fx+(R()*2-1)*rng,pz=fz+(R()*2-1)*rng,A=G.lgrid.get(Math.floor(px/400)+"_"+Math.floor(pz/400));if(!A)continue;const e=A[Math.floor(R()*A.length)],li=Math.floor(e/10000),si=e%10000;ln=G.lanes[li];c.li=li;c.dir=R()<.5?1:-1;c.s=ln.cum[si]+R()*(ln.cum[si+1]-ln.cum[si]);const mw=ln.r.k===6;if(ln.r.ow){c.dir=1;const nl=ln.r.nl||2;c.off=((Math.floor(R()*nl)+.5)/nl-.5)*ln.r.hw*1.8}else c.off=ln.r.c?Math.max(1.8,ln.r.hw*.5):mw?(4+Math.floor(R()*3)*3.7):(ln.r.k===5?3.6:3);c.v=(mw?27:13)*(.85+R()*.3)*(c.bus?.75:1);ok=1}if(!ok){c.li=-1;M.compose(P.set(0,-999,0),Qt,S0);im.setMatrixAt(c.i,M);continue}}
     c.s+=c.v*c.dir*dt;const cum=ln.cum,pts=ln.r.pts;let i=0;while(i<cum.length-2&&cum[i+1]<c.s)i++;const a=pts[i],b=pts[i+1],L=(cum[i+1]-cum[i])||1,k=Math.max(0,Math.min(1,(c.s-cum[i])/L)),dx=(b[0]-a[0])/L*c.dir,dz=(b[1]-a[1])/L*c.dir;
-    /* Scotland drives on the left */const x=a[0]+(b[0]-a[0])*k+dz*c.off,z=a[1]+(b[1]-a[1])*k-dx*c.off;c.x=x;c.z=z;const y=ln.r.dk?fjGlaDeckY(ln.r.dk,x,z):ln.r.c?Math.max(0,fjH(x,z)):fjGlaRoadY(x,z,ln.r.k===6);Qt.setFromAxisAngle(UP,Math.atan2(dx,dz));M.compose(P.set(x,y+.05,z),Qt,c.bus?SB:S1);im.setMatrixAt(c.i,M)}
+    /* Scotland drives on the left */const x=a[0]+(b[0]-a[0])*k+dz*c.off,z=a[1]+(b[1]-a[1])*k-dx*c.off;c.x=x;c.z=z;const y=ln.r.dk?fjGlaDeckY(ln.r.dk,x,z):ln.r.c?Math.max(0,fjH(x,z)):fjGlaRoadY(x,z,ln.r.k===6);c.y=y;Qt.setFromAxisAngle(UP,Math.atan2(dx,dz));M.compose(P.set(x,y+.05,z),Qt,c.bus?SB:S1);im.setMatrixAt(c.i,M)}
   im.instanceMatrix.needsUpdate=true}
 /* ---------- every frame ---------- */
 function fjGlaStep(I,dt){const G=FJ_GC;if(!G.tiles)return;const cam=FJR.cam.position,Q=fjQ()==="high",osm=typeof FJ_GO!=="undefined"&&FJ_GO.ok,ds=osm?(Q?4200:2600):(Q?6000:3800),dt2=Q?20000:13000;
@@ -5649,14 +5650,14 @@ function fjMonChoice(){$("#fjm").className="fjmenu on";$("#fjm").innerHTML=`<div
 
 /* ===== stunts: barrel roll and loop-the-loop ===== */
 function fjTrick(j,k){const G=FJG;if(!j||j.dead||j.man||G.mode!=="fly")return;
-  if(j.hero||j.ufo){j.man={k,t:0,d:k==="roll"?.9:1.1};j.mvN=(j.mvN||0)+1;sfx("tap");return}
+  /* a hero standing on the ground does a flip jump; in the air heroes and saucers fly the real display-team tricks like the jets */if(j.hero&&j.hs&&j.hs.ground){j.man={k,t:0,d:k==="roll"?.9:1.1};j.mvN=(j.mvN||0)+1;sfx("tap");return}
   if(j.gnd){fjMsg("🛫 Take off first!",1.2);return}
-  const alt=j.p.y-Math.max(0,fjH(j.p.x,j.p.z)),need=k==="loop"?(j.air?420:(j.cass?70:90)):(j.air?90:(j.cass?35:45));
+  const alt=j.p.y-Math.max(0,fjH(j.p.x,j.p.z)),need=k==="loop"?(j.air?420:j.hero?(j.cass?45:60):(j.cass?70:90)):(j.air?90:j.hero?18:(j.cass?35:45));
   if(alt<need&&!j.cave){fjMsg("⬆️ Climb a bit higher first!",1.3);return}
   if(j.cave&&k==="loop"){fjMsg("🚫 No room for a loop in here!",1.2);return}
-  const s=j.stick.x>.2?-1:j.stick.x<-.2?1:(Math.random()<.5?1:-1),v=Math.max(110,j.spd);
+  const s=j.stick.x>.2?-1:j.stick.x<-.2?1:(Math.random()<.5?1:-1),v=Math.max(j.hero?90:110,j.spd);
   /* display-team sizes: a big round loop that suits your speed, a wide corkscrew roll */
-  const R=k==="loop"?(j.air?520:Math.max(170,Math.min(430,v*1.15))):(j.air?28:20),d=k==="roll"?(j.air?3:1.7):(j.air?10:Math.max(4.2,Math.min(8.5,Math.PI*2*R/v)));
+  const R=k==="loop"?(j.air?520:j.hero?Math.max(70,Math.min(260,v*1.1)):Math.max(170,Math.min(430,v*1.15))):(j.air?28:j.hero?6:j.ufo?24:20),d=k==="roll"?(j.air?3:1.7):(j.air?10:Math.max(4.2,Math.min(8.5,Math.PI*2*R/v)));
   j.man={k,t:0,s,R,off:new THREE.Vector3(),b0:Math.atan2(Math.sin(j.bank),Math.cos(j.bank))*(k==="roll"?1:0),p0:k==="loop"?Math.max(-.15,Math.min(.25,j.pitch)):j.pitch,d};j.smokeT=1.6;sfx("tap")}
 function fjManStep(j,dt){const M=j.man;M.t+=dt;const k=Math.min(1,M.t/M.d),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
   if(M.k==="roll"){/* a barrel roll: roll all the way round while the jet corkscrews around its flight line */const ph=Math.PI*2*e;j.bank=M.b0+M.s*ph;j.pitch+=(Math.max(-.15,Math.min(.2,j.pitch))-j.pitch)*Math.min(1,dt*2);
@@ -5676,11 +5677,11 @@ function fjSmokeStep(dt){const G=FJG;if(!G||G.zone==="space"||!FJR.scene)return;
         S.add({x:p.x+o.x,y:p.y+o.y,z:p.z+o.z,vx:(Math.random()-.5)*2,vy:(Math.random()-.5)*2,vz:(Math.random()-.5)*2,t:0,life:7,s0:2.5,s1:j.air?40:26,c,a:.85,drag:.85,rise:.25})}}j.smP=tail}
   S.step(G.slow&&G.sub!=="live"?dt*.4:dt,cam)}
 /* the camera rides round the loop with the jet */
-function fjManCam(dt,me,far){const G=FJG,cam=FJR.cam,q=new THREE.Quaternion().setFromEuler(new THREE.Euler(-me.pitch,me.yaw,me.bank,"YXZ")),back=me.air?(far?-170:-95):(far?-85:-34),up=me.air?(far?44:24):(far?24:9);
+function fjManCam(dt,me,far){const G=FJG,cam=FJR.cam,q=new THREE.Quaternion().setFromEuler(new THREE.Euler(-me.pitch,me.yaw,me.bank,"YXZ")),back=me.ufo?(far?-115:-54):me.hero?(far?-26:-12):me.air?(far?-170:-95):(far?-85:-34),up=me.ufo?(far?36:15):me.hero?(far?7:3):me.air?(far?44:24):(far?24:9);
   const want=new THREE.Vector3(0,up,back).applyQuaternion(q).add(me.p);if(G.zone!=="space"){const minY=Math.max(0,fjH(want.x,want.z))+6;if(want.y<minY)want.y=minY}
-  cam.position.lerp(want,1-Math.exp(-dt*9));cam.up.set(0,1,0).applyQuaternion(q);cam.lookAt(new THREE.Vector3(0,0,me.air?150:60).applyQuaternion(q).add(me.p));cam.updateProjectionMatrix()}
+  cam.position.lerp(want,1-Math.exp(-dt*9));cam.up.set(0,1,0).applyQuaternion(q);cam.lookAt(new THREE.Vector3(0,0,me.air?150:me.hero?25:60).applyQuaternion(q).add(me.p));cam.updateProjectionMatrix()}
 /* heroes: spins and flips (on the ground it's a flip jump) */
-function fjHeroTrick(j,dt){const M=j.man;if(!M)return;const U=j.mesh.userData;M.t+=dt;const k=Math.min(1,M.t/M.d),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+function fjHeroTrick(j,dt){const M=j.man;if(!M||M.R)return;const U=j.mesh.userData;M.t+=dt;const k=Math.min(1,M.t/M.d),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
   if(M.k==="roll")U.body.rotateY(Math.PI*2*e);else U.body.rotateX(-Math.PI*2*e);if(j.hs&&j.hs.ground)U.body.position.y+=Math.sin(Math.PI*k)*2.2;
   if(k>=1){j.man=null;if(j.kind==="me")fjMsg(M.k==="roll"?"🌀 SUPER SPIN!":"🤸 SUPER FLIP!",1)}}
 
@@ -5720,10 +5721,10 @@ function fjFlyHero(j,dt){const G=FJG,H=j.hs,sx=j.stick.x,sy=j.stick.y*(G.inv?-1:
   if(H.stun>0){H.stun-=dt;j.p.addScaledVector(H.kb,dt);H.kb.multiplyScalar(Math.pow(.15,dt));j.yaw+=dt*6*H.stun;const s0=fjHeroSurf(j.p.x,j.p.z,j.p.y);if(j.p.y<s0+stand)j.p.y=s0+stand;j.v.copy(H.kb);fjHeroPlace(j,dt);return}
   if(H.ground){j.yaw-=sx*2.4*dt;const run=j.bo?1:0,want=-sy*(run?18:6.5);j.spd+=(want-j.spd)*Math.min(1,dt*6);const fx=Math.sin(j.yaw),fz=Math.cos(j.yaw),nx=j.p.x+fx*j.spd*dt,nz=j.p.z+fz*j.spd*dt,ny=j.p.y-stand,s=fjHeroSurf(nx,nz,ny);
     if(s>ny+3){j.spd=0}else{j.p.x=nx;j.p.z=nz;if(s<ny-2.5){H.ground=0;j.v.set(fx*j.spd,0,fz*j.spd)}else j.p.y=s+stand}j.v.set(fx*j.spd,0,fz*j.spd);j.pitch=0;j.bank=0;H.ph+=Math.abs(j.spd)*dt*2.3}
-  else{const thr=j.thr==null?1:j.thr,hover=thr===0&&!j.bo&&H.dash<=0;
+  else{const thr=j.thr==null?1:j.thr,hover=thr===0&&!j.bo&&H.dash<=0&&!(j.man&&j.man.R);
     if(hover){j.yaw-=sx*1.9*dt;const fwd=-sy*0;j.spd+=(0-j.spd)*Math.min(1,dt*2);let vy=H.launch>0?50:H.landing?-75:-sy*28;if(!H.launch&&!H.landing&&Math.abs(sy)<.05)vy=Math.sin(H.t*2)*.6;H.launch=Math.max(0,H.launch-dt);j.pitch+=(0-j.pitch)*Math.min(1,dt*3);j.bank+=(-sx*.3-j.bank)*Math.min(1,dt*3);
       j.v.set(Math.sin(j.yaw)*j.spd,vy,Math.cos(j.yaw)*j.spd)}
-    else{H.landing=0;j.bank+=(sx*1.15-j.bank)*Math.min(1,dt*3);j.yaw-=(Math.sin(j.bank)*1.7+sx*.4)*dt;j.pitch+=-sy*1.5*dt;if(Math.abs(sy)<.05)j.pitch*=Math.pow(.7,dt);j.pitch=Math.max(-1.35,Math.min(1.35,j.pitch));
+    else{H.landing=0;if(j.man&&j.man.R){j.spd=Math.max(j.spd,90);fjManStep(j,dt)}else{j.bank+=(sx*1.15-j.bank)*Math.min(1,dt*3);j.yaw-=(Math.sin(j.bank)*1.7+sx*.4)*dt;j.pitch+=-sy*1.5*dt;if(Math.abs(sy)<.05)j.pitch*=Math.pow(.7,dt);j.pitch=Math.max(-1.35,Math.min(1.35,j.pitch))}
       const tgt=[30,110,230][thr]+(j.bo?320:0)+(H.dash>0?160:0);j.spd+=(tgt-j.spd)*Math.min(1,dt*(H.dash>0?8:1.6));const cp=Math.cos(j.pitch);j.v.set(Math.sin(j.yaw)*cp*j.spd,Math.sin(j.pitch)*j.spd,Math.cos(j.yaw)*cp*j.spd)}
     if(H.launch>0&&!hover){H.launch=0}j.p.addScaledVector(j.v,dt);
     /* the ground and rooftops: land gently, or skim */if(!j.cave){const s=fjHeroSurf(j.p.x,j.p.z,j.p.y-stand);if(j.p.y<s+stand){const hard=j.v.y<-35||H.landing;j.p.y=s+stand;if(hover||j.spd<45||H.landing){H.ground=1;H.landing=0;j.spd=0;if(hard)fjHeroSlam(j);else sfx("tap")}else{j.pitch=Math.max(j.pitch,.12)}}}
@@ -5731,7 +5732,7 @@ function fjFlyHero(j,dt){const G=FJG,H=j.hs,sx=j.stick.x,sy=j.stick.y*(G.inv?-1:
   H.dash=Math.max(0,H.dash-dt);if(H.dashHit&&H.dash<=0){H.dashHit=0;fjHeroImpact(j)}
   /* the edge of the world, and the sky */if(G.zone!=="space"){const wc=[FJ_WB.x0+FJ_WB.S/2,FJ_WB.z0+FJ_WB.S/2];if(Math.max(Math.abs(j.p.x-wc[0]),Math.abs(j.p.z-wc[1]))>FJ_WB.S/2-2500){const w2=Math.atan2(wc[0]-j.p.x,wc[1]-j.p.z);let d=w2-j.yaw;d=Math.atan2(Math.sin(d),Math.cos(d));j.yaw+=d*dt}if(j.p.y>6000){j.p.y=6000;j.pitch=Math.min(j.pitch,0)}}
   fjHeroPlace(j,dt)}
-function fjHeroPlace(j,dt){const H=j.hs;j.mesh.position.copy(j.p);if(H.ground)j.mesh.rotation.set(0,j.yaw,0,"YXZ");else j.mesh.rotation.set(-j.pitch*Math.min(1,H.lean*1.2),j.yaw,j.bank,"YXZ");fjHeroPose(j,dt);fjHeroTrick(j,dt)}
+function fjHeroPlace(j,dt){const H=j.hs;j.mesh.position.copy(j.p);if(H.ground)j.mesh.rotation.set(0,j.yaw,0,"YXZ");else j.mesh.rotation.set(-j.pitch*(j.man&&j.man.R?1:Math.min(1,H.lean*1.2)),j.yaw,j.bank,"YXZ");fjHeroPose(j,dt);fjHeroTrick(j,dt)}
 /* landing hard: a superhero landing — crouch, shockwave, dust */
 function fjHeroSlam(j){const G=FJG,p=j.p;j.hs.crouch=.6;G.shake=Math.max(G.shake||0,.7);sfx("b_boom");for(let k=0;k<26;k++){const a=k/26*6.28;FJE.fx.add({x:p.x,y:p.y-j.mesh.userData.stand+.5,z:p.z,vx:Math.cos(a)*45,vy:3,vz:Math.sin(a)*45,t:0,life:1.6,s0:4,s1:14,c:[.6,.56,.5],a:.7,drag:.35})}
   fjScare(p.x,p.z,120);if(G.t-(j.hs.slT||0)>3){j.hs.slT=G.t;fjMsg("🦸 SUPER LANDING!",1)}}
@@ -5806,25 +5807,27 @@ function fjUfoMesh(who){const T=THREE,C=FJ_UFO_COL[who]||FJ_UFO_COL.X,g=new T.Gr
   const glow=new T.Mesh(new T.CircleGeometry(5.5,32).rotateX(Math.PI/2).translate(0,-2.35,0),new T.MeshBasicMaterial({color:C.glow,transparent:true,opacity:.85,side:T.DoubleSide}));body.add(glow);
   /* the tractor beam (a soft cone of light, shown when beaming) */const beam=new T.Mesh(new T.CylinderGeometry(1,4.5,1,32,1,true).translate(0,-.5,0),new T.MeshBasicMaterial({color:C.glow,transparent:true,opacity:.4,blending:T.AdditiveBlending,depthWrite:false,side:T.DoubleSide}));beam.visible=false;g.add(beam);const spot=new T.Mesh(new T.CircleGeometry(4.5,40).rotateX(-Math.PI/2),new T.MeshBasicMaterial({color:C.glow,transparent:true,opacity:.45,blending:T.AdditiveBlending,depthWrite:false}));spot.visible=false;g.add(spot);
   g.userData={body,ring,lights,glow,beam,spot,flames:[],missiles:[],noz:[],fz:-1,tips:[],ufo:1,alien:al};return g}
-function fjUfoify(j){const sc=j.mesh.parent||FJR.scene;sc.remove(j.mesh);j.mesh=fjUfoMesh(j.who);sc.add(j.mesh);j.ufo=1;j.mis=0;j.fl=0;j.us={bank:0,tilt:0,spin:0,beam:0,wt:0};j.tp={nm:"UFO",spd:1,turn:1,hp:1.1,lock:1,mis:0};j.cols={...j.cols,nm:j.who==="O"?"UFO CASS":"UFO DAD"}}
+function fjUfoify(j){const sc=j.mesh.parent||FJR.scene;sc.remove(j.mesh);j.mesh=fjUfoMesh(j.who);sc.add(j.mesh);j.ufo=1;j.mis=0;j.fl=0;j.us={bank:0,tilt:0,spin:0,beam:0,wt:0};j.tp={...FJ_TYPES.falcon,nm:"UFO",hp:1.1,mis:0};j.cols={...j.cols,nm:j.who==="O"?"UFO CASS":"UFO DAD"}}
 function fjUfoButtons(on){const set=(id,h)=>{const b=$(id);if(b&&b.dataset.h!==h){b.dataset.h=h;b.innerHTML=h}};$("#fjctl").classList.toggle("ufo",!!on);
   if(on){set("#fjgun","👽<small>ZAP</small>");set("#fjmis","🛸<small>BEAM UP</small><small id=\"fjmn\"></small>");set("#fjfl","⚡<small>WARP</small><small id=\"fjfn\"></small>");set("#fjbo","BOOST")}
   let c=$("#fjufoc");if(!c){c=document.createElement("div");c.id="fjufoc";c.className="fjufoc";$("#fjctl").appendChild(c)}c.style.display=on?"":"none";if(on)fjUfoCount()}
-function fjUfoCount(){const c=$("#fjufoc"),G=FJG;if(!c)return;const n=G.abd||{};c.innerHTML=`👽 <b>${n.cow||0}</b> 🐄 · <b>${n.ppl||0}</b> 🧍 · <b>${n.dino||0}</b> 🦖`}
+function fjUfoCount(){const c=$("#fjufoc"),G=FJG;if(!c)return;const n=G.abd||{};c.innerHTML=`<span>🐄 <b>${n.cow||0}</b></span><span>🧍 <b>${n.ppl||0}</b></span><span>🦖 <b>${n.dino||0}</b></span>`}
 /* ---------- flying ---------- */
+/* the saucer hovers on LOW (and while warping); on CRUISE and MAX it flies exactly like a jet */
+function fjUfoHov(j){return !j.man&&((j.thr==null?1:j.thr)===0||!!(FJG.warp&&j===FJG.me))}
 function fjFlyUFO(j,dt){const U=j.us,sx=j.stick.x,sy=j.stick.y,cass=j.cass,G=FJG;U.wt=Math.max(0,U.wt-dt);
   const thr=j.thr==null?1:j.thr,tgt=(thr===0?0:FJ_THR[thr])*(cass?1.06:1)+(j.bo&&j.boost>0?110:0);j.spd+=(tgt-j.spd)*Math.min(1,dt*(tgt<j.spd?1.6:1.1));
   if(j.bo&&j.boost>0)j.boost=Math.max(0,j.boost-dt*.22);else j.boost=Math.min(1,j.boost+dt*.1);
   /* turn crisply, climb and dive straight up and down (UFOs don't need wings) */j.yaw-=sx*(thr===0?1.9:1.45)*dt;const vy=-sy*(thr===0?45:70)*(j.kind==="me"&&G.inv?-1:1);
-  j.v.set(Math.sin(j.yaw)*j.spd,vy,Math.cos(j.yaw)*j.spd);const prev=j.p.clone();j.p.addScaledVector(j.v,dt);j.pitch=0;fjUfoBlock(j,prev);
-  /* never crash: skim over the ground and the rooftops */if(G.zone!=="space"&&!j.cave){const top=typeof fjHeroSurf==="function"?fjHeroSurf(j.p.x,j.p.z,j.p.y+40):Math.max(0,fjH(j.p.x,j.p.z));const min=Math.max(top,0)+7;if(j.p.y<min)j.p.y+=(min-j.p.y)*Math.min(1,dt*10)}
+  j.v.set(Math.sin(j.yaw)*j.spd,vy,Math.cos(j.yaw)*j.spd);const prev=j.p.clone();j.p.addScaledVector(j.v,dt);j.pitch*=Math.pow(.03,dt);j.bank*=Math.pow(.03,dt);fjUfoBlock(j,prev);
+  /* never crash: skim over the ground and the rooftops */if(G.zone!=="space"&&!j.cave){const top=typeof fjHeroSurf==="function"?fjHeroSurf(j.p.x,j.p.z,j.p.y+40):Math.max(0,fjH(j.p.x,j.p.z));const min=Math.max(top,0)+7;if(j.p.y<min)j.p.y=min}
   if(G.zone!=="space"&&j.p.y>5200)j.p.y=5200;
   {const inSp=fjZoneOf(j)==="space",wc=inSp?[0,0]:[FJ_WB.x0+FJ_WB.S/2,FJ_WB.z0+FJ_WB.S/2];if(!inSp){const r=Math.max(Math.abs(j.p.x-wc[0]),Math.abs(j.p.z-wc[1]))*7600/(FJ_WB.S/2-2500);if(r>7600){j.p.x+=(wc[0]-j.p.x)*dt*.2;j.p.z+=(wc[1]-j.p.z)*dt*.2}}}
   fjUfoPlace(j,dt)}
-function fjUfoPlace(j,dt){const U=j.us,u=j.mesh.userData;U.bank+=((-j.stick.x*.35)-U.bank)*Math.min(1,dt*4);U.tilt+=((Math.min(1,j.spd/300)*.18)+(j.v.y/70)*-.08-U.tilt)*Math.min(1,dt*3);U.spin+=dt*(2+j.spd/60);
-  j.mesh.position.copy(j.p);j.mesh.rotation.set(U.tilt,j.yaw,U.bank,"YXZ");u.ring.rotation.y=U.spin;u.lights.forEach((l,i)=>l.scale.setScalar(.75+.45*Math.max(0,Math.sin(U.spin*3-i*.8))));u.glow.material.opacity=.6+.3*Math.sin(U.spin*2);
-  /* stunts: a barrel spin or a flip */u.body.rotation.set(0,0,0);if(j.man){const M=j.man;M.t+=dt;const k=Math.min(1,M.t/M.d),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;if(M.k==="roll")u.body.rotation.z=Math.PI*2*e;else u.body.rotation.x=-Math.PI*2*e;if(k>=1){j.man=null;if(j.kind==="me")fjMsg(M.k==="roll"?"🛸 SAUCER SPIN!":"🛸 SAUCER FLIP!",1)}}
-  /* the beam reaches the ground */const b=u.beam;b.visible=!!U.beam;if(U.beam){const g=Math.max(0,fjH(j.p.x,j.p.z)),L=Math.max(5,Math.min(260,j.p.y-2-g)),R=(j.cass?30:24);b.scale.set(R/4.5,L,R/4.5);b.position.set(0,-2.4,0);b.rotation.set(-U.tilt,0,-U.bank);b.material.opacity=.32+.1*Math.sin(U.spin*5);const sp=u.spot;sp.visible=true;sp.scale.set(R/4.5,1,R/4.5);sp.position.set(0,-(j.p.y-g)+.6,0);sp.rotation.set(-U.tilt,0,-U.bank);sp.material.opacity=.35+.15*Math.sin(U.spin*7)}else if(u.spot)u.spot.visible=false}
+function fjUfoPlace(j,dt){const U=j.us,u=j.mesh.userData,st=j.stick||{x:0,y:0},hov=j.kind==="remote"?j.spd<100:fjUfoHov(j);U.bank+=((hov?st.x*.35:0)-U.bank)*Math.min(1,dt*4);U.tilt+=((hov?Math.min(1,j.spd/300)*.18+(j.v.y/70)*-.08:0)-U.tilt)*Math.min(1,dt*3);U.spin+=dt*(2+j.spd/60);
+  /* on top of the hover lean, the saucer pitches and banks (and rolls and loops) exactly like a jet */const rx=U.tilt-(j.pitch||0),rz=U.bank+(j.bank||0);j.mesh.position.copy(j.p);j.mesh.rotation.set(rx,j.yaw,rz,"YXZ");u.ring.rotation.y=U.spin;u.lights.forEach((l,i)=>l.scale.setScalar(.75+.45*Math.max(0,Math.sin(U.spin*3-i*.8))));u.glow.material.opacity=.6+.3*Math.sin(U.spin*2);
+  /* stunts: a barrel spin or a flip */u.body.rotation.set(0,0,0);if(j.man&&!j.man.R){const M=j.man;M.t+=dt;const k=Math.min(1,M.t/M.d),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;if(M.k==="roll")u.body.rotation.z=Math.PI*2*e;else u.body.rotation.x=-Math.PI*2*e;if(k>=1){j.man=null;if(j.kind==="me")fjMsg(M.k==="roll"?"🛸 SAUCER SPIN!":"🛸 SAUCER FLIP!",1)}}
+  /* the beam reaches the ground */const b=u.beam;b.visible=!!U.beam;if(U.beam){const g=Math.max(0,fjH(j.p.x,j.p.z)),L=Math.max(5,Math.min(260,j.p.y-2-g)),R=(j.cass?30:24);b.scale.set(R/4.5,L,R/4.5);b.position.set(0,-2.4,0);b.rotation.set(-rx,0,-rz);b.material.opacity=.32+.1*Math.sin(U.spin*5);const sp=u.spot;sp.visible=true;sp.scale.set(R/4.5,1,R/4.5);sp.position.set(0,-(j.p.y-g)+.6,0);sp.rotation.set(-rx,0,-rz);sp.material.opacity=.35+.15*Math.sin(U.spin*7)}else if(u.spot)u.spot.visible=false}
 /* ---------- the zap ray ---------- */
 function fjUfoZap(j,dt){return fjUfoLaser(j,dt);j.gunT-=dt;if(!j.fire||j.dead||j.gunT>0)return;j.gunT=.09;const G=FJG;let d=new THREE.Vector3(Math.sin(j.yaw),0,Math.cos(j.yaw));
   if(j.kind==="me"){const t=fjFocus();if(t&&t.p&&!t.dead){const to=t.p.clone().sub(j.p),L=to.length();if(L<1600&&to.clone().normalize().dot(d)>.82)d=to.normalize()}}
@@ -5864,12 +5867,26 @@ function fjUfoRipple(p,j){const T=THREE,C=FJ_UFO_COL[j&&j.who]||FJ_UFO_COL.X,m=n
 function fjUfoRippleStep(dt){const R=FJG.ripples;if(!R)return;for(let i=R.length-1;i>=0;i--){const r=R[i];r.t+=dt;const k=r.t/1.1;r.m.scale.setScalar(10+k*70);r.m.material.opacity=.5*(1-k);r.ring.scale.setScalar(12+k*160);r.ring.material.opacity=.8*(1-k);if(k>=1){r.m.parent.remove(r.m);r.ring.parent.remove(r.ring);R.splice(i,1)}}}
 /* tap on the sky or the ground (right-hand side of the screen) to warp there */
 function fjUfoTapInit(){const el=$("#fjc");if(!el||el.dataset.ufotap)return;el.dataset.ufotap=1;let d0=null;
-  el.addEventListener("pointerdown",e=>{const G=FJG;if(!G||G.mode!=="fly"||!G.me||!(G.me.ufo||G.me.hero)||e.target.closest(".fjb,.fjmenu,.dfx,.fjmapw,.fjthr,.fjufoc"))return;const q=fjLocal(e);if(q.x<G.W*.5)return;d0={x:e.clientX,y:e.clientY,t:e.timeStamp,id:e.pointerId,lx:q.x,ly:q.y,drag:0}});
-  el.addEventListener("pointermove",e=>{const G=FJG;if(!d0||e.pointerId!==d0.id)return;const q=fjLocal(e),dx=q.x-d0.lx,dy=q.y-d0.ly;if(!d0.drag&&Math.hypot(e.clientX-d0.x,e.clientY-d0.y)<12)return;d0.drag=1;G.aimDrag=1;G.aimT=performance.now();d0.lx=q.x;d0.ly=q.y;const a=G.aim||(G.aim={x:0,y:0}),k=2.4;a.x=Math.max(-.94,Math.min(.94,a.x+dx/G.W*k));a.y=Math.max(-.9,Math.min(.9,a.y-dy/G.H*k))});
-  el.addEventListener("pointerup",e=>{const G=FJG;if(!d0||e.pointerId!==d0.id)return;G.aimDrag=0;G.aimT=performance.now();const ok=!d0.drag&&e.timeStamp-d0.t<400&&Math.hypot(e.clientX-d0.x,e.clientY-d0.y)<16;const s={clientX:e.clientX,clientY:e.clientY};d0=null;if(!ok||!G.me||!G.me.ufo)return;
-    const q=fjLocal(s),nx=q.x/G.W*2-1,ny=-(q.y/G.H*2-1);
+  el.addEventListener("pointerdown",e=>{const G=FJG;if(!G||G.mode!=="fly"||!G.me||!(G.me.ufo||G.me.hero)||e.target.closest(".fjb,.fjmenu,.dfx,.fjmapw,.fjthr,.fjufoc"))return;d0={x:e.clientX,y:e.clientY,t:e.timeStamp,id:e.pointerId}});
+  el.addEventListener("pointercancel",e=>{if(d0&&e.pointerId===d0.id)d0=null});
+  el.addEventListener("pointerup",e=>{const G=FJG;if(!d0||e.pointerId!==d0.id)return;const ok=e.timeStamp-d0.t<380&&Math.hypot(e.clientX-d0.x,e.clientY-d0.y)<16;d0=null;if(!ok||!G.me||G.me.dead||G.mode!=="fly")return;
+    const q=fjLocal({clientX:e.clientX,clientY:e.clientY}),left=q.x<G.W*.5;
+    /* touched something alive and moving? the aim locks onto it and follows it */const T=fjAimPick(q.x,q.y,left?30:50);if(T){G.lock=T;G.aimT=performance.now();sfx("tap");fjMsg("🎯 LOCKED ON",.7);return}
+    if(left)return;G.lock=null;const nx=q.x/G.W*2-1,ny=-(q.y/G.H*2-1);
+    if(!G.me.ufo){G.aim={x:Math.max(-.94,Math.min(.94,nx)),y:Math.max(-.9,Math.min(.9,ny))};G.aimT=performance.now();return}
     const rc=new THREE.Raycaster();rc.setFromCamera(new THREE.Vector2(nx,ny),FJR.cam);const o=rc.ray.origin,dv=rc.ray.direction;let hit=null;for(let t=20;t<14000;t+=t<1500?25:90){const x=o.x+dv.x*t,y=o.y+dv.y*t,z=o.z+dv.z*t;if(y<=Math.max(0,fjH(x,z))){hit=new THREE.Vector3(x,y,z);break}}
     if(!hit){hit=o.clone().addScaledVector(dv,3000);}if(isFinite(hit.x+hit.z))fjUfoWarp(G.me,hit)})}
+/* everything you can lock the aim onto: jets, monsters, dinosaurs, cows, people and cars */
+function fjAimCands(){const G=FJG,me=G.me,out=[],V=(x,y,z)=>new THREE.Vector3(x,y,z);
+  for(const e of G.jets){if(e===me||e.dead||!fjSameZone(e,me)||e.kind==="guide"||e.kind==="home"||(G.peace&&e.kind==="remote"))continue;out.push({get:()=>e.p.clone(),ok:()=>!e.dead&&G.jets.includes(e),r:e.kind==="monster"?40:0})}
+  if(G.zone==="space")return out;
+  for(const I of FJI||[]){const D=I.dinos;if(!D)continue;for(const d of D.list){if(d.gone)continue;out.push({get:()=>V(d.x,(d.y!=null?d.y:Math.max(0,fjH(d.x,d.z)))+2*d.sc,d.z),ok:()=>!d.gone,r:4*d.sc})}}
+  if(FJTW&&FJTW.people)for(const q of FJTW.people){if(q.gone||q.px==null)continue;out.push({get:()=>V(q.px,(q.yv!=null?q.yv:Math.max(0,fjH(q.px,q.pz)))+1,q.pz),ok:()=>!q.gone,r:0})}
+  if(typeof FJ_NC!=="undefined"&&FJ_NC.ppl){const C=FJ_NC;for(const q of C.ppl){if(!q.on)continue;out.push({get:()=>V(q.px!=null?q.px:q.x,C.lv+1,q.pz!=null?q.pz:q.z),ok:()=>!!q.on,r:0})}if(C.cars)for(const c of C.cars){if(!c.on||c.x==null)continue;out.push({get:()=>V(c.x,C.lv+1.5,c.z),ok:()=>!!c.on,r:2})}}
+  if(typeof FJ_GC!=="undefined"&&FJ_GC.cars)for(const c of FJ_GC.cars){if(c.li<0||c.x==null||c.x>1e8)continue;out.push({get:()=>V(c.x,(c.y!=null?c.y:Math.max(0,fjH(c.x,c.z)))+1.5,c.z),ok:()=>c.li>=0&&c.x<1e8,r:2})}
+  return out}
+/* the nearest one to where you touched the screen (px, py in screen pixels) */
+function fjAimPick(px,py,rad){const G=FJG,cam=FJR.cam;cam.updateMatrixWorld();let best=null,bd=1e9;const cp=cam.position;for(const c of fjAimCands()){const p=c.get();const L=p.distanceTo(cp);if(L>3500)continue;const n=p.project(cam);if(n.z>1||n.z<-1)continue;const sx=(n.x+1)/2*G.W,sy=(1-n.y)/2*G.H,d=Math.hypot(sx-px,sy-py)-(c.r?c.r*G.H/Math.max(30,L):0);if(d<rad&&d<bd){bd=d;best=c}}return best}
 /* ---------- the partner's saucer in live play ---------- */
 function fjUfoRemote(F,d){const th=F.who;if(d.uf&&!F.ufo){if(F.hero)return;const sc=F.mesh.parent||FJR.scene;sc.remove(F.mesh);F.mesh=fjUfoMesh(th);sc.add(F.mesh);F.ufo=1;F.us={bank:0,tilt:0,spin:0,beam:0,wt:0};F.cols={...F.cols,nm:th==="O"?"UFO CASS":"UFO DAD"}}
   else if(!d.uf&&F.ufo){const sc=F.mesh.parent||FJR.scene;sc.remove(F.mesh);F.mesh=fjJetBuild({...fjDesign(th),num:th==="X"?"D1":"C1"},FJR.env);sc.add(F.mesh);F.ufo=0}
@@ -5888,6 +5905,7 @@ function fjUfoWarpScale(){const W=FJG.warp;if(!W)return 1;return W.t<.35?.15:.25
 
 /* ---------- aim anywhere (super hero and UFO): drag on the right of the screen to move the aim ring ---------- */
 function fjAimDir(j,o,fwd){const G=FJG;if(j.kind!=="me"){if(j.aimP)return j.aimP.clone().sub(o).normalize();return fwd}
+  if(G.lock&&G.lock.ok()){const d=G.lock.get().sub(o);if(d.lengthSq()>1)return d.normalize()}
   const a=G.aim||{x:0,y:0},rc=new THREE.Raycaster();rc.setFromCamera(new THREE.Vector2(a.x,a.y),FJR.cam);const ro=rc.ray.origin,rd=rc.ray.direction;
   /* help aim: something right by the aim ring gets locked */let best=null,bd=.07;for(const e of G.jets){if(e===j||e.dead||!fjSameZone(e,j)||e.kind==="remote"||e.kind==="guide"||e.kind==="home")continue;const to=e.p.clone().sub(ro),L=to.length();if(L>2500)continue;const ang=to.normalize().angleTo(rd)-(e.hitR||10)/Math.max(50,L);if(ang<bd){bd=ang;best=e}}
   if(best)return best.p.clone().sub(o).normalize();let P=null;if(FJG.zone!=="space")for(let t=30;t<3000;t+=t<600?15:45){const q=ro.clone().addScaledVector(rd,t);if(q.y<fjH(q.x,q.z)&&!fjInCave(q)){P=q;break}}if(!P)P=ro.clone().addScaledVector(rd,2500);
@@ -5901,8 +5919,11 @@ function fjLaser(j,dt,o,dir,col){const G=FJG;let L=1600,hitJ=null;if(G.zone!=="s
   if(Math.random()<.6)FJE.fx.add({x:end.x,y:end.y,z:end.z,vx:(Math.random()-.5)*10,vy:Math.random()*8,vz:(Math.random()-.5)*10,t:0,life:.35,s0:3,s1:1,c:col,a:1,add:1,drag:.9});if(Math.random()<.2)FJE.fx.add({x:end.x,y:end.y,z:end.z,vx:0,vy:4,vz:0,t:0,life:1.4,s0:3,s1:10,c:[.25,.22,.2],a:.5,drag:.5});
   j.lzEnd=end;return end}
 /* the aim ring on screen, and dragging it about */
-function fjAimHud(){const G=FJG,me=G.me;let r=$("#fjaim");const on=G.mode==="fly"&&me&&(me.hero||me.ufo)&&!me.dead;if(!r){if(!on)return;r=document.createElement("div");r.id="fjaim";r.className="fjaim";r.innerHTML="<i></i>";$("#fjctl").appendChild(r)}r.style.display=on?"":"none";if(!on)return;
-  const a=G.aim||(G.aim={x:0,y:0});if(!G.aimDrag&&!me.fire&&performance.now()-(G.aimT||0)>3000){a.x*=.94;a.y*=.94}r.style.left=((a.x+1)/2*G.W)+"px";r.style.top=((1-a.y)/2*G.H)+"px";r.classList.toggle("fire",!!me.fire)}
+function fjAimHud(){const G=FJG,me=G.me;let r=$("#fjaim");const on=G.mode==="fly"&&me&&(me.hero||me.ufo)&&!me.dead;if(!r){if(!on)return;r=document.createElement("div");r.id="fjaim";r.className="fjaim";r.innerHTML="<i></i>";$("#fjctl").appendChild(r)}r.style.display=on?"":"none";if(!on){G.lock=null;return}
+  const a=G.aim||(G.aim={x:0,y:0});
+  /* locked on: the ring rides on the target while it's on screen */if(G.lock){const L=G.lock;let drop=!L.ok();if(!drop){const n=L.get().project(FJR.cam);if(n.z>1||Math.abs(n.x)>1.03||Math.abs(n.y)>1.03)drop=1;else{a.x=n.x;a.y=n.y}}if(drop){G.lock=null;G.aimT=performance.now()-1500}}
+  if(!G.lock&&!me.fire&&performance.now()-(G.aimT||0)>3000){a.x*=.94;a.y*=.94}r.classList.toggle("lock",!!G.lock);
+  /* the beam-up tally sits down the left side, under the speed */const c=$("#fjufoc"),th=$("#fjthr");if(c&&th&&me.ufo){const lx=G.W<560?th.offsetLeft:th.offsetLeft+th.offsetWidth+10,ty=G.W<560?th.offsetTop+th.offsetHeight+46:th.offsetTop+50,k=lx+","+ty;if(c.dataset.at!==k){c.dataset.at=k;c.style.left=lx+"px";c.style.top=ty+"px"}}r.style.left=((a.x+1)/2*G.W)+"px";r.style.top=((1-a.y)/2*G.H)+"px";r.classList.toggle("fire",!!me.fire)}
 /* ---------- the UFO's laser: a cool blue beam from the front of the saucer ---------- */
 function fjUfoLaser(j,dt){const u=j.mesh.userData;if(!j.fire||j.dead){if(u.lz)u.lz.visible=false;j.lzEnd=null;return}
   const o=j.p.clone().add(new THREE.Vector3(Math.sin(j.yaw)*15.5,-.3,Math.cos(j.yaw)*15.5)),end=j.kind==="remote"&&j.aimP?j.aimP.clone():fjLaser(j,dt,o,fjAimDir(j,o,new THREE.Vector3(Math.sin(j.yaw),-.08,Math.cos(j.yaw)).normalize()),[.4,.75,1]);
@@ -6362,19 +6383,20 @@ function fjInput(){const G=FJG,el=$("#fjc"),stk=$("#fjstk"),knob=stk.querySelect
   $("#fjmapb").onpointerdown=e=>{e.preventDefault();e.stopPropagation();fjMapOpen(!G.mapOn)};$("#fjmapw").onpointerdown=e=>{e.preventDefault();e.stopPropagation();fjMapTap(e)};
   window.onkeydown=e=>{if(!FJG)return;G.keys[e.key]=1;if(G.mode!=="fly")return;if(e.key==="m"||e.key==="M")fjFireMissile(G.me);if(e.key==="v"||e.key==="V")fjViewNext();if(e.key==="1"||e.key==="2"||e.key==="3")fjThrSet(+e.key-1);if(e.key==="f"||e.key==="F")fjFlares(G.me);if(e.key===" ")e.preventDefault()};window.onkeyup=e=>{if(FJG)G.keys[e.key]=0}}
 /* ---------- the flight model (simple and friendly: bank to turn, levels itself, no stalling) ---------- */
-function fjFly(j,dt){if(j.hero)return fjFlyHero(j,dt);if(j.ufo)return fjFlyUFO(j,dt);if(j.air)return fjFlyAir(j,dt);const sx=j.stick.x,sy=j.stick.y,cass=j.cass,tp=j.tp||FJ_TYPES.falcon;
+function fjFly(j,dt){if(j.hero)return fjFlyHero(j,dt);if(j.ufo&&fjUfoHov(j))return fjFlyUFO(j,dt);if(j.air)return fjFlyAir(j,dt);const sx=j.stick.x,sy=j.stick.y,cass=j.cass,tp=j.tp||FJ_TYPES.falcon;
   if(j.man)fjManStep(j,dt);else{const want=sx*1.25;j.bank+=(want-j.bank)*Math.min(1,dt*(Math.abs(sx)>.05?3.2:2.2));
   const pr=-sy*1.2*(j.kind==="me"&&FJG.inv?-1:1);j.pitch+=pr*dt;if(Math.abs(sy)<.05)j.pitch*=Math.pow(.55,dt);j.pitch=Math.max(-1.25,Math.min(1.25,j.pitch));
   const turn=(Math.sin(j.bank)*(1.05+.25*(j.spd<200?1:0))+sx*.15)*tp.turn;j.yaw-=turn*dt}
-  let tgt=(FJ_THR[j.thr==null?1:j.thr]*tp.spd+(j.bo&&j.boost>0?110:0))*(cass?1.06:1)*(j.kind==="ai"?[.8,.9,.97][j.diff||0]:1);if(j.cave)tgt=Math.min(tgt,150);j.spd+=(tgt-j.spd)*Math.min(1,dt*.9)-Math.sin(j.pitch)*60*dt;j.spd=Math.max(110,Math.min(500,j.spd));
+  let tgt=(FJ_THR[j.thr==null?1:j.thr]*tp.spd+(j.bo&&j.boost>0?110:0))*(cass?1.06:1)*(j.kind==="ai"?[.8,.9,.97][j.diff||0]:1);if(j.cave)tgt=Math.min(tgt,150);j.spd+=(tgt-j.spd)*Math.min(1,dt*.9)-Math.sin(j.pitch)*60*dt;j.spd=Math.max(j.ufo&&!j.man?0:110,Math.min(500,j.spd));
   if(j.bo&&j.boost>0)j.boost=Math.max(0,j.boost-dt*.22);else j.boost=Math.min(1,j.boost+dt*.1);
   const cp=Math.cos(j.pitch),fx=Math.sin(j.yaw)*cp,fy=Math.sin(j.pitch),fz=Math.cos(j.yaw)*cp;j.v.set(fx*j.spd,fy*j.spd,fz*j.spd);j.p.addScaledVector(j.v,dt);
   /* the edge of the world: a gentle push back */const inSp=fjZoneOf(j)==="space",wc=inSp?[0,0]:[FJ_WB.x0+FJ_WB.S/2,FJ_WB.z0+FJ_WB.S/2],r=inSp?Math.hypot(j.p.x,j.p.y,j.p.z)/1.2:Math.max(Math.abs(j.p.x-wc[0]),Math.abs(j.p.z-wc[1]))*7600/(FJ_WB.S/2-2500);if(r>7600){const want2=Math.atan2(wc[0]-j.p.x,wc[1]-j.p.z);let d=want2-j.yaw;d=Math.atan2(Math.sin(d),Math.cos(d));j.yaw+=d*dt*1.2;if(j.kind==="me"&&FJG.t-(FJG.edgeT||0)>3){FJG.edgeT=FJG.t;fjMsg("↩️ EDGE OF THE WORLD — TURNING BACK",1.5)}}
   if(!inSp&&j.p.y>5200){j.p.y=5200;j.pitch=Math.min(j.pitch,0)}
+  if(j.ufo)return fjUfoPlace(j,dt);
   j.mesh.position.copy(j.p);j.mesh.rotation.set(-j.pitch,j.yaw,j.bank,"YXZ");
   const fl=j.mesh.userData.flames,thr=j.bo&&j.boost>0?1:.35;fl.forEach(f=>{const s=thr*(.85+Math.random()*.3);f.scale.set(1,s,1);f.position.z=(j.mesh.userData.fz+2)-2*s;f.material.opacity=.55+thr*.45})}
 /* does the jet hit the ground, the arch or the tunnel? returns what it hit */
-function fjCrash(j){if(j.hero||j.ufo)return null;if(j.kind==="me"&&FJG.zone==="space")return fjSpaceCrash(j);if(j.kind==="me"){const cc=fjCaveCrash(j);if(cc!==undefined)return cc}const p=j.p,gh=fjH(p.x,p.z);if(p.y<Math.max(gh,0)+3)return gh<0?"water":"ground";{const tc=fjTownCrash(p);if(tc)return tc}
+function fjCrash(j){if(j.hero||j.ufo&&(fjUfoHov(j)||FJG.warp))return null;if(j.kind==="me"&&FJG.zone==="space")return fjSpaceCrash(j);if(j.kind==="me"){const cc=fjCaveCrash(j);if(cc!==undefined)return cc}const p=j.p,gh=fjH(p.x,p.z);if(p.y<Math.max(gh,0)+3)return gh<0?"water":"ground";{const tc=fjTownCrash(p);if(tc)return tc}
   const A=FJW.arch;if(A&&Math.abs(p.x-A.cx)<A.R+80&&Math.abs(p.z-A.cz)<A.R+80){for(const q of A.pts)if((p.x-q[0])**2+(p.y-q[1])**2+(p.z-q[2])**2<(A.r+4)**2)return"arch"}
   const U=FJW.tun;if(U&&Math.hypot(p.x-U.pts[12].x,p.z-U.pts[12].z)<900){for(const q of U.pts){const dx=p.x-q.x,dz=p.z-q.z,along=dx*q.dx+dz*q.dz;if(Math.abs(along)>42)continue;const s2=Math.abs(-dx*q.dz+dz*q.dx),hw=q.hw,ow=hw+110;
     const inner=s2<hw?q.fl-30+Math.sqrt(1-(s2/hw)**2)*(U.roof+30):-1e9,outer=s2<ow?q.fl-40+Math.sqrt(1-(s2/ow)**2)*(U.roof+150):-1e9;if(p.y<outer&&p.y>inner-4)return"tunnel"}}
@@ -6486,7 +6508,7 @@ function fjFrame(dt){const G=FJG;if(!G||G.dead||!FJR||!FJR.built)return;G.t+=dt;
 /* everything that moves (no drawing) */
 function fjUpdate(dt){const G=FJG;const me=G.me;
     /* my controls */if(me&&!me.dead&&G.mode==="fly"){const k=G.keys;let sx=G.stick.x,sy=G.stick.y;if($("#fjctl").classList.contains("tilt")){const t=fjTiltRead();if(t){sx=t.x;sy=t.y}}if(k.ArrowLeft||k.a)sx=-1;if(k.ArrowRight||k.d)sx=1;if(k.ArrowUp||k.w)sy=-1;if(k.ArrowDown||k.s)sy=1;me.stick.x=sx;me.stick.y=sy;me.fire=(G.btn.gun||k[" "])?1:0;me.bo=G.btn.bo||k.Shift?1:0;if(G.mapOn)fjAutopilot(me);fjCaveStep(me,dt);
-      /* Cass gets an automatic pull-up if he's about to hit the ground */if(!me.cave&&G.zone!=="space"&&!me.hero&&!me.ufo&&!(me.air&&(me.gnd||fjNearStrip(me.p,3000)))){const ah=me.p.clone().addScaledVector(me.v,me.cass?1.1:.7),gh=fjInCave(ah)?-1e9:Math.max(0,fjHT(ah.x,ah.z));me.warn=ah.y<gh+40;if(me.cass&&ah.y<gh+25)me.stick.y=Math.min(me.stick.y,-.9)}else me.warn=0}
+      /* Cass gets an automatic pull-up if he's about to hit the ground */if(!me.cave&&G.zone!=="space"&&!me.hero&&!(me.ufo&&fjUfoHov(me))&&!(me.air&&(me.gnd||fjNearStrip(me.p,3000)))){const ah=me.p.clone().addScaledVector(me.v,me.cass?1.1:.7),gh=fjInCave(ah)?-1e9:Math.max(0,fjHT(ah.x,ah.z));me.warn=ah.y<gh+40;if(me.cass&&ah.y<gh+25)me.stick.y=Math.min(me.stick.y,-.9)}else me.warn=0}
     for(const j of G.jets.slice()){const same=j===me||fjSameZone(j,me);if(!same&&j.kind!=="remote")continue;if(same){fjBeacon(j,dt);fjNavGlow(j)}if(j.kind==="monster"){fjMonStep(j,dt);continue}if(j.kind==="alien"){fjAlienStep(j,dt);continue}if(j.kind==="remote")continue;if(j.kind==="guide"){fjGuideStep(j,dt);continue}j.inv=Math.max(0,j.inv-dt);j.misT=Math.max(0,j.misT-dt);j.flT=Math.max(0,j.flT-dt);
       if(j.dead){j.rt-=dt;if(j.rt<=0&&!G.over&&G.mode==="fly"){if(j.kind==="me"&&G.zone==="space")fjToEarth(1);fjRespawn(j);if(j.kind==="me"){G.cam=null;if(G.sub!=="airline")fjMsg("✈️ BACK IN THE AIR!",1.5)}}continue}
       if(j.kind==="ai")fjAI(j,dt);fjFly(j,dt);if(j.hero)fjHeroPowers(j,dt);else if(j.ufo){fjUfoZap(j,dt);fjUfoBeam(j,dt)}else{fjLockStep(j,dt);fjGun(j,dt)}
@@ -6500,10 +6522,13 @@ function fjUpdate(dt){const G=FJG;const me=G.me;
 function fjTrails(j,dt){if(j.hero||j.ufo)return;const pull=Math.abs(j.bank)>.7||Math.abs(j.stick.y)>.6||j.spd>240;if(!pull||Math.random()>.85)return;for(const s of[-1,1]){const tip=new THREE.Vector3(s*7.3,-.1,-4.8).applyEuler(j.mesh.rotation).add(j.p);
   FJE.fx.add({x:tip.x,y:tip.y,z:tip.z,vx:0,vy:0,vz:0,t:0,life:.9,s0:1.6,s1:4,c:[1,1,1],a:.45,drag:1})}}
 function fjCamera(dt){const G=FJG,cam=FJR.cam,me=G.me;if(!me)return;let tgt=me.p;const vw=fjView(),looking=!me.dead&&(G.btn.look||G.keys.l||G.keys.L);if(!me.dead)me.mesh.visible=!(vw==="cockpit"&&!looking);if(looking){const t=fjFocus();if(t){fjLookCam(dt,me,t);return}}if(me.dead){/* watch the wreck from a little way off */const a=G.t*.4;const want=new THREE.Vector3(me.p.x+Math.cos(a)*120,me.p.y+50,me.p.z+Math.sin(a)*120);cam.position.lerp(want,1-Math.exp(-dt*2));cam.lookAt(me.p);return}if(vw==="cockpit")return fjCockpitCam(dt,me);if(vw==="flyby"&&!me.cave)return fjFlybyCam(dt,me);const far=vw==="far"?1:0;
-  if(me.man&&!me.hero&&!me.ufo&&me.man.k==="loop")return fjManCam(dt,me,far);const cp=Math.cos(me.pitch),f=new THREE.Vector3(Math.sin(me.yaw)*cp,Math.sin(me.pitch),Math.cos(me.yaw)*cp),bp=me.man&&me.man.off?me.p.clone().addScaledVector(me.man.off,-.8):me.p,want=bp.clone().addScaledVector(f,me.ufo?(far?-115:(me.us&&me.us.beam?-62:-54)):me.hero?(far?-22:-6):me.air?(far?-170:-95):(far?-85:-34)).add(new THREE.Vector3(0,(me.ufo?(far?36:(me.us&&me.us.beam?40:15)):me.hero?(far?6:1.9):me.air?(far?44:24):(far?24:9))+Math.max(0,-me.pitch)*6,0));
+  if(me.man&&me.man.R&&me.man.k==="loop")return fjManCam(dt,me,far);const cp=Math.cos(me.pitch),f=new THREE.Vector3(Math.sin(me.yaw)*cp,Math.sin(me.pitch),Math.cos(me.yaw)*cp),bp=me.man&&me.man.off?me.p.clone().addScaledVector(me.man.off,-.8):me.p,want=bp.clone().addScaledVector(f,me.ufo?(far?-115:-54):me.hero?(far?-22:-6):me.air?(far?-170:-95):(far?-85:-34)).add(new THREE.Vector3(0,(me.ufo?(far?36:15):me.hero?(far?6:1.9):me.air?(far?44:24):(far?24:9))+Math.max(0,-me.pitch)*6,0));
+  /* a hovering saucer: sit just behind it and look down the beam at what's being picked up */let hvL=null,hvK=0;if(me.ufo&&!me.man&&!far&&G.zone!=="space"){hvK=Math.max(0,Math.min(1,1-(me.spd-25)/90));if(hvK>0){const fx=Math.sin(me.yaw),fz=Math.cos(me.yaw),alt=me.p.y-Math.max(0,fjH(me.p.x,me.p.z));
+    want.lerp(new THREE.Vector3(me.p.x-fx*72,me.p.y+18,me.p.z-fz*72),hvK);hvL=new THREE.Vector3(me.p.x+fx*8,me.p.y-Math.max(10,Math.min(45,alt*.75)),me.p.z+fz*8)}}
   if(me.cave){for(let k=0;k<5;k++){const cw=fjCaveAt(want);if(cw&&cw.f<.8)break;want.lerp(me.p,.45)}}else if(G.zone!=="space"){const minY=Math.max(0,me.hero?fjHeroSurf(want.x,want.z,want.y):fjH(want.x,want.z))+(me.hero?1.2:6);if(want.y<minY)want.y=minY}
   if(!G.cam){cam.position.copy(want);G.cam=1}else cam.position.lerp(want,1-Math.exp(-dt*(me.hero?22:7)));
-  const look=bp.clone().addScaledVector(f,me.hero?25:me.air?150:60);cam.up.set(Math.sin(me.bank)*.25*-Math.cos(me.yaw)*0,1,0);cam.lookAt(look);cam.rotateZ(-(me.man&&me.man.k==="roll"?me.man.b0:me.bank)*.35);
+  const look=bp.clone().addScaledVector(f,me.hero?25:me.air?150:60);
+  if(hvL)look.lerp(hvL,hvK);cam.up.set(Math.sin(me.bank)*.25*-Math.cos(me.yaw)*0,1,0);cam.lookAt(look);cam.rotateZ(-((me.man&&me.man.k==="roll"?me.man.b0:me.bank)||0)*.35);
   const fov=66+(me.bo&&me.boost>0?10:0)+(me.spd-175)*.03;cam.fov+=(fov-cam.fov)*Math.min(1,dt*3);
   if(G.shake>0){G.shake=Math.max(0,G.shake-dt*2);cam.position.x+=(Math.random()-.5)*G.shake*3;cam.position.y+=(Math.random()-.5)*G.shake*3}cam.updateProjectionMatrix()}
 /* behind the menu: a slow flight over the island */
