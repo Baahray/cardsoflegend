@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta name="app-build" content="20 Nov 13:56 PT"><meta charset="utf-8">
+<html lang="en"><head><meta name="app-build" content="20 Nov 18:10 PT"><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Legends"><meta name="theme-color" content="#14102e">
@@ -6603,7 +6603,7 @@ function fjGunSound(){try{if(typeof SND!=="undefined"&&!SND||!AC)return;const t=
    its missiles in the air (ms), how many flare bursts (fc), and whether its gun is firing. games/fjwin = the wins. */
 function fjListen(){if(typeof GNAME!=="undefined")GNAME.jet="SKY ACES";
   db.doc("games/fjl").onSnapshot(s=>{FJD.live=s.exists?s.data():null;fjOnLive()},er);
-  for(const k of["X","O"])db.doc("games/fjp_"+k).onSnapshot(s=>{if(k!==me()&&s.exists)fjOnPos(s.data())},er);
+  for(const k of["X","O"])db.doc("games/fjp_"+k).onSnapshot(s=>{if(k!==me()&&s.exists)fjOnPos(s.data())},er);for(const k of["X","O"])db.doc("games/fjsig_"+k).onSnapshot(s=>{if(k!==me()&&s.exists)fjP2PSig(s.data())},er);
   db.doc("games/fjwin").onSnapshot(s=>{FJD.win=s.exists?s.data():{}},er);
   FJD.jet=FJD.jet||{};for(const k of["X","O"])db.doc("games/fjjet_"+k).onSnapshot(s=>{if(s.exists)FJD.jet[k]=s.data()},er);FJD.hero=FJD.hero||{};for(const k of["X","O"])db.doc("games/fjhero_"+k).onSnapshot(s=>{if(s.exists)FJD.hero[k]=s.data()},er)}
 function fjLiveNew(c){return db.doc("games/fjl").set({id:c&&c.id||Date.now(),at:Date.now(),rX:0,rO:0,s:0,qX:0,qO:0,fr:c&&c.mode==="team"?1:c&&c.mode==="monster"?2:0,mk:c&&c.mon||"crab"})}
@@ -6629,7 +6629,7 @@ function fjLiveGo(){const G=FJG,L=FJD.live;if(G.mode==="fly"&&G.lid===L.id)retur
   fjPlay({mode:L.fr===2?"monster":L.fr?"together":"live",isle:L.fr===1?L.isle:undefined,spawn:me()==="X"?0:1,net:L.fr===2?1:0,mon:L.mk||"crab"});G.lid=L.id;G.startAt=L.s;G.seq=0;G.evs=[];G.evDone=0;G.fcSent=0;G.foeFc=0;G.myDeaths=0;G.netT=0;G.lastPkt=Date.now();G.mine={};
   const S=fjSet();S.done=L.id;fjSave(S);G.foe.net=null}
 /* during the fight */
-function fjLiveStep(dt){const G=FJG,F=G.foe,me=G.me;if(!F)return;
+function fjLiveStep(dt){const G=FJG,F=G.foe,me=G.me;if(!F)return;fjP2PTick(G.lid);
   /* the countdown: everyone frozen in the air until it starts */const left=(G.startAt-Date.now())/1000;if(left>0){me.inv=Math.max(me.inv,3);const n=Math.ceil(left);if(n!==G.cd){G.cd=n;fjMsg(String(n),.9);sfx("tap")}}else if(G.cd){G.cd=0;fjMsg(G.peace?"🤝 GO! FOLLOW ME!":"⚔️ FIGHT!",1.2);sfx(G.peace?"win":"b_boom")}
   const n=F.net;if(n){const age=Math.min(.6,(Date.now()-n.at)/1000),tx=n.p[0]+n.v[0]*age,ty=n.p[1]+n.v[1]*age,tz=n.p[2]+n.v[2]*age,k=1-Math.exp(-dt*8);
     if(F.p.distanceTo(new THREE.Vector3(tx,ty,tz))>400)F.p.set(tx,ty,tz);else{F.p.x+=(tx-F.p.x)*k;F.p.y+=(ty-F.p.y)*k;F.p.z+=(tz-F.p.z)*k}
@@ -6639,13 +6639,15 @@ function fjLiveStep(dt){const G=FJG,F=G.foe,me=G.me;if(!F)return;
   if(Date.now()-G.lastPkt>12000&&!G.over&&left<=0){if(G.peace)return fjSoloOn("Lost touch with "+fjOther()+"'s phone — flying on your own now");G.over=1;fjEnd(false,"Lost touch with "+fjOther()+"'s phone.")}
   fjLiveSend(0)}
 /* my jet, a few times a second (straight away when something happens) */
-function fjLiveSend(force){const G=FJG;if(!G||!G.live||!G.me)return;const now=performance.now();if(!force&&now-G.netT<160)return;if(force===1&&now-G.netT<70)return;G.netT=now;const j=G.me,r=v=>Math.round(v*10)/10;
+/* straight to their phone ~20 times a second; if there is no direct link, through Firebase ~3 times a second (to save the daily allowance) */
+function fjLiveSend(force){const G=FJG;if(!G||!G.live||!G.me)return;const now=performance.now(),dir=FJP2P.open&&FJP2P.lid===G.lid,gap=force===2?0:dir?(force?15:50):(force?120:300);if(now-G.netT<gap)return;G.netT=now;const j=G.me,r=v=>Math.round(v*10)/10;
   const ms=G.mis.filter(m=>m.own===j).slice(0,6).map(m=>({i:m.id,p:[r(m.p.x),r(m.p.y),r(m.p.z)],v:[r(m.v.x),r(m.v.y),r(m.v.z)],t:m.tgt&&m.tgt===G.foe?1:0}));
-  try{db.doc("games/fjp_"+me()).set({id:G.lid,k:++G.seq,p:[r(j.p.x),r(j.p.y),r(j.p.z)],v:[r(j.v.x),r(j.v.y),r(j.v.z)],r:[Math.round(j.pitch*1000)/1000,Math.round(j.yaw*1000)/1000,Math.round(j.bank*1000)/1000],s:Math.round(j.spd),bo:j.bo&&j.boost>0?1:0,
-    hp:Math.max(0,Math.round(j.hp)),hm:j.hpM,dead:j.dead?1:0,dn:G.myDeaths||0,inv:j.inv>0?1:0,ev:G.evs.slice(-8),ms,fc:G.fcSent||0,gf:j.fire&&!j.dead?1:0,hz:j.hero?1:0,uf:j.ufo?1:0,ap:j.fire&&j.lzEnd?[Math.round(j.lzEnd.x),Math.round(j.lzEnd.y),Math.round(j.lzEnd.z)]:0,ub:j.us&&j.us.beam?1:0,sm:j.man||j.smokeT>0?1:0,mv:j.hero&&j.mvN?[j.mvN,j.man?j.man.k:""]:0,hg:j.hs&&j.hs.ground?1:0,tz:G.tsync||[],zn:G.zone||"earth",mn:G.mon&&!G.mon.remote?[r(G.mon.p.x),r(G.mon.p.y),r(G.mon.p.z),Math.round(G.mon.yaw*1000)/1000,Math.round(G.mon.hp),G.mon.st==="rise"||G.mon.st==="arrive"?0:1,G.mon.smash,G.mon.dead?1:0,Math.round(G.mon.pitch*1000)/1000,Math.round(G.mon.bank*1000)/1000,Math.round(G.mon.base)]:null}).catch(er)}catch(e){console.error("live send",e)}}
+  const pk={id:G.lid,k:++G.seq,p:[r(j.p.x),r(j.p.y),r(j.p.z)],v:[r(j.v.x),r(j.v.y),r(j.v.z)],r:[Math.round(j.pitch*1000)/1000,Math.round(j.yaw*1000)/1000,Math.round(j.bank*1000)/1000],s:Math.round(j.spd),bo:j.bo&&j.boost>0?1:0,
+    hp:Math.max(0,Math.round(j.hp)),hm:j.hpM,dead:j.dead?1:0,dn:G.myDeaths||0,inv:j.inv>0?1:0,ev:G.evs.slice(-8),ms,fc:G.fcSent||0,gf:j.fire&&!j.dead?1:0,hz:j.hero?1:0,uf:j.ufo?1:0,ap:j.fire&&j.lzEnd?[Math.round(j.lzEnd.x),Math.round(j.lzEnd.y),Math.round(j.lzEnd.z)]:0,ub:j.us&&j.us.beam?1:0,sm:j.man||j.smokeT>0?1:0,mv:j.hero&&j.mvN?[j.mvN,j.man?j.man.k:""]:0,hg:j.hs&&j.hs.ground?1:0,tz:G.tsync||[],zn:G.zone||"earth",mn:G.mon&&!G.mon.remote?[r(G.mon.p.x),r(G.mon.p.y),r(G.mon.p.z),Math.round(G.mon.yaw*1000)/1000,Math.round(G.mon.hp),G.mon.st==="rise"||G.mon.st==="arrive"?0:1,G.mon.smash,G.mon.dead?1:0,Math.round(G.mon.pitch*1000)/1000,Math.round(G.mon.bank*1000)/1000,Math.round(G.mon.base)]:null};
+  if(dir&&fjP2PSend(pk))return;try{db.doc("games/fjp_"+me()).set(pk).catch(er)}catch(e){console.error("live send",e)}}
 /* I hit them: tell their phone */
 function fjLiveHit(dmg,how){const G=FJG;G.evSeq=(G.evSeq||0)+1;G.evs.push({n:G.evSeq,d:Math.round(dmg*10)/10,h:how});if(G.evs.length>8)G.evs.shift();if(how==="missile")sfx("b_boom");fjLiveSend(1)}
-function fjOnPos(d){const G=FJG;if(!G||!G.live||d.id!==G.lid||!G.foe)return;const F=G.foe,me=G.me;G.lastPkt=Date.now();
+function fjOnPos(d){const G=FJG;if(!G||!G.live||d.id!==G.lid||!G.foe)return;const F=G.foe,me=G.me;/* an older update arriving late (direct and Firebase can cross) */if(F.net&&F.net.id===d.id&&d.k<=F.net.k&&F.net.k-d.k<300)return;G.lastPkt=Date.now();
   if(!F.net)F.p.set(...d.p);F.net={...d,at:Date.now()};fjHeroRemote(F,d);fjUfoRemote(F,d);{const zn=d.zn||"earth";if(fjZoneOf(F)!==zn){F.zone=zn;if(F.mesh.parent)F.mesh.parent.remove(F.mesh);(zn==="space"?fjSpaceBuild().scene:FJR.scene).add(F.mesh);F.p.set(...d.p)}}if(d.tz)fjTownApply(d.tz);
   if(d.mn)G.monNet=d.mn;/* hits they landed on me (or on the monster) */for(const e of d.ev||[])if(e.n>G.evDone){G.evDone=e.n;if(e.h==="mon"){if(G.mon&&!G.mon.remote)fjMonHit(G.mon,e.d,"net",null);continue}if(!me.dead&&me.inv<=0){me.hp-=e.d;me.hitT=.25;G.shake=Math.max(G.shake||0,e.h==="missile"?1:.25);if(e.h==="missile")fjBoom(me.p.x,me.p.y,me.p.z,0);if(me.hp<=0)fjDown(me,F,e.h)}}
   /* they went down */if(d.dead&&!F.dead){F.dead=1;fjBoom(F.p.x,F.p.y,F.p.z,1);F.mesh.visible=false;FJE.chute={p:F.p.clone(),t:0};if(G.peace)fjMsg("💥 "+fjOther().toUpperCase()+" CRASHED! Back in a moment…",2.5);else{sfx("win");fjMsg("🎯 "+fjOther().toUpperCase()+" IS DOWN! +1",2.5)}}else if(!d.dead&&F.dead){F.dead=0;F.p.set(...d.p)}
@@ -6654,10 +6656,53 @@ function fjOnPos(d){const G=FJG;if(!G||!G.live||d.id!==G.lid||!G.foe)return;cons
   /* their missiles in the air: show them (and warn me) */const seen={};for(const q0 of d.ms||[]){const q=Array.isArray(q0)?q0:q0&&q0.p?[q0.i,...q0.p,...q0.v,q0.t]:null;if(!q)continue;seen[q[0]]=1;let m=G.mis.find(m=>m.id===q[0]&&m.remote);if(!m){const mesh=fjMissileModel(FJR.env);mesh.scale.setScalar(1.6);FJR.scene.add(mesh);m={id:q[0],remote:1,own:F,p:new THREE.Vector3(),v:new THREE.Vector3(),spd:0,mesh,life:9,age:0};G.mis.push(m)}
     m.p.set(q[1],q[2],q[3]);m.v.set(q[4],q[5],q[6]);m.tgt=q[7]?me:null;m.seen=Date.now()}
   for(const m of G.mis)if(m.remote&&!seen[m.id]&&Date.now()-m.seen>400){m.life=0;m.quiet=1}}
-function fjLiveQuit(){const G=FJG;if(G&&G.lid)db.doc("games/fjl").update({["q"+me()]:1}).catch(er)}
+function fjLiveQuit(){fjP2PStop();const G=FJG;if(G&&G.lid)db.doc("games/fjl").update({["q"+me()]:1}).catch(er)}
 function fjLiveWin(){const w=FJD.win||{};db.doc("games/fjwin").update({[me()]:(w[me()]||0)+1}).catch(er)}
 /* flying together and the other phone leaves: carry on alone (with the guide planes) */
-function fjSoloOn(why){const G=FJG;if(!G)return;const F=G.foe;if(F){FJR.scene.remove(F.mesh);G.jets=G.jets.filter(j=>j!==F)}if(G.sub==="monster"){G.foe=null;G.live=0;if(G.mon)G.mon.remote=0;fjMsg(fjOther()+" had to go — keep fighting Clawdon! 💪",3.5);return}G.foe=null;G.live=0;G.sub="free";G.peace=1;G.over=0;fjGuides();fjMsg(why,3.5)}
+function fjSoloOn(why){fjP2PStop();const G=FJG;if(!G)return;const F=G.foe;if(F){FJR.scene.remove(F.mesh);G.jets=G.jets.filter(j=>j!==F)}if(G.sub==="monster"){G.foe=null;G.live=0;if(G.mon)G.mon.remote=0;fjMsg(fjOther()+" had to go — keep fighting Clawdon! 💪",3.5);return}G.foe=null;G.live=0;G.sub="free";G.peace=1;G.over=0;fjGuides();fjMsg(why,3.5)}
+
+/* ---------- SKY ACES: a direct phone-to-phone link for live play ----------
+   Firebase only introduces the two phones (one "offer" doc from Dad's phone, one "answer" doc back from Cass's,
+   in games/fjsig_X|O). After that every position update goes straight between the phones over a WebRTC data
+   channel: about 20 a second, nothing saved, nothing counted against the Firebase daily allowance.
+   If the link can't be made (some mobile networks block it), the game falls back to Firebase, but slower. */
+const FJP2P={pc:null,dc:null,lid:null,n:0,open:0,t0:0,pend:null,tries:0,said:0};
+const FJ_ICE=[{urls:["stun:stun.l.google.com:19302","stun:stun1.l.google.com:19302"]},{urls:"stun:stun.cloudflare.com:3478"}];
+function fjP2POk(){return typeof RTCPeerConnection!=="undefined"&&typeof db!=="undefined"&&db}
+function fjP2PStop(){const P=FJP2P;try{if(P.dc)P.dc.close()}catch(e){}try{if(P.pc)P.pc.close()}catch(e){}P.pc=P.dc=null;P.open=0}
+/* wait until the phone has worked out the ways it can be reached: all of them, or after 2.5 s at least its
+   public internet address (from the STUN server), or after 10 s whatever it has */
+function fjP2PGather(pc){return new Promise(ok=>{const t0=Date.now();let done=0;const fin=()=>{if(!done){done=1;clearInterval(iv);ok()}};
+  const iv=setInterval(()=>{const sdp=(pc.localDescription&&pc.localDescription.sdp)||"",dt=Date.now()-t0;if(pc.iceGatheringState==="complete"||dt>2500&&/typ (srflx|relay)/.test(sdp)||dt>10000&&/a=candidate/.test(sdp)||dt>20000)fin()},250);
+  pc.addEventListener("icegatheringstatechange",()=>{if(pc.iceGatheringState==="complete")fin()})})}
+function fjP2PNew(lid,n){const P=FJP2P;fjP2PStop();P.lid=lid;P.n=n;P.open=0;P.t0=Date.now();
+  const pc=new RTCPeerConnection({iceServers:FJ_ICE});P.pc=pc;
+  pc.onconnectionstatechange=()=>{if(P.pc===pc&&(pc.connectionState==="failed"||pc.connectionState==="closed"||pc.connectionState==="disconnected"))P.open=0};
+  return pc}
+function fjP2PWire(dc){const P=FJP2P;P.dc=dc;
+  dc.onopen=()=>{if(P.dc!==dc)return;P.open=1;if(!P.said){P.said=1;try{fjMsg("⚡ Direct link to "+fjOther()+"'s phone",1.6)}catch(e){}}};
+  dc.onclose=()=>{if(P.dc===dc)P.open=0};
+  dc.onmessage=e=>{try{fjOnPos(JSON.parse(e.data))}catch(x){}}}
+/* Dad's phone (X) makes the offer; Cass's phone (O) answers it */
+async function fjP2POffer(lid){const P=FJP2P;P.tries++;const n=Date.now(),pc=fjP2PNew(lid,n);
+  fjP2PWire(pc.createDataChannel("fj",{ordered:false,maxRetransmits:0}));
+  try{await pc.setLocalDescription(await pc.createOffer());await fjP2PGather(pc);if(P.pc!==pc)return;
+    await db.doc("games/fjsig_"+me()).set({id:lid,n,t:"offer",sdp:pc.localDescription.sdp,at:Date.now()})}catch(e){console.error("p2p offer",e)}}
+async function fjP2PAnswer(d){const P=FJP2P,pc=fjP2PNew(d.id,d.n);pc.ondatachannel=e=>fjP2PWire(e.channel);
+  try{await pc.setRemoteDescription({type:"offer",sdp:d.sdp});await pc.setLocalDescription(await pc.createAnswer());await fjP2PGather(pc);if(P.pc!==pc)return;
+    await db.doc("games/fjsig_"+me()).set({id:d.id,n:d.n,t:"answer",sdp:pc.localDescription.sdp,at:Date.now()})}catch(e){console.error("p2p answer",e)}}
+/* the other phone's signal doc changed */
+function fjP2PSig(d){const P=FJP2P;if(!d||!d.sdp)return;
+  if(d.t==="offer"){if(Date.now()-(d.at||0)>10*60*1000)return;/* an old one from a past game */if(P.lid!==d.id){P.pend=d;return}if(P.n===d.n&&P.pc)return;P.pend=null;fjP2PAnswer(d);return}
+  if(d.t==="answer"&&P.pc&&d.id===P.lid&&d.n===P.n&&P.pc.signalingState==="have-local-offer")P.pc.setRemoteDescription({type:"answer",sdp:d.sdp}).catch(e=>console.error("p2p",e))}
+/* called every frame of a live game: start the link, and try again (a few times) if it hasn't come up */
+function fjP2PTick(lid){const P=FJP2P;if(!fjP2POk()||!lid)return;
+  if(P.lid!==lid){fjP2PStop();P.lid=lid;P.n=0;P.tries=0;P.said=0;P.t0=Date.now();if(me()==="X")fjP2POffer(lid);else if(P.pend&&P.pend.id===lid){const d=P.pend;P.pend=null;fjP2PAnswer(d)}return}
+  /* not up yet: try again, but never while an attempt is still getting going */
+  if(me()==="X"&&!P.open&&P.tries<3&&Date.now()-P.t0>30000){const c=P.pc&&P.pc.connectionState;if(c==="connecting"&&Date.now()-P.t0<40000)return;fjP2POffer(lid)}}
+/* send one update straight to the other phone; false = no link (use Firebase instead) */
+function fjP2PSend(d){const P=FJP2P,c=P.dc;if(!P.open||!c||c.readyState!=="open")return false;if(c.bufferedAmount>65536)return true;/* busy: skip this one */
+  try{c.send(JSON.stringify(d));return true}catch(e){P.open=0;return false}}
 
 /*FJ-END*/</script>
 <script>
@@ -6759,7 +6804,7 @@ function shell(){
   $("#nav").innerHTML=[["today",IC("camera",30),"Today"],["cards",IC("cards",30),"Cards"],["play",IC("play",30),"Play"]].map(([k,i,l])=>`<button data-t="${k}" class="${tab===k?"on":""}"><span>${i}</span>${l}</button>`).join("");
   document.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{tab=b.dataset.t;g=null;reveal=null;bt=null;shell()});view();
 }
-function view(){if(SOLO&&g!==SOLO_G)soloEnd();if(g!=="jet"&&typeof FJG!=="undefined"&&FJG){FJG.dead=1;FJG=null;try{fjSound(0)}catch(e){}window.onkeydown=window.onkeyup=null}if(g!=="rw"&&typeof RWG!=="undefined"&&RWG){RWG.dead=1;RWG=null;window.onkeydown=window.onkeyup=null}if(g!=="dr"&&typeof DRG!=="undefined"&&DRG){drEngine(0);DRG=null;window.onkeydown=window.onkeyup=null}if(g!=="zt"&&typeof ZTG!=="undefined"&&ZTG){ZTG=null;window.onkeydown=window.onkeyup=null}if(g!=="ff"&&typeof FFG!=="undefined"&&FFG){ffSndStop();FFG=null;window.onkeydown=window.onkeyup=null}if(g!=="wb"&&typeof WBG!=="undefined"&&WBG){WBG=null;window.onkeydown=null}if(g!=="hoop"&&g!=="sm"&&g!=="race"&&g!=="pen"&&g!=="zt"&&g!=="ff"&&g!=="wb"){document.body.classList.remove("dfon");if(typeof g2Stop==="function"&&document.getElementById("g2c")===null)cancelAnimationFrame(g2Loop.h)}clearInterval(tick);if(PENDC&&!["battle","draw","earn"].includes(g)){const n=PENDC;PENDC=0;setTimeout(()=>coinFly(n),300)}setPot();const vk=tab+"|"+g+"|"+(typeof MDAY!=="undefined"?MDAY:""),vy=window.scrollY;({today:vToday,cards:vCards,play:vPlay})[tab]();if(vk===view.vk&&vy)window.scrollTo(0,vy);view.vk=vk;document.querySelectorAll(".tc.big").forEach(tilt);if(msg!==view.lm){view.lm=msg;toast(msg)}}
+function view(){if(SOLO&&g!==SOLO_G)soloEnd();if(g!=="jet"&&typeof FJG!=="undefined"&&FJG){FJG.dead=1;FJG=null;try{fjSound(0)}catch(e){}try{fjP2PStop()}catch(e){}window.onkeydown=window.onkeyup=null}if(g!=="rw"&&typeof RWG!=="undefined"&&RWG){RWG.dead=1;RWG=null;window.onkeydown=window.onkeyup=null}if(g!=="dr"&&typeof DRG!=="undefined"&&DRG){drEngine(0);DRG=null;window.onkeydown=window.onkeyup=null}if(g!=="zt"&&typeof ZTG!=="undefined"&&ZTG){ZTG=null;window.onkeydown=window.onkeyup=null}if(g!=="ff"&&typeof FFG!=="undefined"&&FFG){ffSndStop();FFG=null;window.onkeydown=window.onkeyup=null}if(g!=="wb"&&typeof WBG!=="undefined"&&WBG){WBG=null;window.onkeydown=null}if(g!=="hoop"&&g!=="sm"&&g!=="race"&&g!=="pen"&&g!=="zt"&&g!=="ff"&&g!=="wb"){document.body.classList.remove("dfon");if(typeof g2Stop==="function"&&document.getElementById("g2c")===null)cancelAnimationFrame(g2Loop.h)}clearInterval(tick);if(PENDC&&!["battle","draw","earn"].includes(g)){const n=PENDC;PENDC=0;setTimeout(()=>coinFly(n),300)}setPot();const vk=tab+"|"+g+"|"+(typeof MDAY!=="undefined"?MDAY:""),vy=window.scrollY;({today:vToday,cards:vCards,play:vPlay})[tab]();if(vk===view.vk&&vy)window.scrollTo(0,vy);view.vk=vk;document.querySelectorAll(".tc.big").forEach(tilt);if(msg!==view.lm){view.lm=msg;toast(msg)}}
 const back=`<button class="b d" id="bk" style="margin-bottom:10px;display:inline-flex;align-items:center;gap:6px">${IC("back",24)}BACK</button>`,wb=()=>{$("#bk").onclick=()=>{g=null;view()}};
 
 let SND=true,AC=null;
