@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta name="app-build" content="23 Nov 10:14 PT"><meta charset="utf-8">
+<html lang="en"><head><meta name="app-build" content="23 Nov 10:34 PT"><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Legends"><meta name="theme-color" content="#14102e">
@@ -6747,7 +6747,7 @@ function fjP2PSend(d){const P=FJP2P,c=P.dc;if(!P.open||!c||c.readyState!=="open"
 /*FJ-END*/</script>
 <script>/*WG-START*/
 /* which build this is; if a newer one is on the server when you come back to the app, it reloads itself */
-const WG_BUILD="20261123181455";
+const WG_BUILD="20261123183424";
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState!=="visible")return;fetch("version.txt?"+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():"").then(t=>{t=(t||"").trim();if(!t||t===WG_BUILD)return;if(!g)location.reload();else{const b=document.createElement("div");b.className="wgupd";b.textContent="A new version is ready - tap here to update";b.onclick=()=>location.reload();document.body.appendChild(b)}}).catch(()=>{})});
 /* three.js r128 helpers (MIT) and cannon-es physics (MIT), run once THREE has loaded */
 function wgLibs(){
@@ -12755,13 +12755,15 @@ function wgLoadPeople(){if(WG_PPL)return Promise.resolve();return fetch("wg_peop
 function wgClips(kind){const C=WG_PPL.clips;if(C[kind])return C[kind];const T=THREE,out={},src=WG_PPL.animScene,dst=WG_PPL[kind==="big"?"big":"dad"].scene;
   const sb={},db={};src.traverse(o=>{if(o.name&&/^mixamorig/.test(o.name))sb[o.name.replace(/^mixamorig/,"")]=o});dst.traverse(o=>{if(o.isBone)db[o.name.replace(/^mixamorig/,"")]=o});
   const names=Object.keys(db).filter(n=>sb[n]);/* parents before children */const depth=o=>{let d=0;while(o.parent){d++;o=o.parent}return d};names.sort((a,b)=>depth(db[a])-depth(db[b]));
-  src.updateMatrixWorld(true);dst.updateMatrixWorld(true);const restS={},restT={},restLocal={};for(const n of names){restS[n]=sb[n].getWorldQuaternion(new T.Quaternion());restT[n]=db[n].getWorldQuaternion(new T.Quaternion());restLocal[n]=sb[n].quaternion.clone()}
+  src.updateMatrixWorld(true);dst.updateMatrixWorld(true);const restS={},restT={},restLocal={},align={};for(const n of names){restS[n]=sb[n].getWorldQuaternion(new T.Quaternion());restT[n]=db[n].getWorldQuaternion(new T.Quaternion());restLocal[n]=sb[n].quaternion.clone();
+    /* the two bodies don't stand the same way at rest (one has its arms out, the other lower): first turn each target bone to point
+       the way the source bone points at rest, then apply the motion */const ch=db[n].children.find(c=>c.isBone&&sb[c.name.replace(/^mixamorig/,"")]);align[n]=new T.Quaternion();if(ch){const cn=ch.name.replace(/^mixamorig/,""),ds=sb[cn].getWorldPosition(new T.Vector3()).sub(sb[n].getWorldPosition(new T.Vector3())),dt=ch.getWorldPosition(new T.Vector3()).sub(db[n].getWorldPosition(new T.Vector3()));if(ds.lengthSq()>1e-12&&dt.lengthSq()>1e-12)align[n].setFromUnitVectors(dt.normalize(),ds.normalize())}}
   const save={};for(const n of names)save[n]={q:sb[n].quaternion.clone(),p:sb[n].position.clone()};
   const hipS=sb.Hips?sb.Hips.getWorldPosition(new T.Vector3()).y:1,hipT=db.Hips?db.Hips.getWorldPosition(new T.Vector3()).y:1,dstRootQ=db.Hips&&db.Hips.parent?db.Hips.parent.getWorldQuaternion(new T.Quaternion()):new T.Quaternion();
   for(const clip of WG_PPL.anims){if(!["idle","walk","run","sneak_pose"].includes(clip.name))continue;const mixer=new T.AnimationMixer(src),act=mixer.clipAction(clip);act.play();const fps=30,n=Math.max(2,Math.ceil(clip.duration*fps)+1),times=new Float32Array(n),Q={},HY=new Float32Array(n);for(const nm of names)Q[nm]=new Float32Array(n*4);
     const wT={},qa=new T.Quaternion(),qb=new T.Quaternion();
     for(let f=0;f<n;f++){const t=Math.min(clip.duration,f/fps);times[f]=t;mixer.setTime(t);src.updateMatrixWorld(true);
-      for(const nm of names){const ws=sb[nm].getWorldQuaternion(new T.Quaternion());/* world turn away from rest, applied to the target's rest */const w=ws.multiply(qa.copy(restS[nm]).invert()).multiply(restT[nm]);wT[nm]=w;
+      for(const nm of names){const ws=sb[nm].getWorldQuaternion(new T.Quaternion());/* world turn away from rest, applied to the target's rest */const w=ws.multiply(qa.copy(restS[nm]).invert()).multiply(align[nm]).multiply(restT[nm]);wT[nm]=w;
         const pb=db[nm].parent,pn=pb&&pb.name?pb.name.replace(/^mixamorig/,""):null,pw=pn&&wT[pn]?wT[pn]:(pb?pb.getWorldQuaternion(qb):qb.identity());const loc=qa.copy(pw).invert().multiply(w);loc.toArray(Q[nm],f*4)}
       HY[f]=sb.Hips?sb.Hips.getWorldPosition(new T.Vector3()).y:hipS}
     mixer.stopAllAction();mixer.uncacheRoot(src);for(const nm of names){sb[nm].quaternion.copy(save[nm].q);sb[nm].position.copy(save[nm].p)}
