@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta name="app-build" content="23 Nov 10:34 PT"><meta charset="utf-8">
+<html lang="en"><head><meta name="app-build" content="23 Nov 10:40 PT"><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Legends"><meta name="theme-color" content="#14102e">
@@ -980,7 +980,7 @@ body.dfon{overflow:hidden}
 .wgupd{position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:9999;background:#ffd27a;color:#2a1a08;font:800 14px Outfit,system-ui,sans-serif;padding:10px 16px;border-radius:14px;box-shadow:0 4px 14px rgba(0,0,0,.4);cursor:pointer}
 .wgver{position:absolute;right:10px;bottom:8px;color:rgba(255,255,255,.55);font:600 11px Outfit,system-ui,sans-serif}
 .wglist{right:calc(134px + env(safe-area-inset-right,0px));top:calc(14px + env(safe-area-inset-top,0px));width:52px;height:52px;font-size:19px}
-.wgsleep{right:calc(200px + env(safe-area-inset-right,0px));bottom:calc(108px + env(safe-area-inset-bottom,0px));width:64px;height:64px;background:rgba(40,40,120,.55)}
+.wgsleep{right:calc(266px + env(safe-area-inset-right,0px));bottom:calc(38px + env(safe-area-inset-bottom,0px));width:64px;height:64px;background:rgba(40,40,120,.55)}
 .wgen{position:relative;width:96px;height:9px;border-radius:5px;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.45);margin-left:18px}.wgen i{display:block;height:100%;width:100%;border-radius:5px;background:linear-gradient(90deg,#ffe066,#7ee07a)}.wgen span{position:absolute;left:-19px;top:-6px;font-size:14px}
 .wglistp{position:absolute;right:calc(10px + env(safe-area-inset-right,0px));top:calc(74px + env(safe-area-inset-top,0px));bottom:calc(10px + env(safe-area-inset-bottom,0px));width:min(330px,calc(100% - 20px));overflow:auto;background:rgba(250,244,228,.96);color:#2a1a0a;border-radius:16px;padding:10px 12px;z-index:5;display:none;font:600 13px Outfit,system-ui,sans-serif;box-shadow:0 6px 24px rgba(0,0,0,.4)}
 .wglistp.on{display:block}.wglh{display:flex;align-items:center;gap:8px;margin-bottom:6px}.wglh b{font-size:16px}.wglh span{color:#8a6a3a}.wglh button{margin-left:auto;border:0;background:#e8d8b8;border-radius:10px;width:30px;height:30px;font-size:15px}
@@ -988,6 +988,7 @@ body.dfon{overflow:hidden}
 .wgli{display:flex;gap:8px;padding:5px 2px;border-bottom:1px solid rgba(0,0,0,.08)}.wgli i{font-style:normal}.wgli b{display:block}.wgli small{color:#7a6a58;font-weight:500}.wgli.ok b{text-decoration:line-through;color:#5a8a3a}
 .wgzz{position:absolute;inset:0;background:rgba(10,10,30,.92);color:#cfd8ff;font:800 34px Outfit,system-ui,sans-serif;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .8s;z-index:6}.wgzz.on{opacity:1}
 .wgcred{margin-top:10px;font:500 10px Outfit,system-ui,sans-serif;color:#8a7a68;line-height:1.35}
+.wgclimb{right:calc(196px + env(safe-area-inset-right,0px));bottom:calc(110px + env(safe-area-inset-bottom,0px));width:62px;height:62px}.wgclimb.on{background:rgba(120,200,120,.55);border-color:#bfffbf}
 
 /*WG-END*/
 </style></head><body><main>
@@ -6747,7 +6748,7 @@ function fjP2PSend(d){const P=FJP2P,c=P.dc;if(!P.open||!c||c.readyState!=="open"
 /*FJ-END*/</script>
 <script>/*WG-START*/
 /* which build this is; if a newer one is on the server when you come back to the app, it reloads itself */
-const WG_BUILD="20261123183424";
+const WG_BUILD="20261123184034";
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState!=="visible")return;fetch("version.txt?"+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():"").then(t=>{t=(t||"").trim();if(!t||t===WG_BUILD)return;if(!g)location.reload();else{const b=document.createElement("div");b.className="wgupd";b.textContent="A new version is ready - tap here to update";b.onclick=()=>location.reload();document.body.appendChild(b)}}).catch(()=>{})});
 /* three.js r128 helpers (MIT) and cannon-es physics (MIT), run once THREE has loaded */
 function wgLibs(){
@@ -12233,14 +12234,15 @@ function wgPlayerContacts(P){const b=P.b;let g=0,wall=null,wn=null;for(const c o
       /* sofa cushions are springy: you bounce, higher if you jump as you land */if(g.kind==="cushion"&&imp>70){b.velocity.y=Math.min(330,imp*.8*(P.jumpBuf>0?1.35:1));P.jumpBuf=0;P.land=.2;wgSfx("boing");g=0}}
     if(g){P.ground=g;P.gT=0}}if(!g)P.gT+=WG.fdt;if(wall){P.wallN=new THREE.Vector3(wn.x,0,wn.z).normalize();P.wallT=0}else P.wallT+=WG.fdt;P.prevVy=b.velocity.y}
 /* before each physics step: steer with forces, so heavy things push back */
-function wgPlayerForces(P,dt){const b=P.b,I=WG.in,v=b.velocity,m=b.mass,grav=-WG.world.gravity.y;if(P.jumpBuf>0)P.jumpBuf-=dt;
+function wgPlayerForces(P,dt){const b=P.b,I=WG.in,v=b.velocity,m=b.mass,grav=-WG.world.gravity.y;if(P.grip>0)P.grip-=dt;if(P.jumpBuf>0)P.jumpBuf-=dt;
   if(P.stuck){/* trapped under a glass or sucked up: you can only wriggle */b.force.x+=m*(-v.x)*20;b.force.z+=m*(-v.z)*20;P.jumpQ=0;return}
   /* stick -> direction relative to the camera */
   const sx=I.mx,sz=I.my,mag=Math.min(1,Math.hypot(sx,sz)),cy=WG.cam.yaw,dir=new THREE.Vector3(0,0,0);if(mag>.08){/* camera forward is (-sin, -cos); right is (cos, -sin) */dir.set(sx*Math.cos(cy)-sz*Math.sin(cy),0,-sx*Math.sin(cy)-sz*Math.cos(cy)).normalize()}
   const sprint=I.sprint&&mag>.3,carryK=P.carry?1-Math.min(.6,P.carry.b.mass/P.grabMax*.6):1,spd=(sprint?P.sprint:mag>.85?P.run:P.walk*Math.min(1,mag/.85))*carryK*(P.hurtT>0?.7:1);P.sprinting=sprint;
   if(P.rope&&wgRopeForces(P,dt,dir,mag))return;
+  if(P.pole&&wgPoleForces(P,dt,sx,sz))return;
   const onG=P.gT<.08,wantClimb=P.wallT<.1&&P.wallN&&mag>.2&&dir.dot(P.wallN)<-.35&&!P.carry;
-  if(wantClimb){if(!P.climb){P.climb=1;P.yaw=Math.atan2(-P.wallN.x,-P.wallN.z)}}else if(P.climb&&(P.wallT>.18||mag<.15)){/* off the top: hop up and over */if(P.wallT>.18&&mag>.15){v.y=Math.max(v.y,70);v.x-=P.wallN.x*25;v.z-=P.wallN.z*25}P.climb=0}
+  if(wantClimb){if(!P.climb){P.climb=1;P.yaw=Math.atan2(-P.wallN.x,-P.wallN.z)}}else if(P.climb&&(P.wallT>(P.grip>0?.6:.35)||mag<.15)){/* off the top: hop up and over */if(P.wallT>.18&&mag>.15){v.y=Math.max(v.y,70);v.x-=P.wallN.x*25;v.z-=P.wallN.z*25}P.climb=0}
   if(P.climb){const up=Math.max(0,-dir.dot(P.wallN))*P.climbV*(sprint?1.6:1),side=new THREE.Vector3(-P.wallN.z,0,P.wallN.x),sv=dir.dot(side)*P.climbV*.8;
     b.force.y+=m*(grav+(up-v.y)*14);const into=new THREE.Vector3(-P.wallN.x,0,-P.wallN.z);const tx=into.x*6+side.x*sv,tz=into.z*6+side.z*sv;b.force.x+=m*(tx-v.x)*12;b.force.z+=m*(tz-v.z)*12;
     if(P.jumpQ){P.jumpQ=0;P.climb=0;v.x=P.wallN.x*60;v.z=P.wallN.z*60;v.y=90;wgSfx("hop")}P.air=0;return}
@@ -12283,6 +12285,18 @@ function wgAnimPlayer(P,dt){if(P.mesh.isRig)return wgAnimRig(P,dt);const M=P.mes
   const sm=1-Math.exp(-dt*16),lp=(o,k,v)=>{o[k]+=(v-o[k])*sm};
   lp(L.hip.rotation,"x",t.lh);lp(R.hip.rotation,"x",t.rh);lp(L.knee.rotation,"x",t.lk);lp(R.knee.rotation,"x",t.rk);lp(LA.shd.rotation,"x",t.la);lp(RA.shd.rotation,"x",t.ra);lp(LA.el.rotation,"x",t.le);lp(RA.el.rotation,"x",t.re);lp(LA.shd.rotation,"z",t.lz);lp(RA.shd.rotation,"z",t.rz);
   lp(M.body.position,"y",t.bob);lp(M.body.position,"x",t.sway);lp(M.body.rotation,"x",t.lean);lp(M.body.rotation,"z",t.bank);lp(M.head.rotation,"x",t.hx-t.lean*.6);lp(M.head.rotation,"y",t.hy)}
+/* ---- shinning up thin things: wires, cables, the lampshade flex, table legs ---- */
+function wgPoleOf(b){if(!b.isStatic&&b.type!==CANNON.Body.STATIC)return null;const s=b.shapes[0];if(!s)return null;let r=null,h=0;if(s.halfExtents){const e=s.halfExtents;if(Math.max(e.x,e.z)<3.2&&e.y>4){r=Math.max(e.x,e.z);h=e.y}}else if(s.radiusTop!=null&&s.height>8&&Math.max(s.radiusTop,s.radiusBottom)<3.2&&Math.abs(b.quaternion.x)<.1&&Math.abs(b.quaternion.z)<.1){r=Math.max(s.radiusTop,s.radiusBottom);h=s.height/2}return r?{b,r,x:b.position.x,z:b.position.z,y0:b.position.y-h,y1:b.position.y+h}:null}
+function wgPoleNear(P){const p=P.b.position;let best=null,bd=1e9;for(const b of WG.world.bodies){if(b.mass>0||Math.abs(b.position.x-p.x)>8||Math.abs(b.position.z-p.z)>8)continue;const q=wgPoleOf(b);if(!q)continue;const d=Math.hypot(p.x-q.x,p.z-q.z)-q.r-P.r;if(d<3.6&&p.y>q.y0-4&&p.y<q.y1+1&&d<bd){bd=d;best=q}}return best}
+function wgClimbBtn(){const P=WG.P;if(P.stuck)return;if(P.pole){P.pole=null;P.b.velocity.y+=40;return}const q=wgPoleNear(P);if(q){P.pole=q;P.poleA=Math.atan2(P.b.position.x-q.x,P.b.position.z-q.z);P.climb=0;P.rope=null;wgSfx("grab");return}
+  if(P.wallT<.4&&P.wallN){P.climb=1;P.grip=1.5;P.yaw=Math.atan2(-P.wallN.x,-P.wallN.z);wgSfx("grab");return}wgMsg("Nothing to climb here",.9)}
+function wgPoleForces(P,dt,sx,sz){const b=P.b,v=b.velocity,m=b.mass,Q=P.pole,p=b.position;
+  if(P.jumpQ){P.jumpQ=0;const a=P.poleA;P.pole=null;v.set(Math.sin(a)*70,90,Math.cos(a)*70);wgSfx("hop");return false}
+  /* stick up/down climbs, left/right goes round the pole */P.poleA+=sx*dt*2.2;const up=sz*P.climbV*1.1,rad=Q.r+P.r+.15,tx=Q.x+Math.sin(P.poleA)*rad,tz=Q.z+Math.cos(P.poleA)*rad;
+  b.force.x+=m*((tx-p.x)*60-v.x*12);b.force.z+=m*((tz-p.z)*60-v.z*12);b.force.y+=m*(981+(up-v.y)*14);P.yaw=P.poleA+Math.PI;
+  const top=Q.y1-P.h+P.r+1;if(p.y>top&&up>0){/* at the top: haul up onto whatever it's fixed to */const r=new CANNON.RaycastResult(),fx=Q.x-Math.sin(P.poleA)*(Q.r+3),fz=Q.z-Math.cos(P.poleA)*(Q.r+3);WG.world.raycastClosest(new CANNON.Vec3(fx,Q.y1+8,fz),new CANNON.Vec3(fx,Q.y1-2,fz),{collisionFilterMask:1,skipBackfaces:true},r);
+    if(r.hasHit&&r.hitNormalWorld.y>.6){P.pole=null;b.position.set(fx,r.hitPointWorld.y+P.r+.2,fz);v.set(0,0,0);P.land=.5;wgSfx("hop")}else{v.y=Math.min(v.y,0)}}
+  if(p.y<Q.y0+P.r-.5&&up<0){P.pole=null}P.air=0;P.gT=1;return true}
 
 /* ---------- THE WEE GUYS: clutter, crumbs and dust - every bit of it can be pushed, kicked, picked up or thrown ---------- */
 /* shared shapes/materials for the little things */
@@ -12798,11 +12812,11 @@ function wgPose(R,list,w){if(w<=.01)return;for(const[b,c,d]of list)wgAim(R,b,c,d
 function wgAnimRig(P,dt){const R=P.mesh,b=P.b,v=b.velocity,onG=P.gT<.1,T=WG.t;
   const gv=P.ground&&P.ground.type===CANNON.Body.KINEMATIC&&onG?Math.hypot(v.x-P.ground.velocity.x,v.z-P.ground.velocity.z):Math.hypot(v.x,v.z);P.spd=gv;
   R.g.position.set(b.position.x,b.position.y-P.r,b.position.z);R.g.rotation.y=P.yaw;R.g.updateMatrixWorld(true);if(P.land>0)P.land=Math.max(0,P.land-dt*3.2);if(P.atk>0)P.atk-=dt;if(P.throwT>0)P.throwT-=dt;
-  const busy=P.climb||P.rope||P.stuck||!onG;wgRigLoco(R,busy?0:gv,dt,!!WG.big&&!P.sprinting);
+  const busy=P.climb||P.pole||P.rope||P.stuck||!onG;wgRigLoco(R,busy?0:gv,dt,!!WG.big&&!P.sprinting);
   /* step sounds follow the real footfalls */if(!busy&&gv>2){P.stepT+=dt*gv/(P.h*.75);if(P.stepT>1){P.stepT=0;wgSfx("step")}}
   /* lean into speed and turns */R.obj.rotation.x+=((busy?0:Math.min(.16,gv/P.h*.025))-R.obj.rotation.x)*Math.min(1,dt*6);R.obj.rotation.z+=((busy?0:Math.max(-.3,Math.min(.3,-P.turn*gv*.004)))-R.obj.rotation.z)*Math.min(1,dt*6);
   const K=P.poseK||(P.poseK={climb:0,air:0,carry:0,atk:0,shield:0,rope:0,stuck:0,land:0}),sm=1-Math.exp(-dt*12),to=(k,t)=>{K[k]+=(t-K[k])*sm};
-  to("climb",P.climb?1:0);to("rope",P.rope?1:0);to("stuck",P.stuck?1:0);to("air",!onG&&!P.climb&&!P.rope&&!P.stuck?1:0);to("carry",P.carry?1:0);to("atk",P.atk>0?1:0);to("shield",0);to("land",P.land>0&&onG?P.land:0);
+  to("climb",P.climb||P.pole?1:0);to("rope",P.rope?1:0);to("stuck",P.stuck?1:0);to("air",!onG&&!P.climb&&!P.rope&&!P.stuck?1:0);to("carry",P.carry?1:0);to("atk",P.atk>0?1:0);to("shield",0);to("land",P.land>0&&onG?P.land:0);
   if(K.climb>.01){P.ph+=dt*(2.5+Math.abs(v.y)*.6);const s=Math.sin(P.ph);wgPose(R,[["LeftArm","LeftForeArm",[.3,1,.25+.25*s]],["LeftForeArm","LeftHand",[.1,1,.35]],["RightArm","RightForeArm",[-.3,1,.25-.25*s]],["RightForeArm","RightHand",[-.1,1,.35]],["LeftUpLeg","LeftLeg",[.2,-.35+.35*s,.9]],["LeftLeg","LeftFoot",[.05,-1,.1]],["RightUpLeg","RightLeg",[-.2,-.35-.35*s,.9]],["RightLeg","RightFoot",[-.05,-1,.1]]],K.climb)}
   if(K.air>.01){const up=v.y>0,f=Math.sin(T*8)*.15;wgPose(R,up?[["LeftArm","LeftForeArm",[.5,.9,.4]],["RightArm","RightForeArm",[-.5,.9,.4]],["LeftUpLeg","LeftLeg",[.12,-.4,.9]],["LeftLeg","LeftFoot",[.05,-.7,-.7]],["RightUpLeg","RightLeg",[-.12,-.85,.4]],["RightLeg","RightFoot",[-.05,-.9,-.4]]]:[["LeftArm","LeftForeArm",[1,.45+f,.1]],["LeftForeArm","LeftHand",[1,.6+f,.25]],["RightArm","RightForeArm",[-1,.45-f,.1]],["RightForeArm","RightHand",[-1,.6-f,.25]],["LeftUpLeg","LeftLeg",[.2,-1,.15]],["RightUpLeg","RightLeg",[-.2,-1,-.1]]],K.air)}
   if(K.land>.01)wgPose(R,[["LeftUpLeg","LeftLeg",[.12,-.55,.85]],["LeftLeg","LeftFoot",[.02,-.75,-.65]],["RightUpLeg","RightLeg",[-.12,-.55,.85]],["RightLeg","RightFoot",[-.02,-.75,-.65]],["Spine","Spine1",[0,.85,.45]]],K.land*.9);
@@ -13069,7 +13083,7 @@ function wgCatUpAnim(U,dt){const T=THREE,g=U.g;g.position.set(U.pos.x,U.jump-U.c
 /* ---------- THE WEE GUYS: the game page, the loop, the camera, controls, sound ---------- */
 function vWee(){g2Shell("wgc",`<div class="wgload" id="wgload">Shrinking you down… <b id="wgpct"></b></div><div class="wgver">build ${typeof WG_BUILD!=="undefined"?WG_BUILD.slice(4,12):""}</div><div class="wgmsg" id="wgmsg"></div><div class="wgmenu" id="wgm"></div>
   <div class="wgflash" id="wgflash"></div><div class="wghud"><div class="wghp" id="wghp"></div><div class="wgen" id="wgen"><i></i><span>⚡</span></div><div class="wginv" id="wginv" style="display:none"></div></div><div class="wgeye" id="wgeye" style="display:none"><i></i><span>👁️</span></div>
-  <div class="wgctl" id="wgctl"><div class="wgstk" id="wgstk"><i></i></div><button class="wgb wgjump" id="wgjump">JUMP</button><button class="wgb wggrab" id="wggrab">✋<small>GRAB</small></button><button class="wgb wgspr" id="wgspr">🏃<small>SPRINT</small></button><button class="wgb wghook" id="wghook" style="display:none">🪝<small>HOOK</small></button><button class="wgb wgsword" id="wgsword" style="display:none">⚔️<small>STAB</small></button><button class="wgb wgview" id="wgview">🎥<small>VIEW</small></button><button class="wgb wghome" id="wghome">🏠<small>HOME</small></button><button class="wgb wglist" id="wglist">📜<small>LIST</small></button><button class="wgb wgsleep" id="wgsleep" style="display:none">💤<small>SLEEP</small></button></div>
+  <div class="wgctl" id="wgctl"><div class="wgstk" id="wgstk"><i></i></div><button class="wgb wgjump" id="wgjump">JUMP</button><button class="wgb wggrab" id="wggrab">✋<small>GRAB</small></button><button class="wgb wgspr" id="wgspr">🏃<small>SPRINT</small></button><button class="wgb wgclimb" id="wgclimb" style="display:none">🧗<small>CLIMB</small></button><button class="wgb wghook" id="wghook" style="display:none">🪝<small>HOOK</small></button><button class="wgb wgsword" id="wgsword" style="display:none">⚔️<small>STAB</small></button><button class="wgb wgview" id="wgview">🎥<small>VIEW</small></button><button class="wgb wghome" id="wghome">🏠<small>HOME</small></button><button class="wgb wglist" id="wglist">📜<small>LIST</small></button><button class="wgb wgsleep" id="wgsleep" style="display:none">💤<small>SLEEP</small></button></div>
   <div class="wglistp" id="wglistp"></div><div class="wgzz" id="wgzz">Z z z…</div>`);
   $("#g2q").onclick=()=>wgQuit();hpThree(()=>{if(!$("#wgc"))return;setTimeout(()=>{try{wgStart()}catch(e){console.error(e);const m=$("#wgload");if(m)m.textContent="Something went wrong shrinking you down."}},30)})}
 function wgQuit(){g2Stop();if(WG){WG.dead=1;wgSound(0)}WG=null;window.onkeydown=window.onkeyup=null;g=null;view()}
@@ -13113,7 +13127,7 @@ function wgFrame0(dt){const G=WG;if(!G||G.dead||!G.P)return;dt=Math.max(0,dt);G.
   for(const o of G.dyn){const b=o.b;if(b.sleepState===2&&!o.fresh)continue;o.fresh=0;o.m.position.copy(b.position);o.m.quaternion.copy(b.quaternion)}
   /* fell out of the world somehow? back home */
   if(P.b.position.y<-30||!isFinite(P.b.position.x)){wgHome();return}
-  wgShade(P,dt);wgAnimPlayer(P,dt);wgBugsStep(dt);wgCatStep(dt);wgDustStep(dt);wgClockStep();wgKitStep(dt);wgEquipFollow();wgEnergyStep(dt);wgMisStep(dt);wgToasterStep(dt);wgSpoonStep(dt);wgRobotStep(dt);wgBigStep(dt);wgCamera(dt);wgRugNear();
+  wgShade(P,dt);wgAnimPlayer(P,dt);wgBugsStep(dt);wgCatStep(dt);wgDustStep(dt);wgClockStep();wgKitStep(dt);wgEquipFollow();wgEnergyStep(dt);{/* the CLIMB button shows when there's something to grab onto */if(!G.cbT||G.t-G.cbT>.2){G.cbT=G.t;const c=$("#wgclimb");if(c){const on=!!P.pole||P.climb||(!P.stuck&&(wgPoleNear(P)||P.wallT<.4));c.style.display=on?"":"none";c.classList.toggle("on",!!(P.pole||P.climb))}}}wgMisStep(dt);wgToasterStep(dt);wgSpoonStep(dt);wgRobotStep(dt);wgBigStep(dt);wgCamera(dt);wgRugNear();
   /* the sun's shadow follows you, so it is sharp at your size */
   const p=P.b.position,sd=G.sunDir;/* no window inside the walls: just what light leaks in, and your eyes getting used to the dark */const inH=wgInWall(p)?1:0;if(!G.eyeL){G.eyeL=new THREE.PointLight(0xd8c8a8,0,70,2);G.scene.add(G.eyeL)}G.eyeL.position.set(p.x,p.y+14,p.z);G.eyeL.intensity=(G.homeK||0)*.5;G.homeK=(G.homeK==null?inH:G.homeK)+(inH-(G.homeK==null?inH:G.homeK))*Math.min(1,dt*3);G.sun.intensity=1.9*(1-G.homeK*.93);G.hemi.intensity=.18*(1-G.homeK*.8);G.sun.position.set(p.x+sd.x*400,p.y+sd.y*400,p.z+sd.z*400);G.sun.target.position.set(p.x,p.y,p.z);G.sun.target.updateMatrixWorld();
   if(G.tips&&G.tips.length&&!G.big){G.tipT-=dt;if(G.tipT<0){G.tipT=45;wgMsg(G.tips.shift(),4)}}
@@ -13139,9 +13153,9 @@ function wgInput(){const G=WG,el=$("#wgc"),stk=$("#wgstk"),knob=stk.querySelecto
     else if(e.pointerId===lid){G.in.lx+=(q.x-l0.x)*.008;G.in.ly+=(q.y-l0.y)*.006;l0=q}});
   const up=e=>{if(e.pointerId===sid){sid=null;G.in.mx=G.in.my=0;stk.classList.remove("on")}if(e.pointerId===lid)lid=null};el.addEventListener("pointerup",up);el.addEventListener("pointercancel",up);
   const btn=(id,f)=>{const b=$(id);b.addEventListener("pointerdown",e=>{e.preventDefault();e.stopPropagation();wgSoundOn();f()});};
-  btn("#wgjump",()=>{G.P.jumpQ=1});btn("#wgspr",()=>{G.in.sprint=G.in.sprint?0:1;$("#wgspr").classList.toggle("on",!!G.in.sprint)});btn("#wghook",()=>wgGrapple());btn("#wgsword",()=>wgAttack());btn("#wggrab",()=>wgGrab(G.P));btn("#wgview",()=>{G.cam.far=(G.cam.far+1)%3;wgMsg(["Close up","Further back","Wide view"][G.cam.far],.8)});btn("#wghome",()=>wgHome());btn("#wglist",()=>{wgListHud();$("#wglistp").classList.toggle("on")});btn("#wgsleep",()=>wgSleep());
+  btn("#wgjump",()=>{G.P.jumpQ=1});btn("#wgspr",()=>{G.in.sprint=G.in.sprint?0:1;$("#wgspr").classList.toggle("on",!!G.in.sprint)});btn("#wghook",()=>wgGrapple());btn("#wgsword",()=>wgAttack());btn("#wggrab",()=>wgGrab(G.P));btn("#wgview",()=>{G.cam.far=(G.cam.far+1)%3;wgMsg(["Close up","Further back","Wide view"][G.cam.far],.8)});btn("#wghome",()=>wgHome());btn("#wglist",()=>{wgListHud();$("#wglistp").classList.toggle("on")});btn("#wgsleep",()=>wgSleep());btn("#wgclimb",()=>wgClimbBtn());
   const K={};const keys=()=>{G.in.mx=(K.KeyD||K.ArrowRight?1:0)-(K.KeyA||K.ArrowLeft?1:0);G.in.my=(K.KeyW||K.ArrowUp?1:0)-(K.KeyS||K.ArrowDown?1:0);G.in.sprint=K.ShiftLeft||K.ShiftRight||$("#wgspr").classList.contains("on")?1:0};
-  window.onkeydown=e=>{if(!WG)return;wgSoundOn();if(e.code==="Space"){G.P.jumpQ=1;e.preventDefault()}if(e.code==="KeyE"&&!K.KeyE)wgGrab(G.P);if(e.code==="KeyV"&&!K.KeyV)G.cam.far=(G.cam.far+1)%3;if(e.code==="KeyF"&&!K.KeyF)wgGrapple();if(e.code==="KeyR"&&!K.KeyR)wgAttack();K[e.code]=1;keys()};window.onkeyup=e=>{K[e.code]=0;keys()};
+  window.onkeydown=e=>{if(!WG)return;wgSoundOn();if(e.code==="Space"){G.P.jumpQ=1;e.preventDefault()}if(e.code==="KeyE"&&!K.KeyE)wgGrab(G.P);if(e.code==="KeyV"&&!K.KeyV)G.cam.far=(G.cam.far+1)%3;if(e.code==="KeyF"&&!K.KeyF)wgGrapple();if(e.code==="KeyR"&&!K.KeyR)wgAttack();if(e.code==="KeyC"&&!K.KeyC)wgClimbBtn();K[e.code]=1;keys()};window.onkeyup=e=>{K[e.code]=0;keys()};
   let md=0,mp=null;el.addEventListener("mousedown",e=>{if(e.target.closest(".wgb")||e.button!==2&&e.pointerType)return});el.addEventListener("contextmenu",e=>e.preventDefault());
   el.addEventListener("wheel",e=>{G.cam.far=Math.max(0,Math.min(2,G.cam.far+(e.deltaY>0?1:-1)))},{passive:true});
   $("#wggrab").querySelector("small");setInterval(()=>{if(!WG||!WG.P)return;const g=$("#wggrab");if(g)g.innerHTML=WG.P.carry?"🤾<small>THROW</small>":"✋<small>GRAB</small>"},250)}
