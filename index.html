@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta name="app-build" content="23 Nov 10:13 PT"><meta charset="utf-8">
+<html lang="en"><head><meta name="app-build" content="23 Nov 10:14 PT"><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Legends"><meta name="theme-color" content="#14102e">
@@ -987,6 +987,7 @@ body.dfon{overflow:hidden}
 .wglb{background:#efe2c4;border-radius:10px;padding:6px 8px;margin-bottom:6px}.wglmk{width:100%;border:0;border-radius:12px;background:#a0522d;color:#fff;font:800 14px Outfit,system-ui,sans-serif;padding:10px;margin-bottom:8px}
 .wgli{display:flex;gap:8px;padding:5px 2px;border-bottom:1px solid rgba(0,0,0,.08)}.wgli i{font-style:normal}.wgli b{display:block}.wgli small{color:#7a6a58;font-weight:500}.wgli.ok b{text-decoration:line-through;color:#5a8a3a}
 .wgzz{position:absolute;inset:0;background:rgba(10,10,30,.92);color:#cfd8ff;font:800 34px Outfit,system-ui,sans-serif;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .8s;z-index:6}.wgzz.on{opacity:1}
+.wgcred{margin-top:10px;font:500 10px Outfit,system-ui,sans-serif;color:#8a7a68;line-height:1.35}
 
 /*WG-END*/
 </style></head><body><main>
@@ -6746,7 +6747,7 @@ function fjP2PSend(d){const P=FJP2P,c=P.dc;if(!P.open||!c||c.readyState!=="open"
 /*FJ-END*/</script>
 <script>/*WG-START*/
 /* which build this is; if a newer one is on the server when you come back to the app, it reloads itself */
-const WG_BUILD="20261123181355";
+const WG_BUILD="20261123181455";
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState!=="visible")return;fetch("version.txt?"+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():"").then(t=>{t=(t||"").trim();if(!t||t===WG_BUILD)return;if(!g)location.reload();else{const b=document.createElement("div");b.className="wgupd";b.textContent="A new version is ready - tap here to update";b.onclick=()=>location.reload();document.body.appendChild(b)}}).catch(()=>{})});
 /* three.js r128 helpers (MIT) and cannon-es physics (MIT), run once THREE has loaded */
 function wgLibs(){
@@ -12739,7 +12740,7 @@ function wgMisStep(dt){WG.misT-=dt;if(WG.misT>0)return;WG.misT=.5;const K=WG.kit
   if(WG.exits)WG.exits.forEach((e,i)=>{if(Math.hypot(p.x-e.x,p.z-e.z)<14&&Math.abs((p.y-P.r)-(e.y||0))<14&&!WG.misSeen.has(i)){WG.misSeen.add(i);wgMsg(`🗺️ Found a way through the wall ${e.nm} (${WG.misSeen.size}/4)`,2)}});if(WG.misSeen.size>=4)wgMisDone("walls");
   if(WG.bugs.some(b=>b.wall&&b.st==="flip"))wgMisDone("spider")}
 function wgListHud(){const L=$("#wglistp");if(!L||!WG.mis)return;const n=WG_MIS.filter(m=>WG.mis[m[0]]).length;
-  L.innerHTML=`<div class="wglh"><b>📜 Borrowing list</b> <span>${n}/${WG_MIS.length}</span><button id="wglx">✕</button></div>`+(WG.base?`<div class="wglb">🏠 Your base: ${"⭐".repeat(Math.max(1,Math.round(WG.base.s/20)))}${WG.bed?" · 🛏️ bed made":""}</div>`:"")+`<button class="wglmk" id="wglmk">🏠 Make my base here</button>`+WG_MIS.map(m=>`<div class="wgli ${WG.mis[m[0]]?"ok":""}"><i>${WG.mis[m[0]]?"✅":"⬜"}</i><div><b>${m[1]}</b><small>${m[2]}</small></div></div>`).join("");
+  L.innerHTML=`<div class="wglh"><b>📜 Borrowing list</b> <span>${n}/${WG_MIS.length}</span><button id="wglx">✕</button></div>`+(WG.base?`<div class="wglb">🏠 Your base: ${"⭐".repeat(Math.max(1,Math.round(WG.base.s/20)))}${WG.bed?" · 🛏️ bed made":""}</div>`:"")+`<button class="wglmk" id="wglmk">🏠 Make my base here</button>`+WG_MIS.map(m=>`<div class="wgli ${WG.mis[m[0]]?"ok":""}"><i>${WG.mis[m[0]]?"✅":"⬜"}</i><div><b>${m[1]}</b><small>${m[2]}</small></div></div>`).join("")+`<div class="wgcred">Some furniture and ornaments are real scanned 3D models: Glam Velvet Sofa, Glass Hurricane Candle Holder, Iridescent Dish with Olives, Diffuse Transmission Plant (Wayfair LLC), Materials Variants Shoe (Shopify), Sunglasses (Khronos Group) - all CC BY 4.0; others CC0, from the Khronos glTF sample assets. People: Ready Player Me, Mixamo.</div>`;
   $("#wglx").onclick=()=>L.classList.remove("on");$("#wglmk").onclick=()=>{L.classList.remove("on");wgMakeBase()}}
 
 /* ---------- THE WEE GUYS: real people with motion-captured movement ----------
