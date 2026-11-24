@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta name="app-build" content="24 Nov 12:42 PT"><meta charset="utf-8">
+<html lang="en"><head><meta name="app-build" content="24 Nov 14:41 PT"><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Legends"><meta name="theme-color" content="#14102e">
@@ -6762,7 +6762,7 @@ function fjP2PSend(d){const P=FJP2P,c=P.dc;if(!P.open||!c||c.readyState!=="open"
 /*FJ-END*/</script>
 <script>/*WG-START*/
 /* which build this is; if a newer one is on the server when you come back to the app, it reloads itself */
-const WG_BUILD="20261124204222";
+const WG_BUILD="20261124224103";
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState!=="visible")return;fetch("version.txt?"+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():"").then(t=>{t=(t||"").trim();if(!t||t===WG_BUILD)return;if(!g)location.reload();else{const b=document.createElement("div");b.className="wgupd";b.textContent="A new version is ready - tap here to update";b.onclick=()=>location.reload();document.body.appendChild(b)}}).catch(()=>{})});
 /* three.js r128 helpers (MIT) and cannon-es physics (MIT), run once THREE has loaded */
 function wgLibs(){
@@ -11977,7 +11977,8 @@ function wgLibs(){
    A real-size house seen by people 6 cm tall. Units are centimetres everywhere (render and physics).
    This file: little helpers + the hand-painted (procedural) textures. */
 let WG=null,WGR=null;/* WG = this game, WGR = renderer kept between visits */
-const WG_RND=(()=>{let s=20261120;return()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296}})();
+let _wgSeed=20261120;const WG_RND=()=>{_wgSeed=(_wgSeed*1664525+1013904223)>>>0;return _wgSeed/4294967296};function wgReseed(){_wgSeed=20261120}
+/* textures get their own randomness, so the house comes out the same every game whatever's already been drawn */const wgTR=(a,b)=>a+(b-a)*Math.random();
 const wgR=(a,b)=>a+(b-a)*WG_RND(),wgI=(a,b)=>Math.floor(wgR(a,b+1)),wgPick=a=>a[Math.floor(WG_RND()*a.length)];
 /* smooth value noise, tileable over p */
 function wgNoise2(p){const g=new Float32Array(p*p).map(()=>Math.random());return(x,y)=>{x=((x%p)+p)%p;y=((y%p)+p)%p;const xi=Math.floor(x),yi=Math.floor(y),xf=x-xi,yf=y-yi,u=xf*xf*(3-2*xf),v=yf*yf*(3-2*yf),a=g[yi*p+xi],b=g[yi*p+(xi+1)%p],c=g[((yi+1)%p)*p+xi],d=g[((yi+1)%p)*p+(xi+1)%p];return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v}}
@@ -11991,7 +11992,7 @@ const WGT={};
 function wgT(k){if(WGT[k])return WGT[k];const f=WG_TEX[k];WGT[k]=f();return WGT[k]}
 const WG_TEX={
   /* oak floorboards: 14 cm wide planks, random lengths, grain, little dark gaps. One tile = 140 x 140 cm */
-  oak(){const S=1024,n=wgNoise2(64),n2=wgNoise2(256),pl=10,pw=S/pl,cols=[],bump=[];for(let i=0;i<pl;i++){let y=-wgR(0,S*.6);const segs=[];while(y<S){const L=wgR(S*.45,S*.9);segs.push([y,y+L,wgR(-.13,.13),wgR(0,99)]);y+=L}cols.push(segs)}
+  oak(){const S=1024,n=wgNoise2(64),n2=wgNoise2(256),pl=10,pw=S/pl,cols=[],bump=[];for(let i=0;i<pl;i++){let y=-wgTR(0,S*.6);const segs=[];while(y<S){const L=wgTR(S*.45,S*.9);segs.push([y,y+L,wgTR(-.13,.13),wgTR(0,99)]);y+=L}cols.push(segs)}
     const look=(i,j)=>{const ci=Math.floor(i/pw),lx=i-ci*pw,s=cols[ci].find(q=>j>=q[0]&&j<q[1])||cols[ci][0];return[ci,lx,s]};
     const c=wgField(S,S,(i,j)=>{const[ci,lx,s]=look(i,j),ly=j-s[0],edge=Math.min(lx,pw-lx),end=Math.min(Math.abs(j-s[0]),Math.abs(s[1]-j));
       const g=Math.sin((lx+n(i/16+s[3],j/90)*30)*.45+n(i/40,j/200+s[3])*9)*.5+.5,gr=n2(i/2+s[3]*7,j/14)*.6+g*.4,ring=Math.pow(g,6);
@@ -12001,7 +12002,7 @@ const WG_TEX={
     const bm=wgField(S/2,S/2,(i,j)=>{const[ci,lx,s]=look(i*2,j*2),edge=Math.min(lx,pw-lx),end=Math.min(Math.abs(j*2-s[0]),Math.abs(s[1]-j*2));const v=edge<2||end<2?20:150+n2(i,j/7)*60;return[v,v,v]});
     return{map:wgTexOf(c),bump:wgTexOf(bm,1,1,false),size:140}},
   /* ceramic kitchen tiles, 30 cm, 4 mm grout. One tile texture = 60 x 60 cm (2 x 2 tiles) */
-  tile(){const S=1024,n=wgNoise2(128),tv=[wgR(-8,8),wgR(-8,8),wgR(-8,8),wgR(-8,8)];
+  tile(){const S=1024,n=wgNoise2(128),tv=[wgTR(-8,8),wgTR(-8,8),wgTR(-8,8),wgTR(-8,8)];
     const c=wgField(S,S,(i,j)=>{const t=S/2,lx=i%t,ly=j%t,gw=3.4,k=(i<t?0:1)+(j<t?0:2),g=lx<gw||ly<gw||lx>t-gw||ly>t-gw;
       if(g){const v=150+n(i/3,j/3)*40;return[v,v-6,v-14]}const v=226+tv[k]+n(i/50,j/50)*10-(n(i/4,j/4)>.97?18:0);return[v,v-2,v-8]});
     const bm=wgField(S/2,S/2,(i,j)=>{const t=S/4,lx=i%t,ly=j%t,g=lx<2||ly<2||lx>t-2||ly>t-2;const v=g?30:220;return[v,v,v]});
@@ -12041,8 +12042,8 @@ const WG_TEX={
   dot(){const S=64,c=wgCanvas(S,S),x=c.getContext("2d"),g=x.createRadialGradient(S/2,S/2,0,S/2,S/2,S/2);g.addColorStop(0,"rgba(255,255,255,1)");g.addColorStop(.4,"rgba(255,255,255,.5)");g.addColorStop(1,"rgba(255,255,255,0)");x.fillStyle=g;x.fillRect(0,0,S,S);const t=new THREE.CanvasTexture(c);return{map:t}},
   /* the garden through the window: sky, a hedge, a fence, blurred like it is far away */
   garden(){const W=512,H=384,c=wgCanvas(W,H),x=c.getContext("2d");let g=x.createLinearGradient(0,0,0,H);g.addColorStop(0,"#a9d4ff");g.addColorStop(.55,"#e6f3ff");g.addColorStop(.56,"#7aa35a");g.addColorStop(1,"#4b7a36");x.fillStyle=g;x.fillRect(0,0,W,H);
-    x.filter="blur(6px)";x.fillStyle="#8a6a48";for(let i=0;i<W;i+=26)x.fillRect(i,H*.38,20,H*.2);x.fillStyle="#2f5a2a";for(let i=0;i<40;i++){x.beginPath();x.arc(wgR(0,W),H*.36+wgR(-20,20),wgR(20,50),0,7);x.fill()}
-    x.fillStyle="#fff";for(let i=0;i<6;i++){x.beginPath();x.arc(wgR(0,W),wgR(20,110),wgR(18,40),0,7);x.globalAlpha=.6;x.fill()}x.globalAlpha=1;const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;return{map:t}}
+    x.filter="blur(6px)";x.fillStyle="#8a6a48";for(let i=0;i<W;i+=26)x.fillRect(i,H*.38,20,H*.2);x.fillStyle="#2f5a2a";for(let i=0;i<40;i++){x.beginPath();x.arc(wgTR(0,W),H*.36+wgTR(-20,20),wgTR(20,50),0,7);x.fill()}
+    x.fillStyle="#fff";for(let i=0;i<6;i++){x.beginPath();x.arc(wgTR(0,W),wgTR(20,110),wgTR(18,40),0,7);x.globalAlpha=.6;x.fill()}x.globalAlpha=1;const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;return{map:t}}
 };
 /* a material from a texture key, scaled for the given world size (cm) */
 const WGM={};
@@ -12084,7 +12085,7 @@ function wgBinMat(key){const[k,v]=key.split(":");if(k==="book")return wgMat("_",
   return(M[k]||M.grey)()}
 function wgBake(){const T=THREE,S=WG.scene;for(const k of Object.keys(WG.bins)){const B=WG.bins[k];if(!B.geos.length)continue;const g=T.BufferGeometryUtils.mergeBufferGeometries(B.geos,false);const m=new T.Mesh(g,wgBinMat(k));m.receiveShadow=true;m.castShadow=!/wall|oak|tile|glass/.test(k);m.matrixAutoUpdate=false;m.updateMatrix();S.add(m);WG.statics.push(m)}WG.bins={}}
 /* ---------------- build the house ---------------- */
-function wgBuildHouse(){const{LW,KX,D,H,T}=WGH;
+function wgBuildHouse(){wgReseed();const{LW,KX,D,H,T}=WGH;
   /* floors: oak in the living room, tiles in the kitchen (thin solid slabs so things can't fall through) */
   wgBlock("oak",0,-4,0,LW,4,D,{r:0,kind:"floor"});wgBlock("tile",LW,-4,0,KX-LW,4,D,{r:0,kind:"floor"});
   wgBlock("rough",-60,-6,-60,KX+120,2,D+120,{r:0,nodraw:1});
@@ -12685,7 +12686,7 @@ let WG_PROPS=null;
 function wgLoadProps(){if(WG_PROPS)return Promise.resolve();return fetch("wg_props.json").then(r=>{if(!r.ok)throw new Error("props "+r.status);return r.json()}).then(j=>{const L=new THREE.GLTFLoader(),dec=b64=>{const s=atob(b64),u=new Uint8Array(s.length);for(let i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return u.buffer};WG_PROPS={};
   return Promise.all(Object.keys(j).map(k=>new Promise(ok=>L.parse(dec(j[k]),"",g=>{WG_PROPS[k]=g.scene;ok()},e=>{console.error("prop",k,e);ok()}))))}).catch(e=>{console.error("props",e);WG_PROPS=null})}
 /* put a model so that it fills the box (x0..x1, y0.., z0..z1) after turning it by ry; height from the box too unless keep */
-function wgProp(name,x0,y0,z0,x1,y1,z1,ry,o){o=o||{};const src=WG_PROPS&&WG_PROPS[name];if(!src)return null;const T=THREE,m=src.clone(true),g=new T.Group();g.add(m);m.rotation.y=ry||0;m.updateMatrixWorld(true);const bb=new T.Box3().setFromObject(m),sz=bb.getSize(new T.Vector3());
+function wgProp(name,x0,y0,z0,x1,y1,z1,ry,o){o=o||{};const src=WG_PROPS&&WG_PROPS[name];if(!src)return null;const T=THREE,m=src.clone(true),g=new T.Group();g.userData.prop=name;g.add(m);m.rotation.y=ry||0;m.updateMatrixWorld(true);const bb=new T.Box3().setFromObject(m),sz=bb.getSize(new T.Vector3());
   let sx=(x1-x0)/sz.x,sy=(y1-y0)/sz.y,sz2=(z1-z0)/sz.z;if(o.uniform){const s=Math.min(sx,sy,sz2);sx=sy=sz2=s}g.scale.set(sx,sy,sz2);g.position.set((x0+x1)/2-(bb.min.x+bb.max.x)/2*sx,y0-bb.min.y*sy,(z0+z1)/2-(bb.min.z+bb.max.z)/2*sz2);
   m.traverse(c=>{if(c.isMesh){c.castShadow=!o.noShadow;c.receiveShadow=true;const ms=Array.isArray(c.material)?c.material:[c.material];for(const mt of ms){if(mt.userData&&mt.userData.glass){mt.transparent=true;mt.opacity=.35;mt.depthWrite=false;mt.roughness=.05}if(mt.map)mt.map.anisotropy=4}}});WG.scene.add(g);if(o.solid){g.updateMatrixWorld(true);const b2=new T.Box3().setFromObject(g),c=b2.getCenter(new T.Vector3()),e=b2.getSize(new T.Vector3()).multiplyScalar(.5);wgSolid(c.x,c.y,c.z,Math.max(.3,e.x*.92),Math.max(.3,e.y),Math.max(.3,e.z*.92),{kind:name})}return g}
 function wgPlaceProps(){if(!WG_PROPS)return;const D=WGH.D;
@@ -12899,7 +12900,7 @@ function wgPlaceKit(){WG.kit={};WG.keys=[];const put=(k,x,y,z,ry)=>{const m=wgKe
   put("cap",528,0,302,0);/* kitchen floor, behind the bin */
   wgKitHud()}
 function wgKitStep(dt){const P=WG.P,p=P.b.position;for(const K of WG.keys){if(K.got)continue;K.ph+=dt;const tw=Math.max(0,Math.sin(K.ph*2.2))**6;K.gl.scale.setScalar(1.2+tw*6);K.gl.material.opacity=.35+tw*.65;K.gl.material.depthTest=false;K.gl.renderOrder=9;
-    if(Math.hypot(p.x-K.p.x,(p.y-P.r+1)-K.p.y,p.z-K.p.z)<2.8){K.got=1;WG.scene.remove(K.m);WG.scene.remove(K.gl);WG.kit[K.k]=1;wgSfx("grab");wgFound(K.k)}}
+    if(Math.hypot(p.x-K.p.x,(p.y-P.r+1)-K.p.y,p.z-K.p.z)<P.r+2.9){K.got=1;WG.scene.remove(K.m);WG.scene.remove(K.gl);WG.kit[K.k]=1;wgSfx("grab");wgFound(K.k)}}
   if(P.hurtT>0)P.hurtT-=dt;if(P.hp<3){P.hpT+=dt;if(P.hpT>25){P.hpT=0;P.hp=Math.min(3,P.hp+.5);wgKitHud()}}
   /* the rope */const R=WG.ropeL;if(P.rope){const a=P.rope.a,h=new THREE.Vector3(p.x,p.y-P.r+P.h*.85,p.z);R.geometry.setFromPoints([h,a]);R.visible=true;WG.hookM.position.copy(a);WG.hookM.visible=true}else if(P.ropeMiss&&P.ropeMiss.t>0){P.ropeMiss.t-=dt;const k=Math.sin(P.ropeMiss.t/.35*Math.PI),h=new THREE.Vector3(p.x,p.y-P.r+P.h*.85,p.z),e=h.clone().addScaledVector(P.ropeMiss.d,k*120);R.geometry.setFromPoints([h,e]);R.visible=true;WG.hookM.position.copy(e);WG.hookM.visible=true}else{R.visible=false;WG.hookM.visible=false}}
 function wgFound(k){const K=WG.kit;let m="Found "+WG_KIT[k].nm+"!";if(WG_WEAR[k]){wgMsg(wgWearFound(k),4.5);wgKitHud();return}
@@ -13156,6 +13157,71 @@ function wgDadClothes(R){const L=WG_PPL&&WG_PPL.dadLab;if(!L)return;let body=nul
     o[i]=f.data[j]*sh;o[i+1]=f.data[j+1]*sh;o[i+2]=f.data[j+2]*sh}
   R.dadCan.getContext("2d").putImageData(out,0,0);if(!R.dadTex){const t=new THREE.CanvasTexture(R.dadCan);t.flipY=false;t.encoding=THREE.sRGBEncoding;t.anisotropy=4;R.dadTex=t;m.map=t;m.needsUpdate=true}else R.dadTex.needsUpdate=true}
 
+/* ---------- THE WEE GUYS: everything you can see is solid ----------
+   1. wgAutoSolids: when the house is built, every visible surface that has nothing solid behind it gets
+      a collision skin made of 1 cm blocks (closed things like the sofa and armchair are filled in), so you
+      can't walk through or half into anything.
+   2. wgPlayerDepen: contacts are springy; if you end up even slightly inside something, you're put back out.
+   3. wgPlayerSweep: moving fast (falling from the ceiling, flung by a spoon) you can't skip through a thin shelf. */
+function wgLoadSolidData(){return Promise.resolve()}
+/* the things you could bump into: everything visible that stays put */
+function wgSolidCandidates(){const T=THREE,ex=new Set(),mark=o=>o&&o.traverse&&o.traverse(c=>ex.add(c)),out=[];
+  if(WG.P)mark(WG.P.mesh.g);for(const o of WG.dyn)mark(o.m);for(const k of WG.keys||[]){mark(k.m);mark(k.gl)}for(const b of WG.bugs||[])mark(b.m);
+  for(const k of["cat","big","robot","toaster","hoover","glass"]){const o=WG[k];if(o){mark(o.g);mark(o.m);mark(o.mesh&&o.mesh.g);mark(o.mesh)}}
+  WG.scene.traverse(o=>{if(o.userData&&o.userData.noSolid)mark(o)});WG.scene.updateMatrixWorld(true);
+  WG.scene.traverse(o=>{if(!o.isMesh||ex.has(o)||o.isInstancedMesh||o.isSkinnedMesh)return;for(let q=o;q;q=q.parent)if(q.visible===false)return;
+    const mt=Array.isArray(o.material)?o.material[0]:o.material;if(mt&&((mt.transparent&&mt.opacity<.6)||mt.blending===T.AdditiveBlending||mt.depthWrite===false&&mt.transparent))return;
+    let pr=null;for(let q=o;q;q=q.parent)if(q.userData&&q.userData.prop){pr=q;break}out.push([o,pr])});return out}
+/* a fingerprint of the house, so solids worked out ahead of time are only used if it's the same house */
+function wgSceneSig(C){const T=THREE,b=new T.Box3();let s=0,t=0;for(const[o]of C){b.setFromObject(o);s+=Math.round(b.min.x*10)+Math.round(b.min.y*10)*3+Math.round(b.min.z*10)*7+Math.round(b.max.x*10)*11+Math.round(b.max.y*10)*13+Math.round(b.max.z*10)*17;const g=o.geometry;t+=g.index?g.index.count:g.attributes.position.count}return C.length+":"+t+":"+s}
+function wgAutoSolids(){const t0=performance.now(),C=wgSolidCandidates(),T=THREE;
+  /* what's already solid: a coarse grid of the static bodies' boxes */
+  const GC=24,GK=(x,y,z)=>(x+10)*1e6+(y+10)*1e3+(z+10),G=new Map(),boxes=[];for(const b of WG.world.bodies){if(b.mass>0||b.isPlayer||!(b.collisionFilterGroup&1)||b.auto)continue;b.updateAABB();const a=b.aabb,i=boxes.length;boxes.push([a.lowerBound.x,a.lowerBound.y,a.lowerBound.z,a.upperBound.x,a.upperBound.y,a.upperBound.z,b.kind||"",!!b.climb]);
+    for(let x=Math.floor(a.lowerBound.x/GC);x<=Math.floor(a.upperBound.x/GC);x++)for(let y=Math.floor(a.lowerBound.y/GC);y<=Math.floor(a.upperBound.y/GC);y++)for(let z=Math.floor(a.lowerBound.z/GC);z<=Math.floor(a.upperBound.z/GC);z++){const k=GK(x,y,z);let l=G.get(k);if(!l)G.set(k,l=[]);l.push(i)}}
+  const solid=(x,y,z)=>{const l=G.get(GK(Math.floor(x/GC),Math.floor(y/GC),Math.floor(z/GC)));if(!l)return false;for(let n=0;n<l.length;n++){const a=boxes[l[n]];if(x>=a[0]&&x<=a[3]&&y>=a[1]&&y<=a[4]&&z>=a[2]&&z<=a[5])return true}return false};
+  /* a surface covering something special (a cushion, the spoon, a climbable stud) behaves like it */
+  const kindAt=(x,y,z)=>{const l=G.get(GK(Math.floor(x/GC),Math.floor(y/GC),Math.floor(z/GC)));if(!l)return null;for(let n=0;n<l.length;n++){const a=boxes[l[n]];if((a[6]||a[7])&&x>=a[0]&&x<=a[3]&&y>=a[1]&&y<=a[4]&&z>=a[2]&&z<=a[5])return a}return null};
+  /* every visible triangle with nothing solid behind it becomes part of a collision mesh, in 40 cm patches */
+  const CH=120,ch=new Map(),A=new T.Vector3(),B=new T.Vector3(),Cc=new T.Vector3(),N=new T.Vector3(),c=new T.Vector3(),e1=new T.Vector3(),e2=new T.Vector3();let nt=0;
+  for(const[o]of C){const g=o.geometry,pos=g.attributes.position;if(!pos)continue;const idx=g.index,n=idx?idx.count/3:pos.count/3,m=o.matrixWorld;
+    for(let t=0;t<n;t++){const i0=idx?idx.getX(t*3):t*3,i1=idx?idx.getX(t*3+1):t*3+1,i2=idx?idx.getX(t*3+2):t*3+2;
+      A.fromBufferAttribute(pos,i0).applyMatrix4(m);B.fromBufferAttribute(pos,i1).applyMatrix4(m);Cc.fromBufferAttribute(pos,i2).applyMatrix4(m);
+      e1.subVectors(B,A);e2.subVectors(Cc,A);N.crossVectors(e1,e2);const ar=N.length()*.5;if(ar<1e-5)continue;N.multiplyScalar(.5/ar);c.copy(A).add(B).add(Cc).multiplyScalar(1/3);
+      if(c.y<.3&&N.y>.9)continue;/* the floor */if(c.y>249.5)continue;/* the ceiling */if(c.x<-60||c.x>880||c.z<-40||c.z>660||c.y<-1)continue;
+      const nx=N.x*.3,ny=N.y*.3,nz=N.z*.3;if(solid(c.x-nx,c.y-ny,c.z-nz)&&solid(A.x-nx,A.y-ny,A.z-nz)&&solid(B.x-nx,B.y-ny,B.z-nz)&&solid(Cc.x-nx,Cc.y-ny,Cc.z-nz))continue;
+      const sp=kindAt(c.x-N.x*1.2,c.y-N.y*1.2,c.z-N.z*1.2)||kindAt(c.x-N.x*3,c.y-N.y*3,c.z-N.z*3),kd=sp?sp[6]:"",cl=sp?sp[7]:false;
+      const k=Math.floor(c.x/CH)+","+Math.floor(c.y/CH)+","+Math.floor(c.z/CH)+"|"+kd+"|"+(cl?1:0);let l=ch.get(k);if(!l)ch.set(k,l=[]);l.push(A.x,A.y,A.z,B.x,B.y,B.z,Cc.x,Cc.y,Cc.z);nt++}}
+  let nb=0;for(const[kk,v]of ch){const[,kd,cl]=kk.split("|");const ox=v[0],oy=v[1],oz=v[2],vv=new Float32Array(v.length),ii=new Int32Array(v.length/3);for(let q=0;q<v.length;q+=3){vv[q]=v[q]-ox;vv[q+1]=v[q+1]-oy;vv[q+2]=v[q+2]-oz}for(let q=0;q<ii.length;q++)ii[q]=q;
+    const sh=new CANNON.Trimesh(vv,ii),body=new CANNON.Body({mass:0,material:WG.pm.ground});body.addShape(sh);body.position.set(ox,oy,oz);body.kind=kd||"auto";body.auto=1;if(cl==="1"){body.climb=true;sh.climb=true}body.isStatic=1;WG.world.addBody(body);nb++}
+  WG.autoSolid={tris:nt,bodies:nb,ms:Math.round(performance.now()-t0)};console.log("auto-solid",JSON.stringify(WG.autoSolid))}
+
+/* contacts are springy: if you've been pushed into something, step back out of it */
+function wgPlayerDepen(P){const b=P.b,cor=new CANNON.Vec3(),dir=new CANNON.Vec3(),g=new CANNON.Vec3();let n=0;
+  for(const c of WG.world.contacts){let other,sgn;if(c.bi===b){other=c.bj;sgn=-1}else if(c.bj===b){other=c.bi;sgn=1}else continue;if(other.mass>0&&other.type!==4)continue;
+    /* g = (xj+rj) - (xi+ri); overlap when g.n < 0 */g.copy(c.bj.position);g.vadd(c.rj,g);g.vsub(c.bi.position,g);g.vsub(c.ri,g);const depth=-g.dot(c.ni)-.01;if(depth<=0)continue;
+    dir.copy(c.ni);dir.scale(sgn,dir);const have=cor.dot(dir),need=depth-have;if(need>0){cor.x+=dir.x*need;cor.y+=dir.y*need;cor.z+=dir.z*need;n++}}
+  if(!n)return;const L=cor.length();if(L>2)cor.scale(2/L,cor);b.position.vadd(cor,b.position);const cl=cor.length();if(cl>1e-6){dir.copy(cor);dir.scale(1/cl,dir);const vn=b.velocity.dot(dir);if(vn<0){b.velocity.x-=dir.x*vn;b.velocity.y-=dir.y*vn;b.velocity.z-=dir.z*vn}}WG.depenN=(WG.depenN||0)+1}
+
+/* moving fast you can't skip through a thin shelf: sweep each of your three spheres from where it was */
+function wgPlayerSweepStart(P){const p=P.b.position;if(!P.prevP)P.prevP=new CANNON.Vec3();P.prevP.copy(p)}
+function wgPlayerSweep(P){const b=P.b,p=b.position,q=P.prevP;if(!q||P.rope)return;const dx=p.x-q.x,dy=p.y-q.y,dz=p.z-q.z,D=Math.hypot(dx,dy,dz);if(D<P.r*.5)return;
+  /* only real movement: a deliberate move (hauled onto a ledge, through a hole in the wall) doesn't match your speed */if(D>b.velocity.length()/120*1.5+.3)return;
+  const ux=dx/D,uy=dy/D,uz=dz/D,top=P.h-2*P.r,r=new CANNON.RaycastResult();let best=1e9;
+  for(const oy of[0,top/2,top]){r.reset();WG.world.raycastClosest(new CANNON.Vec3(q.x,q.y+oy,q.z),new CANNON.Vec3(p.x+ux*P.r,p.y+oy+uy*P.r,p.z+uz*P.r),{collisionFilterMask:1,skipBackfaces:true},r);
+    if(r.hasHit&&r.body&&r.body.type===2&&(r.hitNormalWorld.x*ux+r.hitNormalWorld.y*uy+r.hitNormalWorld.z*uz)<-.3){const allowed=r.distance-P.r;if(allowed<best)best=allowed}}
+  /* would you end up deep inside (or through) it? stop at its surface and let the bump happen normally */
+  if(best<D-P.r*.6){/* just touching it (a hair inside), so the bump - a landing, a bounce - happens as normal */const t=Math.max(0,best+.04);p.set(q.x+ux*t,q.y+uy*t,q.z+uz*t);WG.sweepN=(WG.sweepN||0)+1}}
+/* a real person steps up anything up to about a quarter of their height without thinking (a rug, a skirting
+   lip, a book lying flat); anything higher you jump or climb */
+function wgPlayerStepUp(P){if(!WG.in||P.gT>.12||P.rope||P.climb||P.pole||P.stuck||P.carry&&P.carry.b.mass>P.grabMax)return;
+  const mv=Math.hypot(WG.in.mx||0,WG.in.my||0);if(mv<.2)return;const b=P.b,p=b.position,fx=Math.sin(P.yaw),fz=Math.cos(P.yaw),feet=p.y-P.r,maxS=P.h*.25,r=new CANNON.RaycastResult();
+  /* something in front of my feet? */r.reset();WG.world.raycastClosest(new CANNON.Vec3(p.x,feet+.25,p.z),new CANNON.Vec3(p.x+fx*(P.r+.7),feet+.25,p.z+fz*(P.r+.7)),{collisionFilterMask:1,skipBackfaces:true},r);
+  if(!r.hasHit||Math.abs(r.hitNormalWorld.y)>.6)return;
+  /* how high is its top, just past the edge? */const ax=p.x+fx*(r.distance+.45),az=p.z+fz*(r.distance+.45);r.reset();WG.world.raycastClosest(new CANNON.Vec3(ax,feet+maxS+.3,az),new CANNON.Vec3(ax,feet-.1,az),{collisionFilterMask:1,skipBackfaces:true},r);
+  if(!r.hasHit||r.hitNormalWorld.y<.7)return;const h=r.hitPointWorld.y-feet;if(h<.08||h>maxS)return;
+  /* room for me up there? */const r2=new CANNON.RaycastResult();WG.world.raycastClosest(new CANNON.Vec3(ax,r.hitPointWorld.y+.1,az),new CANNON.Vec3(ax,r.hitPointWorld.y+P.h*.9,az),{collisionFilterMask:1,skipBackfaces:true},r2);if(r2.hasHit)return;
+  /* a natural little step: up and over */const vy=Math.sqrt(2*981*(h+.15));if(b.velocity.y<vy)b.velocity.y=vy;b.velocity.x+=fx*4;b.velocity.z+=fz*4;P.stepUpT=WG.t;WG.stepUps=(WG.stepUps||0)+1}
+
 /* ---------- THE WEE GUYS: things that launch you - the toaster, the spoon - and the robot hoover you can ride ---------- */
 /* the toaster: drop into a slot and it clicks down, heats up, and POPS you out */
 function wgToasterStep(dt){const Tz=WG.toaster;if(!Tz)return;const P=WG.P,p=P.b.position,feet=p.y-P.r;
@@ -13365,13 +13431,14 @@ function wgStart(){const T=THREE;if(!WG_LIBS){wgLibs();WG_LIBS=1}
   WG.pm={ground:new CANNON.Material("g"),player:new CANNON.Material("p"),thing:new CANNON.Material("t")};
   W.addContactMaterial(new CANNON.ContactMaterial(WG.pm.player,WG.pm.ground,{friction:0,restitution:0}));W.addContactMaterial(new CANNON.ContactMaterial(WG.pm.player,WG.pm.thing,{friction:.05,restitution:0}));
   W.addContactMaterial(new CANNON.ContactMaterial(WG.pm.thing,WG.pm.ground,{friction:.15,restitution:.25}));W.addContactMaterial(new CANNON.ContactMaterial(WG.pm.thing,WG.pm.thing,{friction:.45,restitution:.2}));
-  const load=$("#wgload"),steps=[["the people",wgLoadPeople],["the furniture",wgLoadProps],["the house",()=>{wgBuildHouse();wgPlaceProps()}],["clutter",wgBuildStuff],["dust and crumbs",wgBuildDust],["shadows",wgBuildAO],["bugs",wgBuildBugs],["the cat",wgBuildCat],["the robot hoover",wgBuildRobot]];let i=0;
+  const load=$("#wgload"),steps=[["the people",wgLoadPeople],["the furniture",()=>Promise.all([wgLoadProps(),wgLoadSolidData()])],["the house",()=>{wgBuildHouse();wgPlaceProps()}],["clutter",wgBuildStuff],["dust and crumbs",wgBuildDust],["shadows",wgBuildAO],["bugs",wgBuildBugs],["the cat",wgBuildCat],["the robot hoover",wgBuildRobot]];let i=0;
   const next=()=>{if(!WG||WG.dead)return;if(i<steps.length){const[n,f]=steps[i++];if(load)load.innerHTML="Shrinking you down… <b>"+n+"</b>";setTimeout(()=>{let r;try{r=f()}catch(e){console.error(n,e)}if(r&&r.then)r.then(next,next);else next()},20);return}wgReady()};next()}
 function wgReady(){const T=THREE;$("#wgload")&&$("#wgload").remove();
   /* you start at home behind the skirting board, next to the candle */
   const h=WG.home,who=wgWho();WG.P=wgMakePlayer(who,h.x+4,0,h.z+4);WG.P.yaw=Math.PI/2;WG.cam.yaw=Math.PI/2+Math.PI;
-  WG.world.addEventListener("preStep",()=>{if(WG&&WG.P)wgPlayerForces(WG.P,WG.fdt)});WG.world.addEventListener("postStep",()=>{if(WG&&WG.P){const v=WG.P.b.velocity,sp=v.length();if(sp>650){v.scale(650/sp,v);WG.vclamp=(WG.vclamp||0)+1}{const P=WG.P;/* the crisp-packet cape: a gentle glide down */if(WG.wear&&WG.wear.on.cape&&!P.rope&&!P.climb&&!P.pole&&P.gT>.15&&v.y<-70)v.y+=(-70-v.y)*.2}wgPlayerContacts(WG.P);wgCarryStep(WG.P)}});
+  WG.world.addEventListener("preStep",()=>{if(WG&&WG.P){wgPlayerSweepStart(WG.P);wgPlayerForces(WG.P,WG.fdt);wgPlayerStepUp(WG.P)}});WG.world.addEventListener("postStep",()=>{if(WG&&WG.P){const v=WG.P.b.velocity,sp=v.length();if(sp>650){v.scale(650/sp,v);WG.vclamp=(WG.vclamp||0)+1}{const P=WG.P;/* the crisp-packet cape: a gentle glide down */if(WG.wear&&WG.wear.on.cape&&!P.rope&&!P.climb&&!P.pole&&P.gT>.15&&v.y<-70)v.y+=(-70-v.y)*.2;wgPlayerSweep(P);wgPlayerDepen(P)}wgPlayerContacts(WG.P);wgCarryStep(WG.P)}});
   /* the room's bounce light is softer than the sun; much softer at home behind the wall */WG.scene.traverse(o=>{const ms=o.material?(Array.isArray(o.material)?o.material:[o.material]):[];for(const m of ms)if(m.isMeshStandardMaterial&&m.userData.env==null)m.envMapIntensity=.5});for(const k of["rough","red","cream","card","cavity","brick","timber"])wgBinMat(k).envMapIntensity=.1;
+  /* everything you can see is solid */wgAutoSolids();
   /* let everything settle where it was dropped */for(let i=0;i<240;i++)WG.world.step(1/120);for(const o of WG.dyn){o.fresh=1;o.home=new T.Vector3(o.b.position.x,o.b.position.y,o.b.position.z)}
   wgPlaceKit();wgPlaceWear();wgBigInit();wgBaseInit();{const rl=new T.Line(new T.BufferGeometry().setFromPoints([new T.Vector3(),new T.Vector3(0,1,0)]),new T.LineBasicMaterial({color:0xe8dcc0}));rl.frustumCulled=false;rl.visible=false;WG.scene.add(rl);WG.ropeL=rl;const hk=wgKeyMesh("hook");hk.children.slice(3).forEach(c=>hk.remove(c));hk.visible=false;WG.scene.add(hk);WG.hookM=hk}
   wgInput();wgSize();window.addEventListener("resize",wgSize);window.addEventListener("orientationchange",()=>setTimeout(wgSize,250));wgPostInit();
