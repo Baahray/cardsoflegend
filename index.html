@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta name="app-build" content="24 Nov 10:53 PT"><meta charset="utf-8">
+<html lang="en"><head><meta name="app-build" content="24 Nov 12:42 PT"><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Legends"><meta name="theme-color" content="#14102e">
@@ -6762,7 +6762,7 @@ function fjP2PSend(d){const P=FJP2P,c=P.dc;if(!P.open||!c||c.readyState!=="open"
 /*FJ-END*/</script>
 <script>/*WG-START*/
 /* which build this is; if a newer one is on the server when you come back to the app, it reloads itself */
-const WG_BUILD="20261124185316";
+const WG_BUILD="20261124204222";
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState!=="visible")return;fetch("version.txt?"+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():"").then(t=>{t=(t||"").trim();if(!t||t===WG_BUILD)return;if(!g)location.reload();else{const b=document.createElement("div");b.className="wgupd";b.textContent="A new version is ready - tap here to update";b.onclick=()=>location.reload();document.body.appendChild(b)}}).catch(()=>{})});
 /* three.js r128 helpers (MIT) and cannon-es physics (MIT), run once THREE has loaded */
 function wgLibs(){
@@ -12775,7 +12775,7 @@ function wgMisStep(dt){WG.misT-=dt;if(WG.misT>0)return;WG.misT=.5;const K=WG.kit
   if(WG.exits)WG.exits.forEach((e,i)=>{if(Math.hypot(p.x-e.x,p.z-e.z)<14&&Math.abs((p.y-P.r)-(e.y||0))<14&&!WG.misSeen.has(i)){WG.misSeen.add(i);wgMsg(`🗺️ Found a way through the wall ${e.nm} (${WG.misSeen.size}/4)`,2)}});if(WG.misSeen.size>=4)wgMisDone("walls");
   if(WG.bugs.some(b=>b.wall&&b.st==="flip"))wgMisDone("spider")}
 function wgListHud(){const L=$("#wglistp");if(!L||!WG.mis)return;const n=WG_MIS.filter(m=>WG.mis[m[0]]).length;
-  L.innerHTML=`<div class="wglh"><b>📜 Borrowing list</b> <span>${n}/${WG_MIS.length}</span><button id="wglx">✕</button></div>`+(WG.base?`<div class="wglb">🏠 Your base: ${"⭐".repeat(Math.max(1,Math.round(WG.base.s/20)))}${WG.bed?" · 🛏️ bed made":""}</div>`:"")+`<button class="wglmk" id="wglmk">🏠 Make my base here</button>`+WG_MIS.map(m=>`<div class="wgli ${WG.mis[m[0]]?"ok":""}"><i>${WG.mis[m[0]]?"✅":"⬜"}</i><div><b>${m[1]}</b><small>${m[2]}</small></div></div>`).join("")+`<div class="wgcred">Some furniture and ornaments are real scanned 3D models: Glam Velvet Sofa, Glass Hurricane Candle Holder, Iridescent Dish with Olives, Diffuse Transmission Plant (Wayfair LLC), Materials Variants Shoe (Shopify), Sunglasses (Khronos Group) - all CC BY 4.0; others CC0, from the Khronos glTF sample assets. People: Ready Player Me, Mixamo.</div>`;
+  L.innerHTML=`<div class="wglh"><b>📜 Borrowing list</b> <span>${n}/${WG_MIS.length}</span><button id="wglx">✕</button></div>`+(WG.base?`<div class="wglb">🏠 Your base: ${"⭐".repeat(Math.max(1,Math.round(WG.base.s/20)))}${WG.bed?" · 🛏️ bed made":""}</div>`:"")+`<button class="wglmk" id="wglmk">🏠 Make my base here</button>`+WG_MIS.map(m=>`<div class="wgli ${WG.mis[m[0]]?"ok":""}"><i>${WG.mis[m[0]]?"✅":"⬜"}</i><div><b>${m[1]}</b><small>${m[2]}</small></div></div>`).join("")+`<div class="wgcred">Some furniture and ornaments are real scanned 3D models: Glam Velvet Sofa, Glass Hurricane Candle Holder, Iridescent Dish with Olives, Diffuse Transmission Plant (Wayfair LLC), Materials Variants Shoe (Shopify), Sunglasses (Khronos Group) - all CC BY 4.0; others CC0, from the Khronos glTF sample assets. People: Wee Cass made with MakeHuman (CC0); Wee Dad from the Microsoft Rocketbox Avatar Library, Copyright (c) 2020 Microsoft, MIT License (full text in wg_people.json); big people: Ready Player Me; movement: Mixamo.</div>`;
   const tap=(id,f)=>{const b=$(id);b.addEventListener("pointerup",e=>{e.stopPropagation();f()});b.addEventListener("pointerdown",e=>e.stopPropagation())};tap("#wglx",()=>L.classList.remove("on"));tap("#wglmk",()=>{L.classList.remove("on");wgMakeBase()})}
 
 /* ---- the backpack: COLLECT the useful bits, they unpack themselves when you get home ---- */
@@ -12794,10 +12794,14 @@ function wgBagHome(){const B=WG.base,P=WG.P;if(!B||!WG.bag.length||P.carry&&P.st
    jumping, climbing, carrying, fighting and so on are layered on top by aiming the bones. */
 let WG_PPL=null;
 function wgLoadPeople(){if(WG_PPL)return Promise.resolve();return fetch("wg_people.json").then(r=>{if(!r.ok)throw new Error("people "+r.status);return r.json()}).then(j=>{const L=new THREE.GLTFLoader(),dec=b64=>{const s=atob(b64),u=new Uint8Array(s.length);for(let i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return u.buffer};
-  const parse=k=>new Promise((ok,no)=>L.parse(dec(j[k]),"",ok,no));return Promise.all([parse("anims"),parse("dad"),parse("big")]).then(([a,d,b])=>{WG_PPL={anims:a.animations,animScene:a.scene,dad:d,big:b,clips:{}}})}).catch(e=>{console.error("people",e);WG_PPL=null})}
+  const parse=k=>new Promise((ok,no)=>L.parse(dec(j[k]),"",ok,no));const opt=k=>j[k]?parse(k).catch(e=>{console.warn("people "+k,e);return null}):Promise.resolve(null);
+  const lab=j.dadlab?new Promise(ok=>{const im=new Image();im.onload=()=>{const c=document.createElement("canvas");c.width=im.width;c.height=im.height;const x=c.getContext("2d");x.drawImage(im,0,0);ok(x.getImageData(0,0,c.width,c.height))};im.onerror=()=>ok(null);im.src="data:image/png;base64,"+j.dadlab}):Promise.resolve(null);
+  return Promise.all([parse("anims"),parse("dad"),parse("big"),opt("cass"),opt("dadrb"),lab]).then(([a,d,b,c2,d2,lb])=>{WG_PPL={anims:a.animations,animScene:a.scene,dad:d,big:b,cass2:c2,dad2:d2,dadLab:lb,clips:{}}})}).catch(e=>{console.error("people",e);WG_PPL=null})}
+/* which model each person uses: Cass is made in MakeHuman, Dad is a Rocketbox man; the big people keep theirs */
+function wgSrcKey(kind){if(kind==="big")return"big";if(kind==="cass"&&WG_PPL.cass2)return"cass2";if(kind==="dad"&&WG_PPL.dad2)return"dad2";return"dad"}
 /* the motion-capture clips re-aimed onto each model's own skeleton: every bone keeps the same turn
    relative to its standing pose, so arms hang and legs swing properly even though the skeletons differ */
-function wgClips(kind){const C=WG_PPL.clips;if(C[kind])return C[kind];const T=THREE,out={},src=WG_PPL.animScene,dst=WG_PPL[kind==="big"?"big":"dad"].scene;
+function wgClips(kind){const C=WG_PPL.clips,K=wgSrcKey(kind);if(C[K])return C[K];const T=THREE,out={},src=WG_PPL.animScene,dst=WG_PPL[K].scene;
   const sb={},db={};src.traverse(o=>{if(o.name&&/^mixamorig/.test(o.name))sb[o.name.replace(/^mixamorig/,"")]=o});dst.traverse(o=>{if(o.isBone)db[o.name.replace(/^mixamorig/,"")]=o});
   const names=Object.keys(db).filter(n=>sb[n]);/* parents before children */const depth=o=>{let d=0;while(o.parent){d++;o=o.parent}return d};names.sort((a,b)=>depth(db[a])-depth(db[b]));
   src.updateMatrixWorld(true);dst.updateMatrixWorld(true);const restS={},restT={},restLocal={},align={};for(const n of names){restS[n]=sb[n].getWorldQuaternion(new T.Quaternion());restT[n]=db[n].getWorldQuaternion(new T.Quaternion());restLocal[n]=sb[n].quaternion.clone();
@@ -12813,13 +12817,14 @@ function wgClips(kind){const C=WG_PPL.clips;if(C[kind])return C[kind];const T=TH
       HY[f]=sb.Hips?sb.Hips.getWorldPosition(new T.Vector3()).y:hipS}
     mixer.stopAllAction();mixer.uncacheRoot(src);for(const nm of names){sb[nm].quaternion.copy(save[nm].q);sb[nm].position.copy(save[nm].p)}
     const tracks=names.map(nm=>new T.QuaternionKeyframeTrack(db[nm].name+".quaternion",times,Q[nm]));
-    if(db.Hips){/* the hip bob, scaled to this body */const v=new Float32Array(n*3),hp=db.Hips.position,k=hipT/hipS;for(let f=0;f<n;f++){v[f*3]=hp.x;v[f*3+1]=hp.y+(HY[f]-hipS)*k/(db.Hips.parent?db.Hips.parent.getWorldScale(new T.Vector3()).y:1);v[f*3+2]=hp.z}tracks.push(new T.VectorKeyframeTrack(db.Hips.name+".position",times,v))}
+    if(db.Hips){/* the hip bob, scaled to this body, as "up" in whatever way the hip's parent is turned */const v=new Float32Array(n*3),hp=db.Hips.position,k=hipT/hipS,par=db.Hips.parent,pq=par?par.getWorldQuaternion(new T.Quaternion()).invert():new T.Quaternion(),ps=par?par.getWorldScale(new T.Vector3()).y:1,up=new T.Vector3();
+      for(let f=0;f<n;f++){up.set(0,(HY[f]-hipS)*k/ps,0).applyQuaternion(pq);v[f*3]=hp.x+up.x;v[f*3+1]=hp.y+up.y;v[f*3+2]=hp.z+up.z}tracks.push(new T.VectorKeyframeTrack(db.Hips.name+".position",times,v))}
     out[clip.name]=new T.AnimationClip(clip.name,clip.duration,tracks)}
-  src.updateMatrixWorld(true);return C[kind]=out}
+  src.updateMatrixWorld(true);return C[K]=out}
 /* a person, h cm tall, facing +z, feet at 0 */
-function wgRig(kind,h){const T=THREE,src=WG_PPL[kind==="big"?"big":"dad"],obj=T.SkeletonUtils.clone(src.scene),g=new T.Group();g.add(obj);
+function wgRig(kind,h){const T=THREE,SK=wgSrcKey(kind),src=WG_PPL[SK],obj=T.SkeletonUtils.clone(src.scene),g=new T.Group();g.add(obj);
   const bones={};obj.traverse(o=>{if(o.isBone)bones[o.name.replace(/^mixamorig/,"")]=o;if(o.isMesh){o.castShadow=true;o.receiveShadow=true;o.frustumCulled=false;o.material=o.material.clone()}});
-  if(kind==="cass"){/* Wee Cass is a kid: a big head, a short body and legs, a blue hoodie, jeans and red trainers, his own hair */
+  if(kind==="cass"&&SK==="dad"){/* (fallback when his own model isn't there) Wee Cass is a kid: a big head, a short body and legs, a blue hoodie, jeans and red trainers, his own hair */
     const knit=wgClothTex("knit"),den=wgClothTex("denim");obj.traverse(o=>{if(!o.isMesh)return;const n=o.name,m=o.material;if(/Beard|Headwear/.test(n))o.visible=false;
       if(/Outfit_Top/.test(n)){m.map=null;m.color.setHex(0x2f6fe0);m.bumpMap=knit;m.bumpScale=.002;m.roughness=.95;m.needsUpdate=true}
       if(/Outfit_Bottom/.test(n)){m.map=null;m.color.setHex(0x23365a);m.bumpMap=den;m.bumpScale=.002;m.roughness=.9;m.needsUpdate=true}
@@ -12829,11 +12834,13 @@ function wgRig(kind,h){const T=THREE,src=WG_PPL[kind==="big"?"big":"dad"],obj=T.
     /* hair where the hat was */const hr=new T.Mesh(new T.SphereGeometry(1,22,14,0,Math.PI*2,0,Math.PI*.6),new T.MeshStandardMaterial({color:0x0b0b0e,roughness:.55}));const hd=bones.Head;if(hd){const top=bones.HeadTop_End?bones.HeadTop_End.position.length():.2;hr.scale.set(top*.43,top*.42,top*.47);hr.position.set(0,top*.53,-top*.03);hr.rotation.x=-.32;hr.name="hair";hd.add(hr);hr.castShadow=true}
     /* a hood lying on his back */const nk=bones.Neck;if(nk){const hood=new T.Mesh(new T.TorusGeometry(.075,.035,10,20,Math.PI*1.25),new T.MeshStandardMaterial({color:0x2a62cc,roughness:.95,bumpMap:knit,bumpScale:.002}));hood.rotation.set(Math.PI/2+.5,0,Math.PI*1.125-Math.PI/2);hood.position.set(0,.0,-.05);hood.name="hood";nk.add(hood);hood.castShadow=true}}
   /* size from the skeleton itself (top of head to the soles), which is what the skin follows */obj.updateMatrixWorld(true);const v=new T.Vector3(),top=(bones.HeadTop_End||bones.Head).getWorldPosition(new T.Vector3()).y*(bones.HeadTop_End?1:1.06);let bot=1e9;for(const k of["LeftToe_End","RightToe_End","LeftToeBase","RightToeBase","LeftFoot","RightFoot"])if(bones[k])bot=Math.min(bot,bones[k].getWorldPosition(v).y);const H=top-bot+(bones.LeftToe_End?0:(top-bot)*.03);obj.scale.multiplyScalar(h/H);obj.position.y=-bot*h/H+h*.008;
-  if(kind==="dad"){/* Wee Dad: a borrowed-looking olive suit and his hat */obj.traverse(o=>{if(!o.isMesh)return;const n=o.name;if(/Outfit_Top/.test(n))o.material.color.setHex(0x86a07a);if(/Outfit_Bottom/.test(n))o.material.color.setHex(0x6a6f80)})}
+  if(kind==="dad"&&SK==="dad"){/* Wee Dad: a borrowed-looking olive suit and his hat */obj.traverse(o=>{if(!o.isMesh)return;const n=o.name;if(/Outfit_Top/.test(n))o.material.color.setHex(0x86a07a);if(/Outfit_Bottom/.test(n))o.material.color.setHex(0x6a6f80)})}
 
   if(kind==="big2"){/* the other big person: same build as Dad's model, different clothes */obj.traverse(o=>{if(!o.isMesh)return;if(/Outfit_Top/.test(o.name))o.material.color.setHex(0xb04040);if(/Outfit_Bottom/.test(o.name))o.material.color.setHex(0x5a5a62)})}
-  const mixer=new T.AnimationMixer(obj),clips=wgClips(kind==="big"?"big":"dad"),act={};for(const k of["idle","walk","run","sneak_pose"]){if(!clips[k])continue;const a=mixer.clipAction(clips[k]);a.play();a.setEffectiveWeight(k==="idle"?1:0);act[k]=a}
-  const R={kind,g,obj,mixer,act,bones,h,w:{idle:1,walk:0,run:0,sneak_pose:0},isRig:1};R.head=bones.Head;if(kind==="cass"||kind==="dad")wgOutfitBuild(R);return R}
+  const mixer=new T.AnimationMixer(obj),clips=wgClips(kind),act={};for(const k of["idle","walk","run","sneak_pose"]){if(!clips[k])continue;const a=mixer.clipAction(clips[k]);a.play();a.setEffectiveWeight(k==="idle"?1:0);act[k]=a}
+  /* skin lets a little light through: a soft glow of its own colour keeps faces from going muddy indoors */
+  if(SK==="cass2"||SK==="dad2")obj.traverse(o=>{if(o.isMesh&&o.material&&/Cass_Skin|Dad_Head/.test(o.material.name)&&o.material.map){const m=o.material;m.emissive=new T.Color(0xffffff);m.emissiveMap=m.map;m.emissiveIntensity=SK==="dad2"?.36:.24;m.needsUpdate=true}});
+  const R={kind,SK,g,obj,mixer,act,bones,h,w:{idle:1,walk:0,run:0,sneak_pose:0},isRig:1};R.head=bones.Head;if(kind==="cass"||kind==="dad")wgOutfitBuild(R);return R}
 /* blend idle / walk / run from the speed, with the feet's timing matched to how fast you're really going */
 function wgRigLoco(R,spd,dt,sneak){const h=R.h,s=spd/h,want={idle:0,walk:0,run:0,sneak_pose:0};
   if(s<.15)want.idle=1;else if(s<1.9){const k=Math.min(1,(s-.15)/.5);want.idle=1-k;want.walk=k}else{const k=Math.min(1,(s-1.9)/1.4);want.walk=1-k;want.run=k}
@@ -13073,7 +13080,7 @@ function wgMiscTex(k){const key="misc_"+k;if(WGT[key])return WGT[key];let c,r=1,
 const wgFoil=(col,o)=>new THREE.MeshStandardMaterial(Object.assign({color:col,metalness:.85,roughness:.28,bumpMap:wgMiscTex("crinkle"),bumpScale:.003},o||{}));
 
 /* ---- the borrower bits sewn onto the rig: measured from the skeleton so they fit Cass or Dad ---- */
-function wgOutfitBuild(R){const T=THREE,B=R.bones,kid=R.kind==="cass";if(!WG.wear)WG.wear={have:{},on:{},top:kid?"sockblue":"towel",bot:kid?"hblue":"sockgrey"};
+function wgOutfitBuild(R){const T=THREE,B=R.bones,kid=R.kind==="cass";if(!WG.wear)WG.wear={have:{},on:{},top:kid?"sockblue":"sockgrey",bot:"hblue",shirt:"towel"};
   R.obj.updateMatrixWorld(true);R.g.updateMatrixWorld(true);const W=n=>B[n]?B[n].getWorldPosition(new T.Vector3()):null,O={};R.out=O;
   const sw=W("LeftArm").distanceTo(W("RightArm")),hw=W("LeftUpLeg").distanceTo(W("RightUpLeg")),tl=W("Hips").distanceTo(W("Neck")),up=new T.Vector3(0,1,0),fwd=new T.Vector3(0,0,1),q=new T.Quaternion();
   const put=(bn,m,pos,axis)=>{m.position.copy(pos);if(axis)m.quaternion.setFromUnitVectors(new T.Vector3(0,0,1),axis.clone().normalize());m.traverse(o=>{if(o.isMesh){o.castShadow=true;o.frustumCulled=false}});R.g.add(m);R.g.updateMatrixWorld(true);B[bn].attach(m);return m};
@@ -13089,7 +13096,7 @@ function wgOutfitBuild(R){const T=THREE,B=R.bones,kid=R.kind==="cass";if(!WG.wea
   O.leather=leather;
   /* a postage-stamp patch on his knee */{const k=W("LeftLeg"),f=W("LeftFoot"),st=new T.Mesh(new T.PlaneGeometry(hw*.42,hw*.52),new T.MeshStandardMaterial({map:wgMiscTex("stamp"),transparent:true,alphaTest:.5,roughness:.8,side:T.DoubleSide}));put("LeftLeg",st,k.clone().lerp(f,.1).addScaledVector(fwd,hw*.36))}
   /* ---- the finds you can wear ---- */
-  const hair=R.obj.getObjectByName("hair");let hc,hs;if(hair){hair.updateMatrixWorld(true);const bb=new T.Box3().setFromObject(hair);hc=bb.getCenter(new T.Vector3());hs=bb.getSize(new T.Vector3())}else{const a=W("Head"),b=W("HeadTop_End");const hh=a.distanceTo(b);hc=a.clone().lerp(b,.7);hs=new T.Vector3(hh*1.15,hh*.7,hh*1.25)}
+  const hair=R.obj.getObjectByName("hair")||R.obj.getObjectByName("Hair");if(hair&&hair.material&&R.SK!=="dad")hair.material.roughness=.8;let hc,hs;if(hair){hair.updateMatrixWorld(true);const bb=new T.Box3().setFromObject(hair);hc=bb.getCenter(new T.Vector3());hs=bb.getSize(new T.Vector3())}else{const a=W("Head"),b=W("HeadTop_End");const hh=a.distanceTo(b);hc=a.clone().lerp(b,.7);hs=new T.Vector3(hh*1.15,hh*.7,hh*1.25)}
   const hr=Math.max(hs.x,hs.z)*.5;
   {const H=hr*1.15,pts=[[1.02,0],[1,.08],[.97,.7],[.86,.93],[.55,1.02],[0,1.05]].map(([x,y])=>new T.Vector2(x*hr*1.05,y*H)),m=new T.Mesh(new T.LatheGeometry(pts,28),new T.MeshStandardMaterial({color:0xd6dade,metalness:1,roughness:.3,bumpMap:wgMiscTex("dimple"),bumpScale:.004}));const g=new T.Group();g.add(m);g.rotation.x=-.12;O.thimble=put("Head",g,new T.Vector3(hc.x,hc.y-hs.y*.12,hc.z))}
   {const r=hr*1.25,geo=new T.CylinderGeometry(r,r*1.04,r*.22,48,1,true),ps=geo.attributes.position;for(let i=0;i<ps.count;i++){if(ps.getY(i)<0){const a=Math.atan2(ps.getZ(i),ps.getX(i)),k=1+.06*Math.sign(Math.sin(a*24));ps.setX(i,ps.getX(i)*k);ps.setZ(i,ps.getZ(i)*k)}}geo.computeVertexNormals();const mat=wgFoil(0xd9b23c,{side:T.DoubleSide}),g=new T.Group(),sk=new T.Mesh(geo,mat),top=new T.Mesh(new T.CircleGeometry(r,40),mat);top.rotation.x=-Math.PI/2;top.position.y=r*.11;g.add(sk,top);g.rotation.z=.28;O.milktop=put("Head",g,new T.Vector3(hc.x,hc.y+hs.y*.32,hc.z))}
@@ -13101,8 +13108,8 @@ function wgOutfitBuild(R){const T=THREE,B=R.bones,kid=R.kind==="cass";if(!WG.wea
     g.rotation.x=-Math.PI/2;O.scarf=put("Neck",g,W("Neck").lerp(W("Spine2"),.25).addScaledVector(fwd,sw*.02))}
   /* the hood becomes a red sweet wrapper */const hood=R.obj.getObjectByName("hood");if(hood)hood.material=wgFoil(0xc8102e,{roughness:.32});
   wgOutfitApply(R)}
-function wgOutfitApply(R){if(!R||!R.out)return;const Wr=WG.wear,kid=R.kind==="cass";R.obj.traverse(o=>{if(!o.isMesh||!o.material)return;const m=o.material,n=o.name;
-    const fab=/Outfit_Top/.test(n)?Wr.top:/Outfit_Bottom/.test(n)?Wr.bot:null;if(fab){const t=wgFabTex(fab);m.map=t;m.bumpMap=t;m.bumpScale=.0025;m.color.setHex(0xffffff);m.roughness=.95;m.metalness=0;m.needsUpdate=true}
+function wgOutfitApply(R){if(!R||!R.out)return;const Wr=WG.wear,kid=R.kind==="cass";if(R.SK==="dad2")wgDadClothes(R);R.obj.traverse(o=>{if(!o.isMesh||!o.material)return;const m=o.material,n=o.name;
+    const fab=/Outfit_Top/.test(n)?Wr.top:/Outfit_Bottom/.test(n)?Wr.bot:null;if(fab){let t=wgFabTex(fab);if(R.SK==="cass2"){/* his own model's texture layout is bigger: finer stitches */const k="fine_"+fab;t=WGT[k]||(WGT[k]=(()=>{const c=t.clone();c.repeat.multiplyScalar(2.2);c.needsUpdate=true;return c})())}m.map=t;m.bumpMap=t;m.bumpScale=.0025;m.color.setHex(0xffffff);m.roughness=.95;m.metalness=0;m.needsUpdate=true}
     if(/Footwear/.test(n)&&!m._lea){m._lea=1;m.map=R.out.leather.map;m.bumpMap=R.out.leather.map;m.bumpScale=.002;m.color.setHex(0xffffff);m.roughness=.6;m.needsUpdate=true}
     if(/Headwear/.test(n))o.visible=!kid&&!Wr.on.thimble&&!Wr.on.milktop});
   const F=WG_FAB[Wr.top];R.out.rib.color.set(F.knit?F.knit[1]:"#e8e0cc");for(const k in WG_WEAR)if(R.out[k])R.out[k].visible=!!Wr.on[k];if(Wr.on.thimble&&Wr.on.milktop)R.out.milktop.visible=false;if(R.out.flap)R.out.flap.position.z=Wr.on.pack?-R.out.packD:0}
@@ -13116,7 +13123,7 @@ function wgWearMesh(k){const T=THREE,g=new T.Group();
   if(k==="pack"){const m=new T.Mesh(new T.BoxGeometry(4.8,1.3,3.3),[0,0,0,0,0,0].map((_,i)=>new T.MeshStandardMaterial({color:i===2?0x8a5a34:0xb07a48,roughness:.9})));m.position.y=.65;g.add(m)}
   if(k==="scarf"){const m=new T.Mesh(new T.TorusGeometry(1.1,.38,10,24),new T.MeshStandardMaterial({map:wgFabTex("sockred"),roughness:.95}));m.rotation.x=Math.PI/2;m.position.y=.38;g.add(m)}
   g.traverse(o=>{if(o.isMesh)o.castShadow=true});return g}
-function wgPlaceWear(){if(!WG.wear)WG.wear={have:{},on:{},top:WG.P.kid?"sockblue":"towel",bot:WG.P.kid?"hblue":"sockgrey"};const put=(k,x,y,z)=>{const m=wgWearMesh(k);m.position.set(x,y,z);m.rotation.y=wgR(0,6);WG.scene.add(m);const gl=wgGlint();gl.position.set(x,y+.8,z);WG.scene.add(gl);WG.keys.push({k,m,gl,p:new THREE.Vector3(x,y,z),ph:wgR(0,6)})};
+function wgPlaceWear(){if(!WG.wear)WG.wear={have:{},on:{},top:WG.P.kid?"sockblue":"sockgrey",bot:"hblue",shirt:"towel"};const put=(k,x,y,z)=>{const m=wgWearMesh(k);m.position.set(x,y,z);m.rotation.y=wgR(0,6);WG.scene.add(m);const gl=wgGlint();gl.position.set(x,y+.8,z);WG.scene.add(gl);WG.keys.push({k,m,gl,p:new THREE.Vector3(x,y,z),ph:wgR(0,6)})};
   const D=WG.drawer;if(D)put("thimble",D.x0+(D.x1-D.x0)*.86,D.y,D.z0+(D.z1-D.z0)*.72);
   put("milktop",660,0,214);put("cape",200,0,425);put("pack",440,182,406);
   const M=WG.spotMatch;if(M)put("scarf",M.x-16,M.y-.4,M.z+2);else put("scarf",160,0,200)}
@@ -13132,6 +13139,22 @@ function wgWardOpen(){const p=$("#wgwardp"),Wr=WG.wear;if(!p)return;const kid=WG
 function wgWardClick(e){const t=e.target.closest("button");if(!t)return;const Wr=WG.wear;if(t.dataset.x){$("#wgwardp").style.display="none";return}
   if(t.dataset.g){Wr[t.dataset.g]=t.dataset.k}if(t.dataset.w){const k=t.dataset.w;Wr.on[k]=!Wr.on[k];if(Wr.on[k]&&k==="thimble")Wr.on.milktop=0;if(Wr.on[k]&&k==="milktop")Wr.on.thimble=0}
   wgOutfitApply(WG.P.mesh);wgSfx("grab");wgWardOpen()}
+
+/* ---- Dad's clothes: his jacket, shirt, jeans and shoes are painted in one picture, so re-make that picture:
+   wherever the label map says "jacket" (etc.), lay the scavenged fabric over the original folds and shading ---- */
+const _wgID=new Map();function wgImgData(c){if(_wgID.has(c))return _wgID.get(c);const x=c.getContext?c.getContext("2d"):null;let d;if(x)d=x.getImageData(0,0,c.width,c.height);else{const k=document.createElement("canvas");k.width=c.width;k.height=c.height;const kx=k.getContext("2d");kx.drawImage(c,0,0);d=kx.getImageData(0,0,k.width,k.height)}_wgID.set(c,d);return d}
+function wgDadClothes(R){const L=WG_PPL&&WG_PPL.dadLab;if(!L)return;let body=null;R.obj.traverse(o=>{if(o.isMesh&&o.material&&o.material.name==="Dad_Body")body=o});if(!body||!body.material.map)return;const m=body.material,W=L.width,H=L.height,ld=L.data;
+  if(!R.dadBase){const c=document.createElement("canvas");c.width=W;c.height=H;const x=c.getContext("2d");x.drawImage(m.map.image,0,0,W,H);R.dadBase=x.getImageData(0,0,W,H);R.dadCan=c;
+    const d=R.dadBase.data,sum=new Float64Array(6),cnt=new Float64Array(6);for(let i=0;i<ld.length;i+=4){const k=Math.min(5,Math.round(ld[i]/50));sum[k]+=d[i]*.3+d[i+1]*.59+d[i+2]*.11;cnt[k]++}R.dadMean=[...sum].map((s,k)=>cnt[k]?s/cnt[k]:128)}
+  const Wr=WG.wear,pf=Wr.top==="hspot"?"hblue":"hspot",src={1:wgImgData(wgFabTex(Wr.top).image),2:wgImgData(wgFabTex(Wr.bot).image),3:wgImgData(wgMiscTex("leather").image),4:wgImgData(wgFabTex(Wr.shirt||"hblue").image),9:wgImgData(wgFabTex(pf).image)},rep={1:11,2:5,3:3,4:6,9:3};
+  /* patches sewn on: both elbows and one on the front */const P=[[.14,.63,.055,.07],[.86,.63,.055,.07],[.38,.62,.045,.045]];
+  const b=R.dadBase.data,out=new ImageData(new Uint8ClampedArray(b),W,H),o=out.data,mean=R.dadMean;
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const i=(y*W+x)*4;let k=Math.min(5,Math.round(ld[i]/50));if(k<1||k>4)continue;const u=x/W,v=y/H;let edge=0,kk=k;
+    if(k===1)for(const[pu,pv,hw,hh]of P){const du=Math.abs(u-pu),dv=Math.abs(v-pv);if(du<hw&&dv<hh){kk=9;if(hw-du<.004||hh-dv<.004)edge=((x+y)>>2)&1?2:1;break}}
+    const f=src[kk],r=rep[kk],fx=Math.floor(((u*r)%1)*f.width),fy=Math.floor(((v*r)%1)*f.height),j=(fy*f.width+fx)*4,sh=Math.max(.35,Math.min(1.7,(b[i]*.3+b[i+1]*.59+b[i+2]*.11)/(mean[k]||128)));
+    if(edge===2){o[i]=238;o[i+1]=226;o[i+2]=196;continue}
+    o[i]=f.data[j]*sh;o[i+1]=f.data[j+1]*sh;o[i+2]=f.data[j+2]*sh}
+  R.dadCan.getContext("2d").putImageData(out,0,0);if(!R.dadTex){const t=new THREE.CanvasTexture(R.dadCan);t.flipY=false;t.encoding=THREE.sRGBEncoding;t.anisotropy=4;R.dadTex=t;m.map=t;m.needsUpdate=true}else R.dadTex.needsUpdate=true}
 
 /* ---------- THE WEE GUYS: things that launch you - the toaster, the spoon - and the robot hoover you can ride ---------- */
 /* the toaster: drop into a slot and it clicks down, heats up, and POPS you out */
