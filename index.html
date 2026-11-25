@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta name="app-build" content="24 Nov 14:41 PT"><meta charset="utf-8">
+<html lang="en"><head><meta name="app-build" content="24 Nov 15:58 PT"><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Legends"><meta name="theme-color" content="#14102e">
@@ -1003,6 +1003,12 @@ body.dfon{overflow:hidden}
 .wgwo button,.wgwi{font:700 12px Outfit,system-ui,sans-serif;color:#2a1a0a;background:#efe2c4;border:2px solid transparent;border-radius:10px;padding:6px 9px}
 .wgwo button.on,.wgwi.on{background:#f6c860;border-color:#a0522d}.wgwi{display:block;width:100%;text-align:left;margin:4px 0;box-sizing:border-box}.wgwi small{display:block;font-weight:500;color:#6a5a48;margin-top:2px}
 .wgwi.lock{color:#8a7a68;background:rgba(0,0,0,.04);border:1px dashed rgba(0,0,0,.2)}
+.wglower{right:calc(112px + env(safe-area-inset-right,0px));bottom:calc(184px + env(safe-area-inset-bottom,0px));width:56px;height:56px}.wglower.on{background:rgba(90,140,230,.65)}
+.wgaim{position:absolute;left:50%;top:50%;width:46px;height:46px;margin:-23px 0 0 -23px;pointer-events:none;display:none;z-index:6}.wgaim.on{display:block}
+.wgaim b{position:absolute;inset:0;border:2px solid rgba(120,255,150,.95);border-radius:50%;box-shadow:0 0 0 1px rgba(0,0,0,.35)}.wgaim b:before,.wgaim b:after{content:"";position:absolute;background:rgba(120,255,150,.95)}
+.wgaim b:before{left:50%;top:-9px;bottom:-9px;width:2px;margin-left:-1px}.wgaim b:after{top:50%;left:-9px;right:-9px;height:2px;margin-top:-1px}
+.wgaim.bad b{border-color:rgba(255,100,80,.95)}.wgaim.bad b:before,.wgaim.bad b:after{background:rgba(255,100,80,.95)}
+.wgaim i{position:absolute;left:50%;top:54px;transform:translateX(-50%);white-space:nowrap;font:800 13px Outfit,system-ui,sans-serif;color:#fff;text-shadow:0 1px 3px #000;font-style:normal}
 
 /*WG-END*/
 </style></head><body><main>
@@ -6762,7 +6768,7 @@ function fjP2PSend(d){const P=FJP2P,c=P.dc;if(!P.open||!c||c.readyState!=="open"
 /*FJ-END*/</script>
 <script>/*WG-START*/
 /* which build this is; if a newer one is on the server when you come back to the app, it reloads itself */
-const WG_BUILD="20261124224103";
+const WG_BUILD="20261124235820";
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState!=="visible")return;fetch("version.txt?"+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():"").then(t=>{t=(t||"").trim();if(!t||t===WG_BUILD)return;if(!g)location.reload();else{const b=document.createElement("div");b.className="wgupd";b.textContent="A new version is ready - tap here to update";b.onclick=()=>location.reload();document.body.appendChild(b)}}).catch(()=>{})});
 /* three.js r128 helpers (MIT) and cannon-es physics (MIT), run once THREE has loaded */
 function wgLibs(){
@@ -12239,7 +12245,7 @@ function wgMakePlayer(who,x,y,z){const T=THREE,kid=who==="cass",h=kid?5.3:6.2,r=
   const b=new CANNON.Body({mass:10,material:WG.pm.player,fixedRotation:true,linearDamping:0,allowSleep:false});const top=h-2*r;
   for(const oy of[0,top/2,top])b.addShape(new CANNON.Sphere(r),new CANNON.Vec3(0,oy,0));b.position.set(x,y+r,z);b.updateMassProperties();b.isPlayer=1;b.collisionFilterGroup=2;WG.world.addBody(b);P.b=b;
   /* Cass has a hidden edge: stronger, faster, springier, harder to spot, tougher */
-  P.jumpV=kid?150:135;P.walk=kid?10.5:10;P.run=kid?22:20;P.sprint=kid?38:34;P.acc=kid?5200:4400;P.grabMax=kid?70:45;P.climbV=kid?18:14;P.dmgK=kid?.5:1;
+  P.jumpV=kid?150:135;P.walk=kid?10.5:10;P.run=kid?22:20;P.sprint=kid?46:42;P.acc=kid?5200:4400;P.grabMax=kid?70:45;P.climbV=kid?18:14;P.dmgK=kid?.5:1;
   return P}
 /* after each physics step: what is the wee guy touching? */
 function wgPlayerContacts(P){const b=P.b;let g=0,wall=null,wn=null;for(const c of WG.world.contacts){let n,o,os;if(c.bi===b){n=c.ni;o=c.bj;os=c.sj;n={x:-n.x,y:-n.y,z:-n.z}}else if(c.bj===b){n=c.ni;o=c.bi;os=c.si}else continue;
@@ -12281,12 +12287,12 @@ function wgGrab(P){if(P.stuck)return;if(P.carry&&P.spd<3){/* standing still: put
   for(const o of WG.dyn){const b=o.b;if(b.mass>P.grabMax||o.nograb||o.gone)continue;const d=Math.hypot(b.position.x-hx,(b.position.y-hy)*.6,b.position.z-hz)-o.rad;if(d<2.4&&d<bd){bd=d;best=o}}
   if(best){P.carry=best;best.b.collisionResponse=false;best.b.wakeUp();wgSfx("grab");wgMsg(best.nm?("Got "+best.nm+"!"):"Got it!",1)}else{const o=WG.dyn.find(o=>!o.gone&&o.b.mass>P.grabMax&&Math.hypot(o.b.position.x-hx,o.b.position.z-hz)-o.rad<2.5);wgMsg(o?"Too heavy to lift - try pushing it!":"Nothing to grab here",1)}}
 /* keep carried things above your head */
-function wgCarryStep(P){const c=P.carry;if(!c)return;const p=P.b.position,b=c.b;b.position.set(p.x,p.y-P.r+P.h+c.rad*.9+.3,p.z);b.velocity.copy(P.b.velocity);b.quaternion.setFromEuler(0,P.yaw,0)}
+function wgCarryStep(P){wgCarryShape(P);const c=P.carry;if(!c)return;const p=P.b.position,b=c.b;b.position.set(p.x,p.y-P.r+P.h+c.rad*.9+.3,p.z);b.velocity.copy(P.b.velocity);b.quaternion.setFromEuler(0,P.yaw,0)}
 /* ---- natural movement: gait from distance travelled, lean into speed and turns, land with a bend ---- */
 function wgAnimPlayer(P,dt){if(P.mesh.isRig)return wgAnimRig(P,dt);const M=P.mesh,b=P.b,v=b.velocity,hs=Math.hypot(v.x,v.z),onG=P.gT<.1,T=WG.t;
   const gv=P.ground&&P.ground.type===CANNON.Body.KINEMATIC&&onG?Math.hypot(v.x-P.ground.velocity.x,v.z-P.ground.velocity.z):hs;/* on a moving thing, walk at your own speed */
   P.accS=(P.accS||0)+((gv-P.spd)/Math.max(dt,1e-3)-(P.accS||0))*Math.min(1,dt*6);P.spd=gv;
-  M.g.position.set(b.position.x,b.position.y-P.r,b.position.z);M.g.rotation.y=P.yaw;if(P.land>0)P.land=Math.max(0,P.land-dt*3.2);if(P.atk>0)P.atk-=dt;if(P.throwT>0)P.throwT-=dt;
+  {const vp=P.vp||b.position;M.g.position.set(vp.x,vp.y-P.r,vp.z)}M.g.rotation.y=P.yaw;if(P.land>0)P.land=Math.max(0,P.land-dt*3.2);if(P.atk>0)P.atk-=dt;if(P.throwT>0)P.throwT-=dt;
   const L=M.L,R=M.R,LA=M.LA,RA=M.RA;const t={lh:0,rh:0,lk:.06,rk:.06,la:.04,ra:.04,le:-.15,re:-.15,lz:.06,rz:-.06,bob:0,lean:.02,bank:0,sway:0,hx:0,hy:0};
   const rn=Math.max(0,Math.min(1,(gv-P.walk)/(P.sprint-P.walk)));
   if(P.stuck){/* wriggling */const s=Math.sin(T*14);t.la=-2.4+s*.5;t.ra=-2.4-s*.5;t.lh=s*.3;t.rh=-s*.3;t.lk=.4;t.rk=.4}
@@ -12372,7 +12378,7 @@ function wgThing(k,x,y,z,o){o=o||{};const T=THREE,K=wgKind(k);let mesh;
   mesh.castShadow=K.rad>1.2&&k!=="dust";mesh.receiveShadow=true;WG.scene.add(mesh);
   const b=new CANNON.Body({mass:K.mass,material:WG.pm.thing,allowSleep:true,sleepSpeedLimit:1.5,sleepTimeLimit:.6,linearDamping:k==="dust"?.92:.06,angularDamping:k==="dust"?.9:.2});b.addShape(K.shape);b.collisionFilterGroup=4;
   b.position.set(x,y+K.rad*.6,z);if(o.ry!=null||o.rand!==false)b.quaternion.setFromEuler(0,o.ry!=null?o.ry:wgR(0,6.28),0);WG.world.addBody(b);
-  const it={b,m:mesh,k,rad:K.rad,nm:K.nm,fresh:1,nograb:o.nograb};mesh.position.copy(b.position);mesh.quaternion.copy(b.quaternion);WG.dyn.push(it);
+  wgItemFeel(b);const it={b,m:mesh,k,rad:K.rad,nm:K.nm,fresh:1,nograb:o.nograb};mesh.position.copy(b.position);mesh.quaternion.copy(b.quaternion);WG.dyn.push(it);
   b.addEventListener("collide",e=>{const v=Math.abs(e.contact.getImpactVelocityAlongNormal());if(v>60&&WG.t-(it.snd||0)>.15&&WG.P&&b.position.distanceTo(WG.P.b.position)<120){it.snd=WG.t;wgSfx(K.mass>40?"thud":"clink")}});
   return it}
 /* small finishing touches on things */
@@ -12859,7 +12865,7 @@ function wgAim(R,bn,cn,dir,w){const b=R.bones[bn],c=R.bones[cn];if(!b||!c||w<=0)
 function wgPose(R,list,w){if(w<=.01)return;for(const[b,c,d]of list)wgAim(R,b,c,d,w)}
 function wgAnimRig(P,dt){const R=P.mesh,b=P.b,v=b.velocity,onG=P.gT<.1,T=WG.t;
   const gv=P.ground&&P.ground.type===CANNON.Body.KINEMATIC&&onG?Math.hypot(v.x-P.ground.velocity.x,v.z-P.ground.velocity.z):Math.hypot(v.x,v.z);P.spd=gv;
-  R.g.position.set(b.position.x,b.position.y-P.r,b.position.z);R.g.rotation.y=P.yaw;R.g.updateMatrixWorld(true);if(P.land>0)P.land=Math.max(0,P.land-dt*3.2);if(P.atk>0)P.atk-=dt;if(P.throwT>0)P.throwT-=dt;
+  const vp=P.vp||b.position;R.g.position.set(vp.x,vp.y-P.r,vp.z);R.g.rotation.y=P.yaw;R.g.updateMatrixWorld(true);if(P.land>0)P.land=Math.max(0,P.land-dt*3.2);if(P.atk>0)P.atk-=dt;if(P.throwT>0)P.throwT-=dt;
   const busy=P.climb||P.pole||P.rope||P.stuck||!onG;wgRigLoco(R,busy?0:gv,dt,!!WG.big&&!P.sprinting);
   /* step sounds follow the real footfalls */if(!busy&&gv>2){P.stepT+=dt*gv/(P.h*.75);if(P.stepT>1){P.stepT=0;wgSfx("step")}}
   /* lean into speed and turns */R.obj.rotation.x+=((busy?0:Math.min(.16,gv/P.h*.025))-R.obj.rotation.x)*Math.min(1,dt*6);R.obj.rotation.z+=((busy?0:Math.max(-.3,Math.min(.3,-P.turn*gv*.004)))-R.obj.rotation.z)*Math.min(1,dt*6);
@@ -12902,7 +12908,7 @@ function wgPlaceKit(){WG.kit={};WG.keys=[];const put=(k,x,y,z,ry)=>{const m=wgKe
 function wgKitStep(dt){const P=WG.P,p=P.b.position;for(const K of WG.keys){if(K.got)continue;K.ph+=dt;const tw=Math.max(0,Math.sin(K.ph*2.2))**6;K.gl.scale.setScalar(1.2+tw*6);K.gl.material.opacity=.35+tw*.65;K.gl.material.depthTest=false;K.gl.renderOrder=9;
     if(Math.hypot(p.x-K.p.x,(p.y-P.r+1)-K.p.y,p.z-K.p.z)<P.r+2.9){K.got=1;WG.scene.remove(K.m);WG.scene.remove(K.gl);WG.kit[K.k]=1;wgSfx("grab");wgFound(K.k)}}
   if(P.hurtT>0)P.hurtT-=dt;if(P.hp<3){P.hpT+=dt;if(P.hpT>25){P.hpT=0;P.hp=Math.min(3,P.hp+.5);wgKitHud()}}
-  /* the rope */const R=WG.ropeL;if(P.rope){const a=P.rope.a,h=new THREE.Vector3(p.x,p.y-P.r+P.h*.85,p.z);R.geometry.setFromPoints([h,a]);R.visible=true;WG.hookM.position.copy(a);WG.hookM.visible=true}else if(P.ropeMiss&&P.ropeMiss.t>0){P.ropeMiss.t-=dt;const k=Math.sin(P.ropeMiss.t/.35*Math.PI),h=new THREE.Vector3(p.x,p.y-P.r+P.h*.85,p.z),e=h.clone().addScaledVector(P.ropeMiss.d,k*120);R.geometry.setFromPoints([h,e]);R.visible=true;WG.hookM.position.copy(e);WG.hookM.visible=true}else{R.visible=false;WG.hookM.visible=false}}
+  /* the rope */const R=WG.ropeL;if(P.rope){const a=P.rope.a,vp=P.vp||p,h=new THREE.Vector3(vp.x,vp.y-P.r+P.h*.85,vp.z);R.geometry.setFromPoints([h,a]);R.visible=true;WG.hookM.position.copy(a);WG.hookM.visible=true}else if(P.ropeMiss&&P.ropeMiss.t>0){P.ropeMiss.t-=dt;const k=Math.sin(P.ropeMiss.t/.35*Math.PI),h=new THREE.Vector3(p.x,p.y-P.r+P.h*.85,p.z),e=h.clone().addScaledVector(P.ropeMiss.d,k*120);R.geometry.setFromPoints([h,e]);R.visible=true;WG.hookM.position.copy(e);WG.hookM.visible=true}else{R.visible=false;WG.hookM.visible=false}}
 function wgFound(k){const K=WG.kit;let m="Found "+WG_KIT[k].nm+"!";if(WG_WEAR[k]){wgMsg(wgWearFound(k),4.5);wgKitHud();return}
   if((k==="string"||k==="hook")&&K.string&&K.hook&&!K.grapple){K.grapple=1;m="You tied the string to the fishing hook:<br><b>🪝 GRAPPLING HOOK!</b><br>Look where you want to go and tap 🪝";}
   else if(k==="string")m+=" Something to tie it to would make a grappling hook…";else if(k==="hook")m+=" Tie some string to it and you've got a grappling hook…";
@@ -12921,20 +12927,7 @@ function wgKitHud(){const inv=$("#wginv"),hp=$("#wghp"),K=WG.kit||{};if(inv){con
 function wgHurt(n,why){const P=WG.P;if(P.hurtT>0||P.stuck)return;P.hp=Math.max(0,P.hp-n*P.dmgK*(WG.wear&&WG.wear.on.thimble?.5:1));P.hurtT=1.1;P.hpT=0;wgKitHud();const f=$("#wgflash");if(f){f.classList.remove("on");void f.offsetWidth;f.classList.add("on")}wgSfx("ouch");
   if(P.hp<=0){wgMsg((why||"Ouch!")+" You limp home for a rest…",2.5);setTimeout(()=>{if(WG&&WG.P){wgHome();WG.P.hp=3;wgKitHud()}},900)}else wgMsg(why||"Ouch!",1.2)}
 /* ---- the grappling hook ---- */
-function wgGrapple(aim){const P=WG.P;if(!WG.kit.grapple||P.stuck)return;if(P.rope){P.rope=null;P.b.velocity.y+=50;return}
-  const cam=WG.camera,p=P.b.position,h=new THREE.Vector3(p.x,p.y-P.r+P.h*.85,p.z),d=new THREE.Vector3();if(aim)d.copy(aim);else{cam.getWorldDirection(d);d.y+=.12}d.normalize();
-  const to=h.clone().addScaledVector(d,320),r=new CANNON.RaycastResult();WG.world.raycastClosest(new CANNON.Vec3(h.x,h.y,h.z),new CANNON.Vec3(to.x,to.y,to.z),{collisionFilterMask:1,skipBackfaces:true},r);
-  wgSfx("throw");if(r.hasHit&&r.distance>4){const a=new THREE.Vector3(r.hitPointWorld.x,r.hitPointWorld.y,r.hitPointWorld.z);P.rope={a,n:new THREE.Vector3(r.hitNormalWorld.x,r.hitNormalWorld.y,r.hitNormalWorld.z),L:r.distance+.5,body:r.body};P.climb=0;wgSfx("clink");if(P.carry){P.carry.b.collisionResponse=true;P.carry=null}}
-  else{P.ropeMiss={d,t:.35};wgMsg(r.hasHit?"Too close!":"Nothing to hook onto that way",.9)}}
-/* while on the rope: it reels you in, you can swing with the stick, JUMP lets go */
-function wgRopeForces(P,dt,dir,mag){const b=P.b,v=b.velocity,m=b.mass,R=P.rope,p=b.position,h=new THREE.Vector3(p.x,p.y-P.r+P.h*.85,p.z),d=R.a.clone().sub(h),dist=d.length(),n=d.clone().multiplyScalar(1/Math.max(dist,.001));
-  if(P.jumpQ){P.jumpQ=0;P.rope=null;v.y+=60;wgSfx("hop");return false}
-  R.L=Math.max(2.5,R.L-(R.L>60?130:80)*dt);
-  if(dist>R.L){const vr=v.x*n.x+v.y*n.y+v.z*n.z,k=(dist-R.L)*500-Math.min(0,vr)*35;b.force.x+=m*n.x*k;b.force.y+=m*n.y*k;b.force.z+=m*n.z*k}
-  b.force.x+=m*dir.x*mag*380;b.force.z+=m*dir.z*mag*380;const vv=Math.hypot(v.x,v.y,v.z),kd=981/(700*700);b.force.x-=m*kd*v.x*vv;b.force.y-=m*kd*v.y*vv;b.force.z-=m*kd*v.z*vv;
-  P.yaw+=(Math.atan2(n.x,n.z)-P.yaw)*0;if(dist<4.2&&R.L<=2.6){/* arrived: if the hook caught a top edge, haul yourself up and over onto it */let topY=R.n.y>.5?R.a.y:null,ox=0,oz=0;if(topY==null){const q=new CANNON.RaycastResult(),sx=R.a.x-R.n.x*2.5,sz=R.a.z-R.n.z*2.5;WG.world.raycastClosest(new CANNON.Vec3(sx,R.a.y+9,sz),new CANNON.Vec3(sx,R.a.y-1,sz),{collisionFilterMask:1,skipBackfaces:true},q);if(q.hasHit&&q.hitNormalWorld.y>.6){topY=q.hitPointWorld.y;ox=-R.n.x*2.6;oz=-R.n.z*2.6}}
-    if(topY!=null){P.rope=null;b.position.set(R.a.x+ox,topY+P.r+.15,R.a.z+oz);v.set(0,0,0);P.land=.6;P.gT=0;wgSfx("hop");return true}else if(R.body&&R.body.climb){P.rope=null;P.climb=1;P.wallN=new THREE.Vector3(R.n.x,0,R.n.z).normalize();P.wallT=0}else{/* hang there */b.force.y+=m*981;v.x*=.9;v.y*=.9;v.z*=.9}}
-  if(dist>340)P.rope=null;return true}
+
 /* ---- the needle sword ---- */
 /* ---- the finder: points to the nearest thing still to find, with its name and how far ---- */
 function wgFindTarget(){const P=WG.P,p=P.b.position,c=[];for(const K of WG.keys)if(!K.got)c.push({p:K.p,nm:WG_KIT[K.k].ic+" "+WG_KIT[K.k].nm});
@@ -12947,6 +12940,62 @@ function wgFinderStep(){const f=$("#wgfind");if(!f)return;if(!WG.findT||WG.t-WG.
   const v=new THREE.Vector3(q.p.x,q.p.y+1.5,q.p.z).project(WG.camera),W=WG.W,H=WG.H,on=v.z<1&&Math.abs(v.x)<.9&&Math.abs(v.y)<.85;let x=(v.x+1)/2*W,y=(1-v.y)/2*H;
   if(v.z>=1){x=W-x;y=H-y}let ang=0;if(!on){const cx=W/2,cy=H/2,dx=x-cx,dy=y-cy,k=Math.min((W/2-70)/Math.max(1,Math.abs(dx)),(H/2-60)/Math.max(1,Math.abs(dy)));x=cx+dx*k;y=cy+dy*k;ang=Math.atan2(dy,dx)}
   f.style.left=x+"px";f.style.top=y+"px";f.classList.toggle("on",on);f.firstChild.style.transform=on?"rotate(90deg)":`rotate(${ang}rad)`;const t=q.nm+" · "+(q.d<100?Math.round(q.d)+" cm":(q.d/100).toFixed(1)+" m");if(f.lastChild.textContent!==t)f.lastChild.textContent=t}
+
+/* ---------- THE WEE GUYS: the grappling hook ----------
+   AIM: hold 🪝 and slide your finger - a crosshair and a marker show exactly where it'll catch (green = in reach).
+   Let go of 🪝 to throw. A quick tap throws at the crosshair.
+   SWING: the rope is a fixed length, so you swing like a pendulum; push the stick to pump the swing.
+   ON THE ROPE: hold 🪝 to climb up it, hold ⏬ to let more out, JUMP (or a quick tap of 🪝) to let go and fly. */
+const WG_ROPE_MAX=320;
+function wgHeadP(P){const p=P.b.position;return new THREE.Vector3(p.x,p.y-P.r+P.h*.85,p.z)}
+/* where would the hook catch, looking through the crosshair? */
+function wgAimTarget(){const P=WG.P,cam=WG.camera,o=cam.position,f=new THREE.Vector3();cam.getWorldDirection(f);const h=wgHeadP(P);
+  /* what the crosshair is on (skipping anything between the camera and you) */let tgt=null;{const r=new CANNON.RaycastResult(),s=o.clone().addScaledVector(f,Math.max(0,h.clone().sub(o).dot(f))+1.5),e=s.clone().addScaledVector(f,WG_ROPE_MAX+60);
+    WG.world.raycastClosest(new CANNON.Vec3(s.x,s.y,s.z),new CANNON.Vec3(e.x,e.y,e.z),{collisionFilterMask:1,skipBackfaces:true},r);tgt=r.hasHit?new THREE.Vector3(r.hitPointWorld.x,r.hitPointWorld.y,r.hitPointWorld.z):e}
+  /* can the hook actually get there from your hand? */const d=tgt.clone().sub(h),L=d.length();d.multiplyScalar(1/Math.max(L,.001));const r=new CANNON.RaycastResult(),e=h.clone().addScaledVector(d,Math.min(L+2,WG_ROPE_MAX+40));
+  WG.world.raycastClosest(new CANNON.Vec3(h.x,h.y,h.z),new CANNON.Vec3(e.x,e.y,e.z),{collisionFilterMask:1,skipBackfaces:true},r);
+  if(!r.hasHit)return{ok:false,p:tgt,why:"Nothing to hook onto"};const a=new THREE.Vector3(r.hitPointWorld.x,r.hitPointWorld.y,r.hitPointWorld.z),n=new THREE.Vector3(r.hitNormalWorld.x,r.hitNormalWorld.y,r.hitNormalWorld.z),dist=r.distance;
+  if(dist<4)return{ok:false,p:a,n,dist,why:"Too close"};if(dist>WG_ROPE_MAX)return{ok:false,p:a,n,dist,why:"Too far"};return{ok:true,p:a,n,dist,body:r.body}}
+function wgAimStart(){const P=WG.P;if(!WG.kit.grapple||P.stuck)return;wgSoundOn();
+  if(P.rope){/* already on a rope: hold to climb up it, a quick tap lets go */WG.reelHold=1;WG.reelT=WG.t;WG.reelD=0;return}
+  WG.aim={on:1,t0:WG.t,moved:0};P.carry&&(P.carry.b.collisionResponse=true,P.carry=null);$("#wgaim").classList.add("on")}
+function wgAimMove(dx,dy){if(WG.aim&&WG.aim.on){WG.in.lx+=dx*.0055;WG.in.ly+=dy*.0042;WG.aim.moved+=Math.abs(dx)+Math.abs(dy)}else if(WG.reelHold)WG.reelD+=Math.abs(dx)+Math.abs(dy)}
+function wgAimEnd(){const P=WG.P;
+  if(WG.reelHold){WG.reelHold=0;if(P.rope&&WG.t-WG.reelT<.22&&WG.reelD<20)wgLetGo();return}
+  const A=WG.aim;if(!A||!A.on)return;A.on=0;$("#wgaim").classList.remove("on");if(WG.aimM)WG.aimM.visible=false;
+  const T=wgAimTarget();if(T.ok)wgHookOn(T);else{wgSfx("throw");P.ropeMiss={d:T.p.clone().sub(wgHeadP(P)).normalize(),t:.35};wgMsg(T.why==="Too far"?"Too far - the string won't reach":T.why==="Too close"?"Too close!":"Nothing to hook onto there",1)}}
+function wgHookOn(T){const P=WG.P;wgSfx("throw");P.rope={a:T.p.clone(),n:T.n.clone(),L:T.dist+.3,body:T.body,t:0};P.climb=0;P.pole=null;wgSfx("clink");
+  if(!WG.ropeTip){WG.ropeTip=1;wgMsg("🪝 <b>Hooked!</b> Push the stick to swing · hold 🪝 to climb up · hold ⏬ to let out · JUMP to let go",4.5)}}
+function wgLetGo(){const P=WG.P,v=P.b.velocity;if(!P.rope)return;P.rope=null;/* fly off with the swing, and a little hop */v.y+=55;v.x*=1.08;v.z*=1.08;wgSfx("hop")}
+/* the old way in (keyboard tap, tests): throw straight along a direction */
+function wgGrapple(aim){const P=WG.P;if(!WG.kit.grapple||P.stuck)return;if(P.rope){wgLetGo();return}
+  if(!aim){const T=wgAimTarget();if(T.ok)wgHookOn(T);else wgMsg(T.why||"Nothing to hook onto that way",.9);return}
+  const h=wgHeadP(P),d=aim.clone().normalize(),e=h.clone().addScaledVector(d,WG_ROPE_MAX),r=new CANNON.RaycastResult();WG.world.raycastClosest(new CANNON.Vec3(h.x,h.y,h.z),new CANNON.Vec3(e.x,e.y,e.z),{collisionFilterMask:1,skipBackfaces:true},r);
+  if(r.hasHit&&r.distance>4)wgHookOn({p:new THREE.Vector3(r.hitPointWorld.x,r.hitPointWorld.y,r.hitPointWorld.z),n:new THREE.Vector3(r.hitNormalWorld.x,r.hitNormalWorld.y,r.hitNormalWorld.z),dist:r.distance,body:r.body});else{P.ropeMiss={d,t:.35};wgMsg(r.hasHit?"Too close!":"Nothing to hook onto that way",.9)}}
+/* every frame while aiming: face where you're aiming, move the marker, say how far */
+function wgAimStep(dt){const A=WG.aim,P=WG.P;if(!A||!A.on)return;if(!WG.kit.grapple||P.stuck||P.rope){A.on=0;$("#wgaim").classList.remove("on");if(WG.aimM)WG.aimM.visible=false;return}
+  const T=wgAimTarget();P.yaw=WG.cam.yaw+Math.PI;
+  if(!WG.aimM){const g=new THREE.Group(),ring=new THREE.Mesh(new THREE.TorusGeometry(1.6,.22,8,28),new THREE.MeshBasicMaterial({color:0x6dff8a,depthTest:false,transparent:true,opacity:.9})),dot=new THREE.Mesh(new THREE.SphereGeometry(.35,10,8),ring.material);g.add(ring,dot);g.renderOrder=20;ring.renderOrder=20;dot.renderOrder=20;WG.scene.add(g);WG.aimM=g;g.userData.noSolid=1}
+  const g=WG.aimM;g.visible=true;g.position.copy(T.p);if(T.n)g.children[0].quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),T.n);const k=Math.max(.6,(T.dist||60)/40);g.scale.setScalar(k);g.children[0].material.color.setHex(T.ok?0x6dff8a:0xff5a4a);
+  const lab=$("#wgaim i");if(lab)lab.textContent=T.ok?Math.round(T.dist)+" cm":T.why||"";$("#wgaim").classList.toggle("bad",!T.ok)}
+/* while on the rope (from the player's forces): swing, climb, let out, let go */
+function wgRopeForces(P,dt,dir,mag){const b=P.b,v=b.velocity,m=b.mass,R=P.rope,p=b.position,h=wgHeadP(P),d=R.a.clone().sub(h),dist=d.length(),n=d.clone().multiplyScalar(1/Math.max(dist,.001));R.t+=dt;
+  if(P.jumpQ){P.jumpQ=0;wgLetGo();return false}
+  /* climb up the rope / let it out */if(WG.reelHold&&WG.t-WG.reelT>.18)R.L=Math.max(2.5,R.L-34*dt);if(WG.in.lower)R.L=Math.min(WG_ROPE_MAX,R.L+48*dt);
+  const onG=P.gT<.1;
+  /* when it first catches, it pulls you up off the ground so you can swing */if(R.t<.7&&onG&&R.a.y>h.y+2)R.L=Math.max(2.5,Math.min(R.L,dist)-70*dt);
+  /* standing under a slack rope: walk about normally */if(onG&&dist<R.L-.3)return false;
+  /* arrived at the top: if it caught a top edge, haul yourself up and over onto it */
+  if(dist<4.2&&R.L<=2.6){let topY=R.n.y>.5?R.a.y:null,ox=0,oz=0;if(topY==null){const q=new CANNON.RaycastResult(),sx=R.a.x-R.n.x*2.5,sz=R.a.z-R.n.z*2.5;WG.world.raycastClosest(new CANNON.Vec3(sx,R.a.y+9,sz),new CANNON.Vec3(sx,R.a.y-1,sz),{collisionFilterMask:1,skipBackfaces:true},q);if(q.hasHit&&q.hitNormalWorld.y>.6){topY=q.hitPointWorld.y;ox=-R.n.x*2.6;oz=-R.n.z*2.6}}
+    if(topY!=null){P.rope=null;WG.reelHold=0;b.position.set(R.a.x+ox,topY+P.r+.15,R.a.z+oz);v.set(0,0,0);P.land=.6;P.gT=0;wgSfx("hop");return true}
+    if(R.body&&R.body.climb){P.rope=null;WG.reelHold=0;P.climb=1;P.wallN=new THREE.Vector3(R.n.x,0,R.n.z).normalize();P.wallT=0;return true}}
+  /* pump the swing: push sideways to the rope */if(mag>.05){const f=new THREE.Vector3(dir.x,0,dir.z).multiplyScalar(mag),fr=f.dot(n);f.addScaledVector(n,-fr);b.force.x+=m*f.x*430;b.force.y+=m*f.y*430;b.force.z+=m*f.z*430;P.yaw+=(Math.atan2(dir.x,dir.z)-P.yaw)*0}
+  /* a little air drag, so swings settle */const vv=Math.hypot(v.x,v.y,v.z),kd=981/(900*900);b.force.x-=m*kd*v.x*vv;b.force.y-=m*kd*v.y*vv;b.force.z-=m*kd*v.z*vv;
+  /* face the way you're swinging */const hv=Math.hypot(v.x,v.z);if(hv>8){const want=Math.atan2(v.x,v.z);let dd=want-P.yaw;dd=Math.atan2(Math.sin(dd),Math.cos(dd));P.yaw+=dd*Math.min(1,dt*4)}
+  if(dist>WG_ROPE_MAX+40)P.rope=null;return true}
+/* after each physics step: the string can't stretch - a real pendulum */
+function wgRopeConstrain(P){const R=P.rope;if(!R)return;const b=P.b,p=b.position,v=b.velocity,h=wgHeadP(P),dx=R.a.x-h.x,dy=R.a.y-h.y,dz=R.a.z-h.z,dist=Math.hypot(dx,dy,dz);if(dist<=R.L)return;
+  const nx=dx/dist,ny=dy/dist,nz=dz/dist,over=dist-R.L;p.x+=nx*over;p.y+=ny*over;p.z+=nz*over;const vr=v.x*nx+v.y*ny+v.z*nz;if(vr<0){v.x-=nx*vr;v.y-=ny*vr;v.z-=nz*vr}}
 
 /* ---------- THE WEE GUYS: needle fighting - swing (a 3-hit combo), stab (a lunge), block (hold) ----------
    Poses are directions for each bone in the character's own space: x = its left, y = up, z = forward. */
@@ -13188,11 +13237,13 @@ function wgAutoSolids(){const t0=performance.now(),C=wgSolidCandidates(),T=THREE
       A.fromBufferAttribute(pos,i0).applyMatrix4(m);B.fromBufferAttribute(pos,i1).applyMatrix4(m);Cc.fromBufferAttribute(pos,i2).applyMatrix4(m);
       e1.subVectors(B,A);e2.subVectors(Cc,A);N.crossVectors(e1,e2);const ar=N.length()*.5;if(ar<1e-5)continue;N.multiplyScalar(.5/ar);c.copy(A).add(B).add(Cc).multiplyScalar(1/3);
       if(c.y<.3&&N.y>.9)continue;/* the floor */if(c.y>249.5)continue;/* the ceiling */if(c.x<-60||c.x>880||c.z<-40||c.z>660||c.y<-1)continue;
-      const nx=N.x*.3,ny=N.y*.3,nz=N.z*.3;if(solid(c.x-nx,c.y-ny,c.z-nz)&&solid(A.x-nx,A.y-ny,A.z-nz)&&solid(B.x-nx,B.y-ny,B.z-nz)&&solid(Cc.x-nx,Cc.y-ny,Cc.z-nz))continue;
+      /* already solid just behind it (within 8 mm)? then it's covered - don't make a second floor a hair above the first */
+      const nx=N.x*.8,ny=N.y*.8,nz=N.z*.8,in8=(P,k)=>solid(c.x+(P.x-c.x)*k-nx,c.y+(P.y-c.y)*k-ny,c.z+(P.z-c.z)*k-nz);
+      if(solid(c.x-nx,c.y-ny,c.z-nz)&&in8(A,.85)&&in8(B,.85)&&in8(Cc,.85))continue;
       const sp=kindAt(c.x-N.x*1.2,c.y-N.y*1.2,c.z-N.z*1.2)||kindAt(c.x-N.x*3,c.y-N.y*3,c.z-N.z*3),kd=sp?sp[6]:"",cl=sp?sp[7]:false;
       const k=Math.floor(c.x/CH)+","+Math.floor(c.y/CH)+","+Math.floor(c.z/CH)+"|"+kd+"|"+(cl?1:0);let l=ch.get(k);if(!l)ch.set(k,l=[]);l.push(A.x,A.y,A.z,B.x,B.y,B.z,Cc.x,Cc.y,Cc.z);nt++}}
   let nb=0;for(const[kk,v]of ch){const[,kd,cl]=kk.split("|");const ox=v[0],oy=v[1],oz=v[2],vv=new Float32Array(v.length),ii=new Int32Array(v.length/3);for(let q=0;q<v.length;q+=3){vv[q]=v[q]-ox;vv[q+1]=v[q+1]-oy;vv[q+2]=v[q+2]-oz}for(let q=0;q<ii.length;q++)ii[q]=q;
-    const sh=new CANNON.Trimesh(vv,ii),body=new CANNON.Body({mass:0,material:WG.pm.ground});body.addShape(sh);body.position.set(ox,oy,oz);body.kind=kd||"auto";body.auto=1;if(cl==="1"){body.climb=true;sh.climb=true}body.isStatic=1;WG.world.addBody(body);nb++}
+    const sh=new CANNON.Trimesh(vv,ii),body=new CANNON.Body({mass:0,material:WG.pm.ground});sh.collisionFilterGroup=1|32;body.addShape(sh);body.position.set(ox,oy,oz);body.kind=kd||"auto";body.auto=1;if(cl==="1"){body.climb=true;sh.climb=true}body.isStatic=1;WG.world.addBody(body);nb++}
   WG.autoSolid={tris:nt,bodies:nb,ms:Math.round(performance.now()-t0)};console.log("auto-solid",JSON.stringify(WG.autoSolid))}
 
 /* contacts are springy: if you've been pushed into something, step back out of it */
@@ -13222,6 +13273,20 @@ function wgPlayerStepUp(P){if(!WG.in||P.gT>.12||P.rope||P.climb||P.pole||P.stuck
   /* room for me up there? */const r2=new CANNON.RaycastResult();WG.world.raycastClosest(new CANNON.Vec3(ax,r.hitPointWorld.y+.1,az),new CANNON.Vec3(ax,r.hitPointWorld.y+P.h*.9,az),{collisionFilterMask:1,skipBackfaces:true},r2);if(r2.hasHit)return;
   /* a natural little step: up and over */const vy=Math.sqrt(2*981*(h+.15));if(b.velocity.y<vy)b.velocity.y=vy;b.velocity.x+=fx*4;b.velocity.z+=fz*4;P.stepUpT=WG.t;WG.stepUps=(WG.stepUps||0)+1}
 
+/* loose things (boxes, coins, the matchbox) can't touch the exact surfaces with their own shape, so give them
+   small hidden spheres at their corners that only touch those surfaces - they can't sink into the armchair either */
+function wgItemFeel(b){/* we work in centimetres: "at rest" means slower than ~1 cm/s, not 0.1 - otherwise tiny contact wobbles keep things twitching forever */
+  b.sleepSpeedLimit=1.2;b.sleepTimeLimit=.45;b.angularDamping=Math.max(b.angularDamping||0,.25);b.linearDamping=Math.max(b.linearDamping||0,.03);
+  /* round things (kibble, peas, grapes) have rolling resistance in real life - they don't roll for ever */if(b.shapes[0] instanceof CANNON.Sphere){b.angularDamping=Math.max(b.angularDamping,.6);b.linearDamping=Math.max(b.linearDamping,.15)}
+  const s0=b.shapes[0];if(!s0)return;let ex;
+  if(s0 instanceof CANNON.Box)ex=s0.halfExtents;else if(s0 instanceof CANNON.Cylinder)ex=new CANNON.Vec3(s0.radiusTop,s0.height/2,s0.radiusTop);else return;
+  if(Math.max(ex.x,ex.y,ex.z)<.8)return;/* crumbs and peas don't need it */const r=Math.max(.15,Math.min(ex.x,ex.y,ex.z)*.95),xs=ex.x-r>.05?[-1,1]:[0],ys=[0],zs=ex.z-r>.05?[-1,1]:[0];
+  for(const sx of xs)for(const sy of ys)for(const sz of zs){const s=new CANNON.Sphere(r);s.collisionFilterGroup=4;s.collisionFilterMask=32;b.addShape(s,new CANNON.Vec3(sx*(ex.x-r),sy*(ex.y-r),sz*(ex.z-r)))}
+  b.updateMassProperties()}
+/* what you carry over your head is part of you: you can't squeeze it under a table or through a wall */
+function wgCarryShape(P){const c=P.carry;if(c&&!P.carryS){const r=Math.min(2.6,Math.max(.4,c.rad*.9)),s=new CANNON.Sphere(r);P.carryS=s;P.carryC=c;P.b.addShape(s,new CANNON.Vec3(0,P.h-2*P.r+P.r+c.rad*.9+.3,0))}
+  else if(P.carryS&&(!c||c!==P.carryC)){P.b.removeShape(P.carryS);P.carryS=null;P.carryC=null;if(c)wgCarryShape(P)}}
+
 /* ---------- THE WEE GUYS: things that launch you - the toaster, the spoon - and the robot hoover you can ride ---------- */
 /* the toaster: drop into a slot and it clicks down, heats up, and POPS you out */
 function wgToasterStep(dt){const Tz=WG.toaster;if(!Tz)return;const P=WG.P,p=P.b.position,feet=p.y-P.r;
@@ -13248,7 +13313,7 @@ function wgBuildRobot(){const T=THREE,g=new T.Group(),dk={x:530,z:70};
   const b=new CANNON.Body({mass:0,type:CANNON.Body.KINEMATIC,allowSleep:false,material:WG.pm.ground});b.addShape(new CANNON.Cylinder(17,17,8.5,16));b.position.set(dk.x,4.3,dk.z);b.kind="robot";b.collisionFilterGroup=1;WG.world.addBody(b);
   WG.robot={g,b,brush,led,dk,st:"dock",t:wgR(30,50),yaw:Math.PI/2,turn:0,dkB:WG.dkB}}
 function wgRobotStep(dt){const R=WG.robot;if(!R)return;const b=R.b,p=b.position;R.t-=dt;
-  if(R.st==="dock"){b.velocity.set(0,0,0);if(R.t<0||wgMess()>12){R.st="clean";R.t=wgR(60,80);wgMsg("🤖 The robot hoover has started up!",1.6)}}
+  if(R.st==="dock"){b.velocity.set(0,0,0);if(R.t<0||wgMess()-(WG.messBase||0)>6){R.st="clean";R.t=wgR(60,80);wgMsg("🤖 The robot hoover has started up!",1.6)}}
   else{const spd=R.st==="home"?24:22;if(R.st==="clean"&&R.t<0)R.st="home";
     if(R.st==="home"){const dx=R.dk.x-p.x,dz=R.dk.z-p.z,L=Math.hypot(dx,dz);if(L<3){R.st="dock";R.t=wgR(180,260);b.velocity.set(0,0,0);p.x=R.dk.x;p.z=R.dk.z;return}const want=Math.atan2(dx,dz);let d=want-R.yaw;d=Math.atan2(Math.sin(d),Math.cos(d));R.yaw+=Math.max(-1.6*dt,Math.min(1.6*dt,d))}
     /* bump-and-turn like the real thing */const f={x:Math.sin(R.yaw),z:Math.cos(R.yaw)},rr=new CANNON.RaycastResult();WG.world.raycastClosest(new CANNON.Vec3(p.x+f.x*16,3.5,p.z+f.z*16),new CANNON.Vec3(p.x+f.x*21,3.5,p.z+f.z*21),{collisionFilterMask:1,skipBackfaces:true},rr);
@@ -13271,19 +13336,29 @@ function wgBigInit(){WG.bigT=wgR(25,40);WG.big=null;WG.eye=0;WG.glass=null}
 function wgBigSpawn(){const look=wgPick(WG_BIGLOOK),T=THREE,mesh=WG_PPL?wgRig(look.h>175?"big2":"big",look.h):wgPersonMesh("dad",look.col);if(!mesh.isRig)mesh.g.scale.setScalar(look.h);mesh.g.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});WG.scene.add(mesh.g);
   const kin=(hx,hy,hz)=>{const b=new CANNON.Body({mass:0,type:CANNON.Body.KINEMATIC,allowSleep:false,material:WG.pm.ground});b.addShape(new CANNON.Box(new CANNON.Vec3(hx,hy,hz)));b.position.set(0,-500,0);b.isBig=1;b.collisionFilterGroup=8;WG.world.addBody(b);return b};
   const B={mesh,h:look.h,pos:new T.Vector3(WG.door.x,0,-90),yaw:0,path:[],st:"walk",t:0,ph:0,spd:0,sit:0,bend:0,reach:0,bodies:{fl:kin(5.5,4.5,13),fr:kin(5.5,4.5,13),sl:kin(5.5,20,5.5),sr:kin(5.5,20,5.5),lap:kin(24,14,26)}};
-  const mess=wgMess();B.act=mess>22?"hoover":wgPick(["tv","toast","tv","window","toast"]);
+  /* they only hoover if YOU'VE made a mess since they last tidied */const spots=wgMessSpots(),made=wgMess()-(WG.messBase||0);B.act=made>=6&&spots.length?"hoover":wgPick(["tv","toast","tv","window","toast"]);
   const into=[[WG.door.x,40]],toLiving=[[575,200],[505,205],[430,240]];
   if(B.act==="tv")B.path=[...into,...toLiving,[226,300]];else if(B.act==="toast")B.path=[...into,[598,322]];else if(B.act==="window")B.path=[...into,...toLiving,[250,60]];
-  else{B.path=[...into,...wgHooverRoute()];wgHooverMake(B)}
+  else{const r=wgHooverRoute();B.messRoom=r.room;B.path=[...into,...r.path];wgHooverMake(B)}
   B.path=B.path.map(([x,z])=>new T.Vector3(x,0,z));WG.big=B;WG.eye=0;
-  wgMsg(B.act==="hoover"?"😱 Somebody's coming… with the HOOVER! Get off the floor!":"👣 Footsteps! Someone's coming - hide!",2.6);wgSfx("thud");return B}
+  wgMsg(B.act==="hoover"?`😱 Somebody's spotted the mess${B.messRoom?" in the "+B.messRoom:""}… here comes the HOOVER! Get off the floor!`:"👣 Footsteps! Someone's coming - hide!",2.6);wgSfx("thud");return B}
 /* back-and-forth passes over the kitchen and living room floor, including along the front of the sofa */
-function wgHooverRoute(){const r=[[560,60],[800,60],[800,120],[560,120],[560,300],[800,300],[575,200],[505,205],[470,180],[130,180],[130,290],[470,300],[320,326],[140,326],[260,120],[460,120],[505,205],[575,200]];return r}
+/* where the mess is: things on the floor that shouldn't be */
+function wgMessSpots(){const out=[];for(const o of WG.dyn){if(o.gone)continue;const q=o.b.position;if(q.y>4)continue;if(o.mess||(o.home&&Math.hypot(q.x-o.home.x,q.z-o.home.z)>30&&o.home.y>10))out.push([q.x,q.z])}return out}
+/* is there open floor here a person could push a hoover over? */
+function wgFloorFree(x,z){const r=new CANNON.RaycastResult();WG.world.raycastClosest(new CANNON.Vec3(x,90,z),new CANNON.Vec3(x,.5,z),{collisionFilterMask:1,skipBackfaces:true},r);return!r.hasHit||r.hitPointWorld.y<3}
+/* hoover where the mess is: go to each messy patch (kitchen ones first, it's nearer the door) and work back and forth over it */
+function wgHooverRoute(){const s=wgMessSpots(),cl=new Map();for(const[x,z]of s){const k=Math.round(x/70)+","+Math.round(z/70);const c=cl.get(k)||{x:0,z:0,n:0};c.x+=x;c.z+=z;c.n++;cl.set(k,c)}
+  const C=[...cl.values()].map(c=>({x:c.x/c.n,z:c.z/c.n,n:c.n})).sort((a,b)=>b.n-a.n).slice(0,4),kit=C.filter(c=>c.x>505).sort((a,b)=>a.z-b.z),liv=C.filter(c=>c.x<=505).sort((a,b)=>b.x-a.x);
+  const clampK=(x,z)=>[Math.max(545,Math.min(805,x)),Math.max(45,Math.min(300,z))],clampL=(x,z)=>[Math.max(120,Math.min(475,x)),Math.max(55,Math.min(318,z))],path=[];
+  const sweep=(c,cf)=>{for(const[dx,dz]of[[-38,-24],[38,-24],[38,0],[-38,0],[-38,24],[38,24]]){const[x,z]=cf(c.x+dx,c.z+dz);if(wgFloorFree(x,z))path.push([x,z])}};
+  for(const c of kit)sweep(c,clampK);if(liv.length){path.push([575,200],[505,205]);for(const c of liv)sweep(c,clampL);path.push([505,205],[575,200])}
+  const room=kit.length&&liv.length?"house":kit.length?"kitchen":"living room";return{path,room}}
 function wgHooverMake(B){const T=THREE,g=new T.Group(),red=new T.MeshStandardMaterial({color:0xc8202a,roughness:.35}),grey=new T.MeshStandardMaterial({color:0x3a3c40,roughness:.5});
   const head=new T.Mesh(new T.BoxGeometry(32,7,24),grey);head.position.y=3.6;g.add(head);const lip=new T.Mesh(new T.BoxGeometry(32.5,1.4,2),red);lip.position.set(0,1,12);g.add(lip);
   const pole=new T.Mesh(new T.CylinderGeometry(1.5,1.5,95,10),grey);pole.position.set(0,52,-14);pole.rotation.x=-.35;g.add(pole);const bag=new T.Mesh(new T.CylinderGeometry(8,9,50,16),red);bag.position.set(0,38,-22);bag.rotation.x=-.35;g.add(bag);
   g.traverse(o=>{if(o.isMesh){o.castShadow=true}});WG.scene.add(g);const b=new CANNON.Body({mass:0,type:CANNON.Body.KINEMATIC,allowSleep:false,material:WG.pm.ground});b.addShape(new CANNON.Box(new CANNON.Vec3(16,3.6,12)));b.position.set(0,-500,0);b.collisionFilterGroup=8;WG.world.addBody(b);B.hoov={g,b}}
-function wgBigGone(){const B=WG.big;if(!B)return;WG.scene.remove(B.mesh.g);for(const k in B.bodies)WG.world.removeBody(B.bodies[k]);if(B.hoov){WG.scene.remove(B.hoov.g);WG.world.removeBody(B.hoov.b)}WG.big=null;WG.bigT=wgR(55,90);if(WG.tv){WG.tv.on=0;WG.tv.sc.material.color.setHex(0x050608)}$("#wgeye")&&($("#wgeye").style.display="none")}
+function wgBigGone(){const B=WG.big;if(!B)return;/* whatever's left on the floor now is the new normal - they'll only hoover again if you make more mess */if(B.hoov)WG.messBase=wgMess();WG.scene.remove(B.mesh.g);for(const k in B.bodies)WG.world.removeBody(B.bodies[k]);if(B.hoov){WG.scene.remove(B.hoov.g);WG.world.removeBody(B.hoov.b)}WG.big=null;WG.bigT=wgR(55,90);if(WG.tv){WG.tv.on=0;WG.tv.sc.material.color.setHex(0x050608)}$("#wgeye")&&($("#wgeye").style.display="none")}
 /* ---------------- each frame ---------------- */
 function wgBigStep(dt){const T=THREE;wgGlassStep(dt);let B=WG.big;
   if(!B){WG.bigT-=dt;if(WG.bigT<0&&!(WG.P.stuck))B=wgBigSpawn();else return}
@@ -13409,7 +13484,7 @@ function wgCatUpAnim(U,dt){const T=THREE,g=U.g;g.position.set(U.pos.x,U.jump-U.c
 /* ---------- THE WEE GUYS: the game page, the loop, the camera, controls, sound ---------- */
 function vWee(){g2Shell("wgc",`<div class="wgload" id="wgload">Shrinking you down… <b id="wgpct"></b></div><div class="wgver">build ${typeof WG_BUILD!=="undefined"?WG_BUILD.slice(4,12):""}</div><div class="wgmsg" id="wgmsg"></div><div class="wgmenu" id="wgm"></div>
   <div class="wgflash" id="wgflash"></div><div class="wghud"><div class="wghp" id="wghp"></div><div class="wgen" id="wgen"><i></i><span>⚡</span></div><div class="wginv" id="wginv" style="display:none"></div></div><div class="wgeye" id="wgeye" style="display:none"><i></i><span>👁️</span></div>
-  <div class="wgctl" id="wgctl"><div class="wgstk" id="wgstk"><i></i></div><button class="wgb wgjump" id="wgjump">JUMP</button><button class="wgb wggrab" id="wggrab">✋<small>GRAB</small></button><button class="wgb wgspr" id="wgspr">🏃<small>SPRINT</small></button><button class="wgb wgclimb" id="wgclimb" style="display:none">🧗<small>CLIMB</small></button><button class="wgb wghook" id="wghook" style="display:none">🪝<small>HOOK</small></button><button class="wgb wgsword" id="wgsword" style="display:none">⚔️<small>SWING</small></button><button class="wgb wgstab" id="wgstab" style="display:none">🗡️<small>STAB</small></button><button class="wgb wgblock" id="wgblock" style="display:none">🛡️<small>BLOCK</small></button><button class="wgb wgview" id="wgview">🎥<small>VIEW</small></button><button class="wgb wghome" id="wghome">🏠<small>HOME</small></button><button class="wgb wglist" id="wglist">📜<small>LIST</small></button><button class="wgb wgsleep" id="wgsleep" style="display:none">💤<small>SLEEP</small></button><button class="wgb wgward" id="wgward" style="display:none">👕<small>CLOTHES</small></button></div>
+  <div class="wgctl" id="wgctl"><div class="wgstk" id="wgstk"><i></i></div><button class="wgb wgjump" id="wgjump">JUMP</button><button class="wgb wggrab" id="wggrab">✋<small>GRAB</small></button><button class="wgb wgspr" id="wgspr">🏃<small>SPRINT</small></button><button class="wgb wgclimb" id="wgclimb" style="display:none">🧗<small>CLIMB</small></button><button class="wgb wghook" id="wghook" style="display:none">🪝<small>HOOK</small></button><button class="wgb wglower" id="wglower" style="display:none">⏬<small>LET OUT</small></button><div class="wgaim" id="wgaim"><b></b><i></i></div><button class="wgb wgsword" id="wgsword" style="display:none">⚔️<small>SWING</small></button><button class="wgb wgstab" id="wgstab" style="display:none">🗡️<small>STAB</small></button><button class="wgb wgblock" id="wgblock" style="display:none">🛡️<small>BLOCK</small></button><button class="wgb wgview" id="wgview">🎥<small>VIEW</small></button><button class="wgb wghome" id="wghome">🏠<small>HOME</small></button><button class="wgb wglist" id="wglist">📜<small>LIST</small></button><button class="wgb wgsleep" id="wgsleep" style="display:none">💤<small>SLEEP</small></button><button class="wgb wgward" id="wgward" style="display:none">👕<small>CLOTHES</small></button></div>
   <div class="wglistp" id="wglistp"></div><div class="wglistp wgwardp" id="wgwardp" style="display:none"></div><div class="wgfind" id="wgfind"><b>➤</b><span></span></div><div class="wgzz" id="wgzz">Z z z…</div>`);
   $("#g2q").onclick=()=>wgQuit();hpThree(()=>{if(!$("#wgc"))return;setTimeout(()=>{try{wgStart()}catch(e){console.error(e);const m=$("#wgload");if(m)m.textContent="Something went wrong shrinking you down."}},30)})}
 function wgQuit(){g2Stop();if(WG){WG.dead=1;wgSound(0)}WG=null;window.onkeydown=window.onkeyup=null;g=null;view()}
@@ -13436,10 +13511,10 @@ function wgStart(){const T=THREE;if(!WG_LIBS){wgLibs();WG_LIBS=1}
 function wgReady(){const T=THREE;$("#wgload")&&$("#wgload").remove();
   /* you start at home behind the skirting board, next to the candle */
   const h=WG.home,who=wgWho();WG.P=wgMakePlayer(who,h.x+4,0,h.z+4);WG.P.yaw=Math.PI/2;WG.cam.yaw=Math.PI/2+Math.PI;
-  WG.world.addEventListener("preStep",()=>{if(WG&&WG.P){wgPlayerSweepStart(WG.P);wgPlayerForces(WG.P,WG.fdt);wgPlayerStepUp(WG.P)}});WG.world.addEventListener("postStep",()=>{if(WG&&WG.P){const v=WG.P.b.velocity,sp=v.length();if(sp>650){v.scale(650/sp,v);WG.vclamp=(WG.vclamp||0)+1}{const P=WG.P;/* the crisp-packet cape: a gentle glide down */if(WG.wear&&WG.wear.on.cape&&!P.rope&&!P.climb&&!P.pole&&P.gT>.15&&v.y<-70)v.y+=(-70-v.y)*.2;wgPlayerSweep(P);wgPlayerDepen(P)}wgPlayerContacts(WG.P);wgCarryStep(WG.P)}});
+  WG.world.addEventListener("preStep",()=>{if(WG&&WG.P){wgPlayerSweepStart(WG.P);wgPlayerForces(WG.P,WG.fdt);wgPlayerStepUp(WG.P)}});WG.world.addEventListener("postStep",()=>{if(WG&&WG.P){const v=WG.P.b.velocity,sp=v.length();if(sp>650){v.scale(650/sp,v);WG.vclamp=(WG.vclamp||0)+1}{const P=WG.P;/* the crisp-packet cape: a gentle glide down */if(WG.wear&&WG.wear.on.cape&&!P.rope&&!P.climb&&!P.pole&&P.gT>.15&&v.y<-70)v.y+=(-70-v.y)*.2;wgRopeConstrain(P);wgPlayerSweep(P);wgPlayerDepen(P)}wgPlayerContacts(WG.P);wgCarryStep(WG.P)}});
   /* the room's bounce light is softer than the sun; much softer at home behind the wall */WG.scene.traverse(o=>{const ms=o.material?(Array.isArray(o.material)?o.material:[o.material]):[];for(const m of ms)if(m.isMeshStandardMaterial&&m.userData.env==null)m.envMapIntensity=.5});for(const k of["rough","red","cream","card","cavity","brick","timber"])wgBinMat(k).envMapIntensity=.1;
   /* everything you can see is solid */wgAutoSolids();
-  /* let everything settle where it was dropped */for(let i=0;i<240;i++)WG.world.step(1/120);for(const o of WG.dyn){o.fresh=1;o.home=new T.Vector3(o.b.position.x,o.b.position.y,o.b.position.z)}
+  /* let everything settle where it was dropped */for(let i=0;i<240;i++)WG.world.step(1/120);for(const o of WG.dyn){o.fresh=1;o.home=new T.Vector3(o.b.position.x,o.b.position.y,o.b.position.z)}WG.messBase=wgMess();/* the mess that was already there doesn't count */
   wgPlaceKit();wgPlaceWear();wgBigInit();wgBaseInit();{const rl=new T.Line(new T.BufferGeometry().setFromPoints([new T.Vector3(),new T.Vector3(0,1,0)]),new T.LineBasicMaterial({color:0xe8dcc0}));rl.frustumCulled=false;rl.visible=false;WG.scene.add(rl);WG.ropeL=rl;const hk=wgKeyMesh("hook");hk.children.slice(3).forEach(c=>hk.remove(c));hk.visible=false;WG.scene.add(hk);WG.hookM=hk}
   wgInput();wgSize();window.addEventListener("resize",wgSize);window.addEventListener("orientationchange",()=>setTimeout(wgSize,250));wgPostInit();
   wgMsg(`<b>THE WEE GUYS</b><br>You're ${who==="cass"?"Wee Cass":"Wee Dad"}, ${who==="cass"?"5":"6"} cm tall, inside the wall with nothing. Find somewhere to live - tap 📜 for the borrowing list.`,6);
@@ -13450,24 +13525,29 @@ function wgSize(){if(!WG||!WGR)return;const el=$("#wgc"),w=el.clientWidth,h=el.c
 /* ---------------- the loop ---------------- */
 function wgFrame(dt){try{wgFrame0(dt)}catch(e){console.error("wee frame",e)}}
 function wgFrame0(dt){const G=WG;if(!G||G.dead||!G.P)return;dt=Math.max(0,dt);G.t+=dt;const P=G.P;
-  G.world.step(G.fdt,dt,4);
-  for(const o of G.dyn){const b=o.b;if(b.sleepState===2&&!o.fresh)continue;o.fresh=0;o.m.position.copy(b.position);o.m.quaternion.copy(b.quaternion)}
+  G.world.step(G.fdt,Math.min(dt,.1),8);
+  /* draw things where they are at this exact moment (between physics steps), not where the last step left them - no jitter */
+  P.vp=P.b.interpolatedPosition;
+  for(const o of G.dyn){const b=o.b;if(b.sleepState===2&&!o.fresh)continue;o.fresh=0;o.m.position.copy(b.interpolatedPosition);o.m.quaternion.copy(b.interpolatedQuaternion)}
   /* fell out of the world somehow? back home */
   if(P.b.position.y<-30||!isFinite(P.b.position.x)){wgHome();return}
-  wgShade(P,dt);wgAnimPlayer(P,dt);wgBugsStep(dt);wgCatStep(dt);wgDustStep(dt);wgClockStep();wgKitStep(dt);wgFightStep(dt);wgFinderStep();wgEquipFollow();wgEnergyStep(dt);{/* the CLIMB button shows when there's something to grab onto */if(!G.cbT||G.t-G.cbT>.2){G.cbT=G.t;const c=$("#wgclimb");if(c){const on=!!P.pole||P.climb||(!P.stuck&&(wgPoleNear(P)||P.wallT<.4));c.style.display=on?"":"none";c.classList.toggle("on",!!(P.pole||P.climb))}}}wgMisStep(dt);wgToasterStep(dt);wgSpoonStep(dt);wgRobotStep(dt);wgBigStep(dt);wgCamera(dt);wgRugNear();
+  wgShade(P,dt);wgAnimPlayer(P,dt);wgBugsStep(dt);wgCatStep(dt);wgDustStep(dt);wgClockStep();wgKitStep(dt);wgFightStep(dt);wgAimStep(dt);wgFinderStep();wgEquipFollow();wgEnergyStep(dt);{/* the CLIMB button shows when there's something to grab onto */if(!G.cbT||G.t-G.cbT>.2){G.cbT=G.t;const c=$("#wgclimb");if(c){const on=!!P.pole||P.climb||(!P.stuck&&(wgPoleNear(P)||P.wallT<.4));c.style.display=on?"":"none";c.classList.toggle("on",!!(P.pole||P.climb))}}}wgMisStep(dt);wgToasterStep(dt);wgSpoonStep(dt);wgRobotStep(dt);wgBigStep(dt);wgCamera(dt);wgRugNear();
   /* the sun's shadow follows you, so it is sharp at your size */
   const p=P.b.position,sd=G.sunDir;/* no window inside the walls: just what light leaks in, and your eyes getting used to the dark */const inH=wgInWall(p)?1:0;if(!G.eyeL){G.eyeL=new THREE.PointLight(0xd8c8a8,0,70,2);G.scene.add(G.eyeL)}G.eyeL.position.set(p.x,p.y+14,p.z);G.eyeL.intensity=(G.homeK||0)*.5;G.homeK=(G.homeK==null?inH:G.homeK)+(inH-(G.homeK==null?inH:G.homeK))*Math.min(1,dt*3);G.sun.intensity=1.9*(1-G.homeK*.93);G.hemi.intensity=.18*(1-G.homeK*.8);G.sun.position.set(p.x+sd.x*400,p.y+sd.y*400,p.z+sd.z*400);G.sun.target.position.set(p.x,p.y,p.z);G.sun.target.updateMatrixWorld();
   if(G.tips&&G.tips.length&&!G.big){G.tipT-=dt;if(G.tipT<0){G.tipT=45;wgMsg(G.tips.shift(),4)}}
   wgSoundStep(dt);wgRender()}
 function wgHome(){const P=WG.P,h=WG.base||WG.home;if(P.carry){P.carry.b.collisionResponse=true;P.carry=null}P.rope=null;P.stuck=0;P.mesh.g.visible=true;if(WG.glass){for(const b of WG.glass.bodies)WG.world.removeBody(b);WG.scene.remove(WG.glass.g);WG.glass=null}P.b.position.set(h.x+(WG.base?0:4),(h.y||0)+P.r+.3,h.z+(WG.base?0:4));P.b.velocity.set(0,0,0);P.climb=0;if(!WG.base)WG.cam.yaw=Math.PI/2+Math.PI;WG.cam.init=0;wgMsg(WG.base?"🏠 Back to your base":"🏠 Back to where you started",1)}
 /* ---------------- camera: close behind, you can swing it round, it never goes through walls ---------------- */
-function wgCamera(dt){const G=WG,P=G.P,C=G.cam,cam=G.camera,p=P.b.position;
+function wgCamera(dt){const G=WG,P=G.P,C=G.cam,cam=G.camera,p=P.vp||P.b.position;
   if(Math.abs(G.in.lx)+Math.abs(G.in.ly)>0){C.yaw-=G.in.lx;C.pitch=Math.max(-.35,Math.min(1.25,C.pitch+G.in.ly));G.in.lx=G.in.ly=0;C.lastLook=G.t}
   if(G.t-C.lastLook>1.6&&P.spd>4&&!P.climb){let d=(P.yaw+Math.PI)-C.yaw;d=Math.atan2(Math.sin(d),Math.cos(d));C.yaw+=d*Math.min(1,dt*1.4)}
   if(P.climb){let d=(P.yaw+Math.PI)-C.yaw;d=Math.atan2(Math.sin(d),Math.cos(d));C.yaw+=d*Math.min(1,dt*3);C.pitch+=(.15-C.pitch)*Math.min(1,dt*2)}
-  const dist=[15,28,60][C.far]*(P.kid?.92:1),head=new THREE.Vector3(p.x,p.y-P.r+P.h*.8,p.z),cp=Math.cos(C.pitch),want=new THREE.Vector3(head.x+Math.sin(C.yaw)*cp*dist,head.y+Math.sin(C.pitch)*dist,head.z+Math.cos(C.yaw)*cp*dist);
+  const aiming=G.aim&&G.aim.on,dist=aiming?9:[15,28,60][C.far]*(P.kid?.92:1),head=new THREE.Vector3(p.x,p.y-P.r+P.h*.8,p.z),cp=Math.cos(C.pitch);
+  if(aiming){/* over your right shoulder, so the crosshair isn't behind your head */head.x+=Math.cos(C.yaw)*2.2;head.z-=Math.sin(C.yaw)*2.2;head.y+=P.h*.15}
+  const want=new THREE.Vector3(head.x+Math.sin(C.yaw)*cp*dist,head.y+Math.sin(C.pitch)*dist,head.z+Math.cos(C.yaw)*cp*dist);
   const rr=new CANNON.RaycastResult();G.world.raycastClosest(new CANNON.Vec3(head.x,head.y,head.z),new CANNON.Vec3(want.x,want.y,want.z),{collisionFilterMask:1,skipBackfaces:true},rr);
   if(rr.hasHit&&rr.body&&rr.body.isStatic){const d=Math.max(2.5,rr.distance-.8),dir=want.clone().sub(head).normalize();want.copy(head).addScaledVector(dir,d)}
+  {const fov=58+(P.sprinting&&P.spd>P.run?7:0);if(Math.abs(cam.fov-fov)>.05){cam.fov+=(fov-cam.fov)*Math.min(1,dt*4);cam.updateProjectionMatrix()}}
   if(!C.init){cam.position.copy(want);C.init=1}else cam.position.lerp(want,Math.min(1,dt*10));cam.lookAt(head.x,head.y,head.z);G.focus=cam.position.distanceTo(head);
   if(G.shake>0){G.shake=Math.max(0,G.shake-dt*3);const k=G.shake*.6;cam.position.x+=wgR(-k,k);cam.position.y+=wgR(-k,k)}}
 /* ---------------- controls: left = walk (push far to run), right = look ---------------- */
@@ -13480,12 +13560,15 @@ function wgInput(){const G=WG,el=$("#wgc"),stk=$("#wgstk"),knob=stk.querySelecto
     else if(e.pointerId===lid){G.in.lx+=(q.x-l0.x)*.008;G.in.ly+=(q.y-l0.y)*.006;l0=q}});
   const up=e=>{if(e.pointerId===sid){sid=null;G.in.mx=G.in.my=0;stk.classList.remove("on")}if(e.pointerId===lid)lid=null};el.addEventListener("pointerup",up);el.addEventListener("pointercancel",up);
   const btn=(id,f)=>{const b=$(id);b.addEventListener("pointerdown",e=>{e.preventDefault();e.stopPropagation();wgSoundOn();f()});};
-  btn("#wgjump",()=>{G.P.jumpQ=1});btn("#wgspr",()=>{G.in.sprint=G.in.sprint?0:1;$("#wgspr").classList.toggle("on",!!G.in.sprint)});btn("#wghook",()=>wgGrapple());btn("#wgsword",()=>wgAttack());btn("#wgstab",()=>wgStab());btn("#wgward",()=>{const p=$("#wgwardp");if(p.style.display==="none"){$("#wglistp").classList.remove("on");wgWardOpen()}else p.style.display="none"});$("#wgwardp").addEventListener("click",wgWardClick);{const bb=$("#wgblock"),on=v=>e=>{e.preventDefault();e.stopPropagation();G.in.block=v;bb.classList.toggle("on",!!v);if(v){wgSoundOn();try{bb.setPointerCapture(e.pointerId)}catch(_){}}};bb.addEventListener("pointerdown",on(1));for(const ev of["pointerup","pointercancel","lostpointercapture"])bb.addEventListener(ev,on(0))}btn("#wggrab",()=>wgGrab(G.P));btn("#wgview",()=>{G.cam.far=(G.cam.far+1)%3;wgMsg(["Close up","Further back","Wide view"][G.cam.far],.8)});btn("#wghome",()=>wgHome());btn("#wglist",()=>{wgListHud();$("#wglistp").classList.toggle("on")});btn("#wgsleep",()=>wgSleep());btn("#wgclimb",()=>wgClimbBtn());
+  btn("#wgjump",()=>{G.P.jumpQ=1});btn("#wgspr",()=>{G.in.sprint=G.in.sprint?0:1;$("#wgspr").classList.toggle("on",!!G.in.sprint)});{const hb=$("#wghook");let hid=null,hp=null;hb.addEventListener("pointerdown",e=>{e.preventDefault();e.stopPropagation();hid=e.pointerId;hp={x:e.clientX,y:e.clientY};try{hb.setPointerCapture(e.pointerId)}catch(_){}wgAimStart()});
+    hb.addEventListener("pointermove",e=>{if(e.pointerId!==hid)return;wgAimMove(e.clientX-hp.x,e.clientY-hp.y);hp={x:e.clientX,y:e.clientY}});
+    const hend=e=>{if(e.pointerId!==hid)return;hid=null;wgAimEnd()};hb.addEventListener("pointerup",hend);hb.addEventListener("pointercancel",hend);
+    const lb=$("#wglower"),lon=v=>e=>{e.preventDefault();e.stopPropagation();G.in.lower=v;lb.classList.toggle("on",!!v);if(v)try{lb.setPointerCapture(e.pointerId)}catch(_){}};lb.addEventListener("pointerdown",lon(1));for(const ev of["pointerup","pointercancel","lostpointercapture"])lb.addEventListener(ev,lon(0))}btn("#wgsword",()=>wgAttack());btn("#wgstab",()=>wgStab());btn("#wgward",()=>{const p=$("#wgwardp");if(p.style.display==="none"){$("#wglistp").classList.remove("on");wgWardOpen()}else p.style.display="none"});$("#wgwardp").addEventListener("click",wgWardClick);{const bb=$("#wgblock"),on=v=>e=>{e.preventDefault();e.stopPropagation();G.in.block=v;bb.classList.toggle("on",!!v);if(v){wgSoundOn();try{bb.setPointerCapture(e.pointerId)}catch(_){}}};bb.addEventListener("pointerdown",on(1));for(const ev of["pointerup","pointercancel","lostpointercapture"])bb.addEventListener(ev,on(0))}btn("#wggrab",()=>wgGrab(G.P));btn("#wgview",()=>{G.cam.far=(G.cam.far+1)%3;wgMsg(["Close up","Further back","Wide view"][G.cam.far],.8)});btn("#wghome",()=>wgHome());btn("#wglist",()=>{wgListHud();$("#wglistp").classList.toggle("on")});btn("#wgsleep",()=>wgSleep());btn("#wgclimb",()=>wgClimbBtn());
   const K={};const keys=()=>{G.in.mx=(K.KeyD||K.ArrowRight?1:0)-(K.KeyA||K.ArrowLeft?1:0);G.in.my=(K.KeyW||K.ArrowUp?1:0)-(K.KeyS||K.ArrowDown?1:0);G.in.sprint=K.ShiftLeft||K.ShiftRight||$("#wgspr").classList.contains("on")?1:0};
-  window.onkeydown=e=>{if(!WG)return;wgSoundOn();if(e.code==="Space"){G.P.jumpQ=1;e.preventDefault()}if(e.code==="KeyE"&&!K.KeyE)wgGrab(G.P);if(e.code==="KeyV"&&!K.KeyV)G.cam.far=(G.cam.far+1)%3;if(e.code==="KeyF"&&!K.KeyF)wgGrapple();if(e.code==="KeyR"&&!K.KeyR)wgAttack();if(e.code==="KeyT"&&!K.KeyT)wgStab();if(e.code==="KeyQ")G.in.block=1;if(e.code==="KeyC"&&!K.KeyC)wgClimbBtn();K[e.code]=1;keys()};window.onkeyup=e=>{K[e.code]=0;if(e.code==="KeyQ")G.in.block=0;keys()};
+  window.onkeydown=e=>{if(!WG)return;wgSoundOn();if(e.code==="Space"){G.P.jumpQ=1;e.preventDefault()}if(e.code==="KeyE"&&!K.KeyE)wgGrab(G.P);if(e.code==="KeyV"&&!K.KeyV)G.cam.far=(G.cam.far+1)%3;if(e.code==="KeyF"&&!K.KeyF)wgAimStart();if(e.code==="KeyG")G.in.lower=1;if(e.code==="KeyR"&&!K.KeyR)wgAttack();if(e.code==="KeyT"&&!K.KeyT)wgStab();if(e.code==="KeyQ")G.in.block=1;if(e.code==="KeyC"&&!K.KeyC)wgClimbBtn();K[e.code]=1;keys()};window.onkeyup=e=>{K[e.code]=0;if(e.code==="KeyQ")G.in.block=0;if(e.code==="KeyF")wgAimEnd();if(e.code==="KeyG")G.in.lower=0;keys()};
   let md=0,mp=null;el.addEventListener("mousedown",e=>{if(e.target.closest(".wgb")||e.button!==2&&e.pointerType)return});el.addEventListener("contextmenu",e=>e.preventDefault());
   el.addEventListener("wheel",e=>{G.cam.far=Math.max(0,Math.min(2,G.cam.far+(e.deltaY>0?1:-1)))},{passive:true});
-  $("#wggrab").querySelector("small");setInterval(()=>{if(!WG||!WG.P)return;wgWardHud();const g=$("#wggrab");if(!g)return;const P=WG.P,t=P.carry?null:wgGrabTarget(P),h=P.carry?"🤾<small>THROW</small>":t&&WG_BAGK[t.k]?"🎒<small>COLLECT</small>":"✋<small>GRAB</small>";if(g.innerHTML!==h)g.innerHTML=h;g.classList.toggle("on",!!(t&&WG_BAGK[t.k]))},250)}
+  $("#wggrab").querySelector("small");setInterval(()=>{if(!WG||!WG.P)return;wgWardHud();{const r=!!WG.P.rope,hb=$("#wghook"),lb=$("#wglower");if(lb)lb.style.display=r?"":"none";if(hb&&WG.kit.grapple){const h=r?"⏫<small>CLIMB UP</small>":"🪝<small>HOOK</small>";if(hb.innerHTML!==h)hb.innerHTML=h}}const g=$("#wggrab");if(!g)return;const P=WG.P,t=P.carry?null:wgGrabTarget(P),h=P.carry?"🤾<small>THROW</small>":t&&WG_BAGK[t.k]?"🎒<small>COLLECT</small>":"✋<small>GRAB</small>";if(g.innerHTML!==h)g.innerHTML=h;g.classList.toggle("on",!!(t&&WG_BAGK[t.k]))},250)}
 /* ---------------- the wall clock keeps real time ---------------- */
 function wgClockStep(){const C=WG.clock;if(!C)return;const d=new Date(),s=d.getSeconds(),m=d.getMinutes()+s/60,h=(d.getHours()%12)+m/60;C.sh.rotation.z=-s/60*Math.PI*2;C.mh.rotation.z=-m/60*Math.PI*2;C.hh.rotation.z=-h/12*Math.PI*2;if(s!==WG.lastSec){WG.lastSec=s;wgSfx("tick")}}
 /* ---------------- macro-lens look: things nearer or further than you go soft ---------------- */
