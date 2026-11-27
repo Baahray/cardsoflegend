@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta name="app-build" content="24 Nov 22:22 PT"><meta charset="utf-8">
+<html lang="en"><head><meta name="app-build" content="27 Nov 14:22 PT"><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Legends"><meta name="theme-color" content="#14102e">
@@ -1011,6 +1011,14 @@ body.dfon{overflow:hidden}
 .wgaim i{position:absolute;left:50%;top:54px;transform:translateX(-50%);white-space:nowrap;font:800 13px Outfit,system-ui,sans-serif;color:#fff;text-shadow:0 1px 3px #000;font-style:normal}
 
 .wgletgo{right:calc(34px + env(safe-area-inset-right,0px));bottom:calc(196px + env(safe-area-inset-bottom,0px));width:56px;height:56px;background:rgba(230,90,90,.5);border-color:#ffc0c0}
+
+/* playing together: who's with you, and an arrow to them */
+.wgcoop{align-self:flex-start;pointer-events:none;background:rgba(20,14,8,.55);color:#fff;font:800 12px Outfit,system-ui,sans-serif;padding:4px 10px;border-radius:10px;white-space:nowrap}
+.wgcoop.on{background:rgba(30,110,60,.7)}
+.wgpal b{color:#7dff9a}
+.wgpal span{background:rgba(20,70,35,.7)}
+.wgpal.on b{animation:none;font-size:14px}
+.wgltog{background:rgba(40,120,70,.85)!important}
 
 /*WG-END*/
 </style></head><body><main>
@@ -6770,7 +6778,7 @@ function fjP2PSend(d){const P=FJP2P,c=P.dc;if(!P.open||!c||c.readyState!=="open"
 /*FJ-END*/</script>
 <script>/*WG-START*/
 /* which build this is; if a newer one is on the server when you come back to the app, it reloads itself */
-const WG_BUILD="20261125062206";
+const WG_BUILD="20261127222237";
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState!=="visible")return;fetch("version.txt?"+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():"").then(t=>{t=(t||"").trim();if(!t||t===WG_BUILD)return;if(!g)location.reload();else{const b=document.createElement("div");b.className="wgupd";b.textContent="A new version is ready - tap here to update";b.onclick=()=>location.reload();document.body.appendChild(b)}}).catch(()=>{})});
 /* three.js r128 helpers (MIT) and cannon-es physics (MIT), run once THREE has loaded */
 function wgLibs(){
@@ -12251,7 +12259,7 @@ function wgMakePlayer(who,x,y,z){const T=THREE,kid=who==="cass",h=kid?5.3:6.2,r=
   return P}
 /* after each physics step: what is the wee guy touching? */
 function wgPlayerContacts(P){const b=P.b;let g=0,wall=null,wn=null;for(const c of WG.world.contacts){let n,o,os;if(c.bi===b){n=c.ni;o=c.bj;os=c.sj;n={x:-n.x,y:-n.y,z:-n.z}}else if(c.bj===b){n=c.ni;o=c.bi;os=c.si}else continue;
-    if(o.mass>0&&o.sleepState)o.wakeUp();/* nudging something heavy wakes it, so pushing works */
+    if(o.item)wgTouch(o.item);if(o.mass>0&&o.sleepState)o.wakeUp();/* nudging something heavy wakes it, so pushing works */
     if(n.y>.55)g=o;else if(Math.abs(n.y)<.6&&(o.climb||os&&os.climb)){wall=o;wn=n}}
   const was=P.gT;if(g){/* just landed */if(was>.12){const imp=-P.prevVy;P.land=Math.min(1,imp/320);if(imp>60)wgSfx("step");
       /* sofa cushions are springy: you bounce, higher if you jump as you land */if(g.kind==="cushion"&&imp>70){b.velocity.y=Math.min(330,imp*.8*(P.jumpBuf>0?1.35:1));P.jumpBuf=0;P.land=.2;wgSfx("boing");g=0}}
@@ -12280,16 +12288,16 @@ function wgPlayerForces(P,dt){const b=P.b,I=WG.in,v=b.velocity,m=b.mass,grav=-WG
 /* grab the nearest small thing in front, or throw what you are holding */
 function wgGrabTarget(P){const p=P.b.position,f=new THREE.Vector3(Math.sin(P.yaw),0,Math.cos(P.yaw)),hx=p.x+f.x*P.r*1.6,hy=p.y+P.h*.3,hz=p.z+f.z*P.r*1.6;let best=null,bd=1e9;
   for(const o of WG.dyn){const b=o.b;if(o.nograb||o.gone||(b.mass>P.grabMax&&!WG_BAGK[o.k]))continue;const d=Math.hypot(b.position.x-hx,(b.position.y-hy)*.6,b.position.z-hz)-o.rad;if(d<(WG_BAGK[o.k]?3.4:2.4)&&d<bd){bd=d;best=o}}return best}
-function wgGrab(P){if(P.stuck)return;if(P.carry&&P.spd<3){/* standing still: put it down in front of you */const c=P.carry;P.carry=null;c.b.collisionResponse=true;const f=new THREE.Vector3(Math.sin(P.yaw),0,Math.cos(P.yaw)),p=P.b.position;c.b.position.set(p.x+f.x*(P.r+c.rad+.6),p.y-P.r+c.rad+.3,p.z+f.z*(P.r+c.rad+.6));c.b.velocity.set(0,0,0);c.b.angularVelocity.set(0,0,0);c.b.wakeUp();wgSfx("grab");return}
+function wgGrab(P){if(P.stuck)return;if(P.carry&&P.spd<3){/* standing still: put it down in front of you */const c=P.carry;P.carry=null;wgTouch(c);c.b.collisionResponse=true;const f=new THREE.Vector3(Math.sin(P.yaw),0,Math.cos(P.yaw)),p=P.b.position;c.b.position.set(p.x+f.x*(P.r+c.rad+.6),p.y-P.r+c.rad+.3,p.z+f.z*(P.r+c.rad+.6));c.b.velocity.set(0,0,0);c.b.angularVelocity.set(0,0,0);c.b.wakeUp();wgSfx("grab");return}
   if(!P.carry){const t=wgGrabTarget(P);if(t&&WG_BAGK[t.k]){wgBagPut(t);return}}
   if(P.carry&&WG_BAGK[P.carry.k]){wgBagPut(P.carry);return}
   if(!P.carry&&wgTryCut(P))return;
-  if(P.carry){const c=P.carry;P.carry=null;c.b.collisionResponse=true;const f=new THREE.Vector3(Math.sin(P.yaw),0,Math.cos(P.yaw));c.b.velocity.set(P.b.velocity.x+f.x*190,P.b.velocity.y+110,P.b.velocity.z+f.z*190);c.b.angularVelocity.set(wgR(-8,8),wgR(-8,8),wgR(-8,8));c.b.wakeUp();c.thrownT=WG.t;wgSfx("throw");P.throwT=.3;return}
+  if(P.carry){const c=P.carry;P.carry=null;wgTouch(c);c.b.collisionResponse=true;const f=new THREE.Vector3(Math.sin(P.yaw),0,Math.cos(P.yaw));c.b.velocity.set(P.b.velocity.x+f.x*190,P.b.velocity.y+110,P.b.velocity.z+f.z*190);c.b.angularVelocity.set(wgR(-8,8),wgR(-8,8),wgR(-8,8));c.b.wakeUp();c.thrownT=WG.t;wgSfx("throw");P.throwT=.3;return}
   const p=P.b.position,f=new THREE.Vector3(Math.sin(P.yaw),0,Math.cos(P.yaw)),hx=p.x+f.x*P.r*1.6,hy=p.y+P.h*.3,hz=p.z+f.z*P.r*1.6;let best=null,bd=1e9;
   for(const o of WG.dyn){const b=o.b;if(b.mass>P.grabMax||o.nograb||o.gone)continue;const d=Math.hypot(b.position.x-hx,(b.position.y-hy)*.6,b.position.z-hz)-o.rad;if(d<2.4&&d<bd){bd=d;best=o}}
-  if(best){P.carry=best;best.b.collisionResponse=false;best.b.wakeUp();wgSfx("grab");wgMsg(best.nm?("Got "+best.nm+"!"):"Got it!",1)}else{const o=WG.dyn.find(o=>!o.gone&&o.b.mass>P.grabMax&&Math.hypot(o.b.position.x-hx,o.b.position.z-hz)-o.rad<2.5);wgMsg(o?"Too heavy to lift - try pushing it!":"Nothing to grab here",1)}}
+  if(best){P.carry=best;wgTouch(best);best.b.collisionResponse=false;best.b.wakeUp();wgSfx("grab");wgMsg(best.nm?("Got "+best.nm+"!"):"Got it!",1)}else{const o=WG.dyn.find(o=>!o.gone&&o.b.mass>P.grabMax&&Math.hypot(o.b.position.x-hx,o.b.position.z-hz)-o.rad<2.5);wgMsg(o?"Too heavy to lift - try pushing it!":"Nothing to grab here",1)}}
 /* keep carried things above your head */
-function wgCarryStep(P){wgCarryShape(P);const c=P.carry;if(!c)return;const p=P.b.position,b=c.b;b.position.set(p.x,p.y-P.r+P.h+c.rad*.9+.3,p.z);b.velocity.copy(P.b.velocity);b.quaternion.setFromEuler(0,P.yaw,0)}
+function wgCarryStep(P){wgCarryShape(P);const c=P.carry;if(!c)return;wgTouch(c);const p=P.b.position,b=c.b;b.position.set(p.x,p.y-P.r+P.h+c.rad*.9+.3,p.z);b.velocity.copy(P.b.velocity);b.quaternion.setFromEuler(0,P.yaw,0)}
 /* ---- natural movement: gait from distance travelled, lean into speed and turns, land with a bend ---- */
 function wgAnimPlayer(P,dt){if(P.mesh.isRig)return wgAnimRig(P,dt);const M=P.mesh,b=P.b,v=b.velocity,hs=Math.hypot(v.x,v.z),onG=P.gT<.1,T=WG.t;
   const gv=P.ground&&P.ground.type===CANNON.Body.KINEMATIC&&onG?Math.hypot(v.x-P.ground.velocity.x,v.z-P.ground.velocity.z):hs;/* on a moving thing, walk at your own speed */
@@ -12380,7 +12388,7 @@ function wgThing(k,x,y,z,o){o=o||{};const T=THREE,K=wgKind(k);let mesh;
   mesh.castShadow=K.rad>1.2&&k!=="dust";mesh.receiveShadow=true;WG.scene.add(mesh);
   const b=new CANNON.Body({mass:K.mass,material:WG.pm.thing,allowSleep:true,sleepSpeedLimit:1.5,sleepTimeLimit:.6,linearDamping:k==="dust"?.92:.06,angularDamping:k==="dust"?.9:.2});b.addShape(K.shape);b.collisionFilterGroup=4;
   b.position.set(x,y+K.rad*.6,z);if(o.ry!=null||o.rand!==false)b.quaternion.setFromEuler(0,o.ry!=null?o.ry:wgR(0,6.28),0);WG.world.addBody(b);
-  wgItemFeel(b);const it={b,m:mesh,k,rad:K.rad,nm:K.nm,fresh:1,nograb:o.nograb};mesh.position.copy(b.position);mesh.quaternion.copy(b.quaternion);WG.dyn.push(it);
+  wgItemFeel(b);const it={b,m:mesh,k,rad:K.rad,nm:K.nm,fresh:1,nograb:o.nograb};b.item=it;/* the same name on both phones: built in the same order, or made during play by one of you */if(o.id)it.id=o.id;else if(WG.ready){WG.spawnN=(WG.spawnN||0)+1;it.id=me()+WG.spawnN}else it.id="i"+WG.dyn.length;(WG.byId||(WG.byId=new Map())).set(it.id,it);mesh.position.copy(b.position);mesh.quaternion.copy(b.quaternion);WG.dyn.push(it);if(WG.ready&&!o.net&&typeof WGL!=="undefined"&&WGL.on){wgTouch(it);wgLiveEv({e:"spawn",id:it.id,k,p:[b.position.x,b.position.y,b.position.z],c:mesh.material&&mesh.material.color?mesh.material.color.getHex():null})}
   b.addEventListener("collide",e=>{const v=Math.abs(e.contact.getImpactVelocityAlongNormal());if(v>60&&WG.t-(it.snd||0)>.15&&WG.P&&b.position.distanceTo(WG.P.b.position)<120){it.snd=WG.t;wgSfx(K.mass>40?"thud":"clink")}});
   return it}
 /* small finishing touches on things */
@@ -12755,7 +12763,7 @@ function wgBaseRate(p){const D=WGH.D,y=p.y-WG.P.r;let s,why;const inB=(B,pad)=>B
   if(WG.webs&&WG.webs.some(w=>!w.gone&&Math.hypot(w.x-p.x,w.z-p.z)<45)){s+=10;why+=" An old web across the way in - nobody's been through in ages."}
   return{s:Math.min(100,s),why}}
 function wgMakeBase(){const P=WG.P,p=P.b.position;if(P.stuck==="glass"||P.stuck==="bag"){wgMsg("Not while you're stuck!",1.4);return}const R=wgBaseRate(p),star="⭐".repeat(Math.max(1,Math.round(R.s/20)));
-  WG.base={x:p.x,y:p.y-P.r,z:p.z,s:R.s};WG.bed=null;wgBaseMarker();wgMsg(`<b>🏠 Base set up!</b> ${star}<br>${R.why}`,6);wgMisDone("base");wgListHud()}
+  WG.base={x:p.x,y:p.y-P.r,z:p.z,s:R.s};WG.bed=null;wgBaseMarker();wgLiveEv({e:"base",b:WG.base});wgMsg(`<b>🏠 Base set up!</b> ${star}<br>${R.why}`,6);wgMisDone("base");wgListHud()}
 function wgBaseMarker(){const B=WG.base;if(WG.baseM)WG.scene.remove(WG.baseM);const m=new THREE.Mesh(new THREE.RingGeometry(9,9.6,40),new THREE.MeshBasicMaterial({color:0xffd27a,transparent:true,opacity:.25,depthWrite:false}));m.rotation.x=-Math.PI/2;m.position.set(B.x,B.y+.08,B.z);WG.scene.add(m);WG.baseM=m}
 /* things that are "at your base" */
 const wgAtBase=(o,r)=>{const B=WG.base;if(!B||o.gone)return false;const q=o.b.position;return Math.hypot(q.x-B.x,q.z-B.z)<(r||22)&&Math.abs(q.y-B.y)<12};
@@ -12775,7 +12783,7 @@ function wgBedCheck(){if(!WG.base||WG.bed)return;const fr=WG.dyn.find(o=>(o.k===
   const g=new T.Group(),mt=new T.Mesh(new T.RoundedBoxGeometry(4.6,.9,3,2,.3),wgBinMat("sponge"));mt.position.y=1;g.add(mt);const dv=new T.Mesh(new T.RoundedBoxGeometry(3.4,.4,3.2,2,.15),wgBinMat("hanky"));dv.position.set(.5,1.6,0);g.add(dv);const pl=new T.Mesh(new T.SphereGeometry(.7,10,8),wgBinMat("hanky"));pl.scale.set(1,.45,1.6);pl.position.set(-1.6,1.6,0);g.add(pl);
   g.position.set(q.x,q.y,q.z);fr.m.add?(g.position.set(0,0,0),fr.m.add(g)):WG.scene.add(g);WG.bed={x:q.x,y:q.y-1,z:q.z};wgMsg("🛏️ <b>You made a bed!</b><br>Stand by it and tap 💤 to sleep",4);wgMisDone("bed")}
 /* ---- the borrowing list ---- */
-function wgMisDone(k){if(WG.mis[k])return;WG.mis[k]=1;const m=WG_MIS.find(x=>x[0]===k);if(m&&k!=="base")setTimeout(()=>wgMsg("✅ <b>Borrowing list:</b> "+m[1]+"!",2.4),k==="bed"?4200:0);wgSfx("boing");wgListHud()}
+function wgMisDone(k,net){if(WG.mis[k])return;WG.mis[k]=1;if(!net)wgLiveEv({e:"mis",k});const m=WG_MIS.find(x=>x[0]===k);if(m&&k!=="base")setTimeout(()=>wgMsg("✅ <b>Borrowing list:</b> "+m[1]+"!",2.4),k==="bed"?4200:0);wgSfx("boing");wgListHud()}
 function wgMisStep(dt){WG.misT-=dt;if(WG.misT>0)return;WG.misT=.5;const K=WG.kit,P=WG.P,p=P.b.position,at=k=>WG.dyn.some(o=>o.k===k&&wgAtBase(o));
   if(K.blade)wgMisDone("blade");if(K.grapple)wgMisDone("grapple");if(K.sword&&K.shield)wgMisDone("armour");wgBedCheck();
   if(WG.base){if(at("bdcandle")&&at("match"))wgMisDone("light");if(at("sugar")&&at("pea")&&at("raisin")&&(at("crumb")||at("bigcrumb")||at("biscuit")))wgMisDone("larder");if(at("watch"))wgMisDone("watch")}
@@ -12784,17 +12792,17 @@ function wgMisStep(dt){WG.misT-=dt;if(WG.misT>0)return;WG.misT=.5;const K=WG.kit
   if(WG.exits)WG.exits.forEach((e,i)=>{if(Math.hypot(p.x-e.x,p.z-e.z)<14&&Math.abs((p.y-P.r)-(e.y||0))<14&&!WG.misSeen.has(i)){WG.misSeen.add(i);wgMsg(`🗺️ Found a way through the wall ${e.nm} (${WG.misSeen.size}/4)`,2)}});if(WG.misSeen.size>=4)wgMisDone("walls");
   if(WG.bugs.some(b=>b.wall&&b.st==="flip"))wgMisDone("spider")}
 function wgListHud(){const L=$("#wglistp");if(!L||!WG.mis)return;const n=WG_MIS.filter(m=>WG.mis[m[0]]).length;
-  L.innerHTML=`<div class="wglh"><b>📜 Borrowing list</b> <span>${n}/${WG_MIS.length}</span><button id="wglx">✕</button></div>`+(WG.base?`<div class="wglb">🏠 Your base: ${"⭐".repeat(Math.max(1,Math.round(WG.base.s/20)))}${WG.bed?" · 🛏️ bed made":""}</div>`:"")+`<button class="wglmk" id="wglmk">🏠 Make my base here</button>`+WG_MIS.map(m=>`<div class="wgli ${WG.mis[m[0]]?"ok":""}"><i>${WG.mis[m[0]]?"✅":"⬜"}</i><div><b>${m[1]}</b><small>${m[2]}</small></div></div>`).join("")+`<div class="wgcred">Some furniture and ornaments are real scanned 3D models: Glam Velvet Sofa, Glass Hurricane Candle Holder, Iridescent Dish with Olives, Diffuse Transmission Plant (Wayfair LLC), Materials Variants Shoe (Shopify), Sunglasses (Khronos Group) - all CC BY 4.0; others CC0, from the Khronos glTF sample assets. People: Wee Cass made with MakeHuman (CC0); Wee Dad from the Microsoft Rocketbox Avatar Library, Copyright (c) 2020 Microsoft, MIT License (full text in wg_people.json); big people: Ready Player Me; movement: Mixamo.</div>`;
-  const tap=(id,f)=>{const b=$(id);b.addEventListener("pointerup",e=>{e.stopPropagation();f()});b.addEventListener("pointerdown",e=>e.stopPropagation())};tap("#wglx",()=>L.classList.remove("on"));tap("#wglmk",()=>{L.classList.remove("on");wgMakeBase()})}
+  L.innerHTML=`<div class="wglh"><b>📜 Borrowing list</b> <span>${n}/${WG_MIS.length}</span><button id="wglx">✕</button></div>`+(WG.base?`<div class="wglb">🏠 Your base: ${"⭐".repeat(Math.max(1,Math.round(WG.base.s/20)))}${WG.bed?" · 🛏️ bed made":""}</div>`:"")+`<button class="wglmk" id="wglmk">🏠 Make ${WGL.on?"our":"my"} base here</button><button class="wglmk wgltog" id="wgltog">${WGL.on?"👋 Stop playing together":"👥 Play together with "+wgThemNm()}</button>`+WG_MIS.map(m=>`<div class="wgli ${WG.mis[m[0]]?"ok":""}"><i>${WG.mis[m[0]]?"✅":"⬜"}</i><div><b>${m[1]}</b><small>${m[2]}</small></div></div>`).join("")+`<div class="wgcred">Some furniture and ornaments are real scanned 3D models: Glam Velvet Sofa, Glass Hurricane Candle Holder, Iridescent Dish with Olives, Diffuse Transmission Plant (Wayfair LLC), Materials Variants Shoe (Shopify), Sunglasses (Khronos Group) - all CC BY 4.0; others CC0, from the Khronos glTF sample assets. People: Wee Cass made with MakeHuman (CC0); Wee Dad from the Microsoft Rocketbox Avatar Library, Copyright (c) 2020 Microsoft, MIT License (full text in wg_people.json); big people: Ready Player Me; movement: Mixamo.</div>`;
+  const tap=(id,f)=>{const b=$(id);b.addEventListener("pointerup",e=>{e.stopPropagation();f()});b.addEventListener("pointerdown",e=>e.stopPropagation())};tap("#wglx",()=>L.classList.remove("on"));tap("#wglmk",()=>{L.classList.remove("on");wgMakeBase()});tap("#wgltog",()=>{L.classList.remove("on");if(WGL.on)wgLiveLeave();else wgLiveAsk()})}
 
 /* ---- the backpack: COLLECT the useful bits, they unpack themselves when you get home ---- */
 const WG_BAGK={match:1,bdcandle:1,matchbox:1,tin:1,raisin:1,sugar:1,pea:1,crumb:1,bigcrumb:1,biscuit:1,watch:1,spongepiece:1,clothpiece:1,band:1};
 function wgBagName(o){return(o.nm||o.k).replace(/^(a|an|the) /,"")}
 function wgBagPut(o){const P=WG.P;if(WG.bag.length>=(WG.wear&&WG.wear.on.pack?16:8)){wgMsg("🎒 Your bag is full! Take it home first",1.6);return false}if(P.carry===o){P.carry=null;o.b.collisionResponse=true}
-  o.gone=1;o.bagged=1;o.m.visible=false;WG.world.removeBody(o.b);WG.bag.push(o);wgSfx("grab");
+  o.gone=1;o.bagged=1;o.m.visible=false;WG.world.removeBody(o.b);WG.bag.push(o);wgLiveEv({e:"gone",id:o.id});wgSfx("grab");
   wgMsg(`🎒 <b>Collected ${wgBagName(o)}!</b>`+(WG.base?"<br>It'll unpack when you get home":"<br>Make a base - your bag unpacks there"),1.6);wgKitHud();return true}
 function wgBagHome(){const B=WG.base,P=WG.P;if(!B||!WG.bag.length||P.carry&&P.stuck)return;const p=P.b.position;if(Math.hypot(p.x-B.x,p.z-B.z)>18||Math.abs(p.y-P.r-B.y)>10)return;
-  const n=WG.bag.length,names=[];WG.bag.forEach((o,i)=>{const a=i/n*Math.PI*2+.4,rr=8+(i%2)*3;o.b.position.set(B.x+Math.sin(a)*rr,B.y+o.rad+1.2,B.z+Math.cos(a)*rr);o.b.velocity.set(0,0,0);o.b.angularVelocity.set(0,0,0);WG.world.addBody(o.b);o.b.wakeUp();o.m.visible=true;o.gone=0;o.bagged=0;o.fresh=1;names.push(wgBagName(o))});
+  const n=WG.bag.length,names=[];WG.bag.forEach((o,i)=>{const a=i/n*Math.PI*2+.4,rr=8+(i%2)*3;o.b.position.set(B.x+Math.sin(a)*rr,B.y+o.rad+1.2,B.z+Math.cos(a)*rr);o.b.velocity.set(0,0,0);o.b.angularVelocity.set(0,0,0);WG.world.addBody(o.b);o.b.wakeUp();o.m.visible=true;o.gone=0;o.bagged=0;o.fresh=1;wgTouch(o);wgLiveEv({e:"back",id:o.id,p:[o.b.position.x,o.b.position.y,o.b.position.z]});names.push(wgBagName(o))});
   WG.bag=[];wgSfx("boing");wgMsg("🏠 <b>Unpacked:</b> "+names.join(", "),2.6);wgKitHud()}
 
 /* ---------- THE WEE GUYS: real people with motion-captured movement ----------
@@ -12831,7 +12839,7 @@ function wgClips(kind){const C=WG_PPL.clips,K=wgSrcKey(kind);if(C[K])return C[K]
     out[clip.name]=new T.AnimationClip(clip.name,clip.duration,tracks)}
   src.updateMatrixWorld(true);return C[K]=out}
 /* a person, h cm tall, facing +z, feet at 0 */
-function wgRig(kind,h){const T=THREE,SK=wgSrcKey(kind),src=WG_PPL[SK],obj=T.SkeletonUtils.clone(src.scene),g=new T.Group();g.add(obj);
+function wgRig(kind,h,wear){const T=THREE,SK=wgSrcKey(kind),src=WG_PPL[SK],obj=T.SkeletonUtils.clone(src.scene),g=new T.Group();g.add(obj);
   const bones={};obj.traverse(o=>{if(o.isBone)bones[o.name.replace(/^mixamorig/,"")]=o;if(o.isMesh){o.castShadow=true;o.receiveShadow=true;o.frustumCulled=false;o.material=o.material.clone()}});
   if(kind==="cass"&&SK==="dad"){/* (fallback when his own model isn't there) Wee Cass is a kid: a big head, a short body and legs, a blue hoodie, jeans and red trainers, his own hair */
     const knit=wgClothTex("knit"),den=wgClothTex("denim");obj.traverse(o=>{if(!o.isMesh)return;const n=o.name,m=o.material;if(/Beard|Headwear/.test(n))o.visible=false;
@@ -12849,7 +12857,7 @@ function wgRig(kind,h){const T=THREE,SK=wgSrcKey(kind),src=WG_PPL[SK],obj=T.Skel
   const mixer=new T.AnimationMixer(obj),clips=wgClips(kind),act={};for(const k of["idle","walk","run","sneak_pose"]){if(!clips[k])continue;const a=mixer.clipAction(clips[k]);a.play();a.setEffectiveWeight(k==="idle"?1:0);act[k]=a}
   /* skin lets a little light through: a soft glow of its own colour keeps faces from going muddy indoors */
   if(SK==="cass2"||SK==="dad2")obj.traverse(o=>{if(o.isMesh&&o.material&&/Cass_Skin|Dad_Head/.test(o.material.name)&&o.material.map){const m=o.material;m.emissive=new T.Color(0xffffff);m.emissiveMap=m.map;m.emissiveIntensity=SK==="dad2"?.36:.24;m.needsUpdate=true}});
-  const R={kind,SK,g,obj,mixer,act,bones,h,w:{idle:1,walk:0,run:0,sneak_pose:0},isRig:1};R.head=bones.Head;if(kind==="cass"||kind==="dad")wgOutfitBuild(R);return R}
+  const R={kind,SK,g,obj,mixer,act,bones,h,w:{idle:1,walk:0,run:0,sneak_pose:0},isRig:1};R.head=bones.Head;if(wear)R.wear=wear;if(kind==="cass"||kind==="dad")wgOutfitBuild(R);return R}
 /* blend idle / walk / run from the speed, with the feet's timing matched to how fast you're really going */
 function wgRigLoco(R,spd,dt,sneak){const h=R.h,s=spd/h,want={idle:0,walk:0,run:0,sneak_pose:0};
   if(s<.15)want.idle=1;else if(s<1.9){const k=Math.min(1,(s-.15)/.5);want.idle=1-k;want.walk=k}else{const k=Math.min(1,(s-1.9)/1.4);want.walk=1-k;want.run=k}
@@ -12869,7 +12877,7 @@ function wgAnimRig(P,dt){const R=P.mesh,b=P.b,v=b.velocity,onG=P.gT<.1,T=WG.t;
   const gv=P.ground&&P.ground.type===CANNON.Body.KINEMATIC&&onG?Math.hypot(v.x-P.ground.velocity.x,v.z-P.ground.velocity.z):Math.hypot(v.x,v.z);P.spd=gv;
   const vp=P.vp||b.position;R.g.position.set(vp.x,vp.y-P.r,vp.z);R.g.rotation.y=P.yaw;R.g.updateMatrixWorld(true);if(P.land>0)P.land=Math.max(0,P.land-dt*3.2);if(P.atk>0)P.atk-=dt;if(P.throwT>0)P.throwT-=dt;
   const busy=P.climb||P.pole||P.rope||P.stuck||!onG;wgRigLoco(R,busy?0:gv,dt,!!WG.big&&!P.sprinting);
-  /* step sounds follow the real footfalls */if(!busy&&gv>2){P.stepT+=dt*gv/(P.h*.75);if(P.stepT>1){P.stepT=0;wgSfx("step")}}
+  /* step sounds follow the real footfalls */if(!busy&&gv>2){P.stepT+=dt*gv/(P.h*.75);if(P.stepT>1){P.stepT=0;if(P===WG.P)wgSfx("step")}}
   /* lean into speed and turns */R.obj.rotation.x+=((busy?0:Math.min(.16,gv/P.h*.025))-R.obj.rotation.x)*Math.min(1,dt*6);R.obj.rotation.z+=((busy?0:Math.max(-.3,Math.min(.3,-P.turn*gv*.004)))-R.obj.rotation.z)*Math.min(1,dt*6);
   const K=P.poseK||(P.poseK={climb:0,air:0,carry:0,atk:0,shield:0,rope:0,stuck:0,land:0}),sm=1-Math.exp(-dt*12),to=(k,t)=>{K[k]+=(t-K[k])*sm};
   to("climb",P.climb||P.pole?1:0);to("rope",P.rope?1:0);to("stuck",P.stuck?1:0);to("air",!onG&&!P.climb&&!P.rope&&!P.stuck?1:0);to("carry",P.carry?1:0);to("atk",P.atk>0?1:0);to("shield",0);to("land",P.land>0&&onG?P.land:0);
@@ -12908,7 +12916,7 @@ function wgPlaceKit(){WG.kit={};WG.keys=[];const put=(k,x,y,z,ry)=>{const m=wgKe
   put("cap",528,0,302,0);/* kitchen floor, behind the bin */
   wgKitHud()}
 function wgKitStep(dt){const P=WG.P,p=P.b.position;for(const K of WG.keys){if(K.got)continue;K.ph+=dt;const tw=Math.max(0,Math.sin(K.ph*2.2))**6;K.gl.scale.setScalar(1.2+tw*6);K.gl.material.opacity=.35+tw*.65;K.gl.material.depthTest=false;K.gl.renderOrder=9;
-    if(Math.hypot(p.x-K.p.x,(p.y-P.r+1)-K.p.y,p.z-K.p.z)<P.r+2.9){K.got=1;WG.scene.remove(K.m);WG.scene.remove(K.gl);WG.kit[K.k]=1;wgSfx("grab");wgFound(K.k)}}
+    if(Math.hypot(p.x-K.p.x,(p.y-P.r+1)-K.p.y,p.z-K.p.z)<P.r+2.9){K.got=1;WG.scene.remove(K.m);WG.scene.remove(K.gl);WG.kit[K.k]=1;wgSfx("grab");wgLiveEv({e:"found",k:K.k});wgFound(K.k)}}
   if(P.hurtT>0)P.hurtT-=dt;if(P.hp<3){P.hpT+=dt;if(P.hpT>25){P.hpT=0;P.hp=Math.min(3,P.hp+.5);wgKitHud()}}
   /* the rope */const R=WG.ropeL;if(P.rope){const a=P.rope.a,vp=P.vp||p,h=new THREE.Vector3(vp.x,vp.y-P.r+P.h*.85,vp.z);R.geometry.setFromPoints([h,a]);R.visible=true;WG.hookM.position.copy(a);WG.hookM.visible=true}else if(P.ropeMiss&&P.ropeMiss.t>0){P.ropeMiss.t-=dt;const k=Math.sin(P.ropeMiss.t/.35*Math.PI),h=new THREE.Vector3(p.x,p.y-P.r+P.h*.85,p.z),e=h.clone().addScaledVector(P.ropeMiss.d,k*120);R.geometry.setFromPoints([h,e]);R.visible=true;WG.hookM.position.copy(e);WG.hookM.visible=true}else{R.visible=false;WG.hookM.visible=false}}
 function wgFound(k){const K=WG.kit;let m="Found "+WG_KIT[k].nm+"!";if(WG_WEAR[k]){wgMsg(wgWearFound(k),4.5);wgKitHud();return}
@@ -13092,14 +13100,14 @@ function wgApplyArms(R,o,w,legs){if(!(w>.01))return;const tw=o.tw||0;wgTwist(R,"
   if(legs&&(o.lg||0)>.01)wgPose(R,[["RightUpLeg","RightLeg",[-.15,-.72,.68]],["RightLeg","RightFoot",[-.05,-.95,-.1]],["LeftUpLeg","LeftLeg",[.15,-.85,-.5]],["LeftLeg","LeftFoot",[.05,-.75,-.65]]],w*o.lg)}
 /* called from the rig animation in place of the old poke */
 function wgFightPose(R,P,K,dt,gv,busy){const sm=1-Math.exp(-dt*22);K.fight=(K.fight||0)+((P.fx?1:0)-(K.fight||0))*sm;K.block=(K.block||0)+((P.block?1:0)-(K.block||0))*(1-Math.exp(-dt*16));
-  const armed=WG.kit&&WG.kit.sword&&!P.carry&&!busy;K.guard=(K.guard||0)+(((armed&&P.guardT>0&&!P.fx&&!P.block)?1:0)-(K.guard||0))*(1-Math.exp(-dt*8));
+  const KT=P.kit||WG.kit,armed=KT&&KT.sword&&!P.carry&&!busy;K.guard=(K.guard||0)+(((armed&&P.guardT>0&&!P.fx&&!P.block)?1:0)-(K.guard||0))*(1-Math.exp(-dt*8));
   if(K.guard>.01)wgApplyArms(R,WG_GUARD,K.guard*(gv>P.run*1.05?.5:1),false);
-  if(K.block>.01)wgApplyArms(R,WG.kit.shield?WG_BLOCK.sh:WG_BLOCK.nd,K.block,false);
+  if(K.block>.01)wgApplyArms(R,KT&&KT.shield?WG_BLOCK.sh:WG_BLOCK.nd,K.block,false);
   if(P.fx){const F=P.fx;R._fo=wgKeyAt(F.m.keys,Math.min(1,F.t/F.m.d));R._fk=F.k}
   if(K.fight>.01&&R._fo)wgApplyArms(R,R._fo,Math.max(K.fight,P.fx?1:0),gv<6)}
 
 /* ---- the needle and the bottle top follow the hands ---- */
-function wgEquipFollow(){const P=WG.P,R=P.mesh;if(!R.isRig)return;const T=THREE,B=R.bones,a=new T.Vector3(),b=new T.Vector3(),q=new T.Quaternion(),K=P.poseK||{},fw=new T.Vector3(0,0,1).applyQuaternion(R.g.quaternion);
+function wgEquipFollow(P){P=P||WG.P;const R=P.mesh;if(!R.isRig)return;const T=THREE,B=R.bones,a=new T.Vector3(),b=new T.Vector3(),q=new T.Quaternion(),K=P.poseK||{},fw=new T.Vector3(0,0,1).applyQuaternion(R.g.quaternion);
   if(P.swordM&&B.RightHand&&B.RightForeArm){B.RightForeArm.getWorldPosition(a);B.RightHand.getWorldPosition(b);const arm=b.clone().sub(a).normalize(),wf=Math.min(1,Math.max(K.fight||0,K.guard||0,K.block||0)),
       idle=fw.clone().multiplyScalar(.75).addScaledVector(arm,.6).normalize(),fight=arm.clone().addScaledVector(fw,P.fx?.12:.35).normalize(),d=idle.lerp(fight,wf).normalize();
     P.swordM.visible=P.mesh.g.visible&&!P.carry;q.setFromUnitVectors(new T.Vector3(1,0,0),d);P.swordM.quaternion.copy(q);P.swordM.position.copy(b).addScaledVector(d,1.15);P.swordTip=P.swordM.position.clone().addScaledVector(d,2.3)}
@@ -13148,7 +13156,7 @@ function wgMiscTex(k){const key="misc_"+k;if(WGT[key])return WGT[key];let c,r=1,
 const wgFoil=(col,o)=>new THREE.MeshStandardMaterial(Object.assign({color:col,metalness:.85,roughness:.28,bumpMap:wgMiscTex("crinkle"),bumpScale:.003},o||{}));
 
 /* ---- the borrower bits sewn onto the rig: measured from the skeleton so they fit Cass or Dad ---- */
-function wgOutfitBuild(R){const T=THREE,B=R.bones,kid=R.kind==="cass";if(!WG.wear)WG.wear={have:{},on:{},top:kid?"sockblue":"sockgrey",bot:"hblue",shirt:"towel"};
+function wgOutfitBuild(R){const T=THREE,B=R.bones,kid=R.kind==="cass";if(!R.wear&&!WG.wear)WG.wear={have:{},on:{},top:kid?"sockblue":"sockgrey",bot:"hblue",shirt:"towel"};
   R.obj.updateMatrixWorld(true);R.g.updateMatrixWorld(true);const W=n=>B[n]?B[n].getWorldPosition(new T.Vector3()):null,O={};R.out=O;
   const sw=W("LeftArm").distanceTo(W("RightArm")),hw=W("LeftUpLeg").distanceTo(W("RightUpLeg")),tl=W("Hips").distanceTo(W("Neck")),up=new T.Vector3(0,1,0),fwd=new T.Vector3(0,0,1),q=new T.Quaternion();
   const put=(bn,m,pos,axis)=>{m.position.copy(pos);if(axis)m.quaternion.setFromUnitVectors(new T.Vector3(0,0,1),axis.clone().normalize());m.traverse(o=>{if(o.isMesh){o.castShadow=true;o.frustumCulled=false}});R.g.add(m);R.g.updateMatrixWorld(true);B[bn].attach(m);return m};
@@ -13176,7 +13184,7 @@ function wgOutfitBuild(R){const T=THREE,B=R.bones,kid=R.kind==="cass";if(!WG.wea
     g.rotation.x=-Math.PI/2;O.scarf=put("Neck",g,W("Neck").lerp(W("Spine2"),.25).addScaledVector(fwd,sw*.02))}
   /* the hood becomes a red sweet wrapper */const hood=R.obj.getObjectByName("hood");if(hood)hood.material=wgFoil(0xc8102e,{roughness:.32});
   wgOutfitApply(R)}
-function wgOutfitApply(R){if(!R||!R.out)return;const Wr=WG.wear,kid=R.kind==="cass";if(R.SK==="dad2")wgDadClothes(R);R.obj.traverse(o=>{if(!o.isMesh||!o.material)return;const m=o.material,n=o.name;
+function wgOutfitApply(R){if(!R||!R.out)return;const Wr=R.wear||WG.wear,kid=R.kind==="cass";if(R.SK==="dad2")wgDadClothes(R);R.obj.traverse(o=>{if(!o.isMesh||!o.material)return;const m=o.material,n=o.name;
     const fab=/Outfit_Top/.test(n)?Wr.top:/Outfit_Bottom/.test(n)?Wr.bot:null;if(fab){/* on Cass's own model the sock's stripes would wave across his chest - plain knit there (the stripes stay on the cuffs) */let t=wgFabTex(fab,R.SK==="cass2"&&/Outfit_Top/.test(n));if(R.SK==="cass2"){/* his own model's texture layout is bigger: finer stitches */const k="fine_"+fab+(/Outfit_Top/.test(n)?"_p":"");t=WGT[k]||(WGT[k]=(()=>{const c=t.clone();c.repeat.multiplyScalar(2.2);c.needsUpdate=true;return c})())}m.map=t;m.bumpMap=t;m.bumpScale=.0025;m.color.setHex(0xffffff);m.roughness=.95;m.metalness=0;m.needsUpdate=true}
     if(/Footwear/.test(n)&&!m._lea){m._lea=1;m.map=R.out.leather.map;m.bumpMap=R.out.leather.map;m.bumpScale=.002;m.color.setHex(0xffffff);m.roughness=.6;m.needsUpdate=true}
     if(/Headwear/.test(n))o.visible=!kid&&!Wr.on.thimble&&!Wr.on.milktop});
@@ -13214,7 +13222,7 @@ const _wgID=new Map();function wgImgData(c){if(_wgID.has(c))return _wgID.get(c);
 function wgDadClothes(R){const L=WG_PPL&&WG_PPL.dadLab;if(!L)return;let body=null;R.obj.traverse(o=>{if(o.isMesh&&o.material&&o.material.name==="Dad_Body")body=o});if(!body||!body.material.map)return;const m=body.material,W=L.width,H=L.height,ld=L.data;
   if(!R.dadBase){const c=document.createElement("canvas");c.width=W;c.height=H;const x=c.getContext("2d");x.drawImage(m.map.image,0,0,W,H);R.dadBase=x.getImageData(0,0,W,H);R.dadCan=c;
     const d=R.dadBase.data,sum=new Float64Array(6),cnt=new Float64Array(6);for(let i=0;i<ld.length;i+=4){const k=Math.min(5,Math.round(ld[i]/50));sum[k]+=d[i]*.3+d[i+1]*.59+d[i+2]*.11;cnt[k]++}R.dadMean=[...sum].map((s,k)=>cnt[k]?s/cnt[k]:128)}
-  const Wr=WG.wear,pf=Wr.top==="hspot"?"hblue":"hspot",src={1:wgImgData(wgFabTex(Wr.top).image),2:wgImgData(wgFabTex(Wr.bot).image),3:wgImgData(wgMiscTex("leather").image),4:wgImgData(wgFabTex(Wr.shirt||"hblue").image),9:wgImgData(wgFabTex(pf).image)},rep={1:11,2:5,3:3,4:6,9:3};
+  const Wr=R.wear||WG.wear,pf=Wr.top==="hspot"?"hblue":"hspot",src={1:wgImgData(wgFabTex(Wr.top).image),2:wgImgData(wgFabTex(Wr.bot).image),3:wgImgData(wgMiscTex("leather").image),4:wgImgData(wgFabTex(Wr.shirt||"hblue").image),9:wgImgData(wgFabTex(pf).image)},rep={1:11,2:5,3:3,4:6,9:3};
   /* patches sewn on: both elbows and one on the front */const P=[[.14,.63,.055,.07],[.86,.63,.055,.07],[.38,.62,.045,.045]];
   const b=R.dadBase.data,out=new ImageData(new Uint8ClampedArray(b),W,H),o=out.data,mean=R.dadMean;
   for(let y=0;y<H;y++)for(let x=0;x<W;x++){const i=(y*W+x)*4;let k=Math.min(5,Math.round(ld[i]/50));if(k<1||k>4)continue;const u=x/W,v=y/H;let edge=0,kk=k;
@@ -13341,7 +13349,7 @@ function wgRobotStep(dt){const R=WG.robot;if(!R)return;const b=R.b,p=b.position;
     /* suck up what is underneath */for(const o of WG.dyn){if(o.gone||!o.mess&&o.b.mass>6)continue;const q=o.b.position;if(q.y<4&&Math.hypot(q.x-p.x,q.z-p.z)<14){wgSuck(o)}}}
   b.quaternion.setFromEuler(0,R.yaw,0);R.g.position.set(p.x,0,p.z);R.g.rotation.y=R.yaw;R.led.material.color.setHex(R.st==="dock"?0x40ff70:Math.sin(WG.t*6)>0?0x40a0ff:0x103060)}
 /* something gets hoovered up */
-function wgSuck(o){o.gone=1;o.b.collisionResponse=false;WG.world.removeBody(o.b);WG.scene.remove(o.m);if(WG.P.carry===o)WG.P.carry=null}
+function wgSuck(o){wgLiveEv({e:"gone",id:o.id});o.gone=1;o.b.collisionResponse=false;WG.world.removeBody(o.b);WG.scene.remove(o.m);if(WG.P.carry===o)WG.P.carry=null}
 /* how messy is the floor? crumbs and things knocked off where they belong */
 function wgMess(){let n=0;for(const o of WG.dyn){if(o.gone)continue;const q=o.b.position;if(q.y>4)continue;if(o.mess)n++;else if(o.home&&Math.hypot(q.x-o.home.x,q.z-o.home.z)>30&&o.home.y>10)n+=2}return n}
 
@@ -13351,9 +13359,10 @@ function wgMess(){let n=0;for(const o of WG.dyn){if(o.gone)continue;const q=o.b.
    Rock the glass over before they come back. */
 const WG_BIGLOOK=[{h:170,col:{top:0x8a2c3c,legs:0x34465e,shoe:0xeeeeee,hair:0x5a3a22,long:true,noStubble:true,skin:0xe8b898}},{h:183,col:{top:0x3a4a5e,legs:0x2b2f38,shoe:0x2a2420,hair:0x2a2018,skin:0xd8a07a}}];
 function wgBigInit(){WG.bigT=wgR(25,40);WG.big=null;WG.eye=0;WG.glass=null}
-function wgBigSpawn(){const look=wgPick(WG_BIGLOOK),T=THREE,mesh=WG_PPL?wgRig(look.h>175?"big2":"big",look.h):wgPersonMesh("dad",look.col);if(!mesh.isRig)mesh.g.scale.setScalar(look.h);mesh.g.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});WG.scene.add(mesh.g);
+function wgBigSpawn(m){const lookI=m?Math.min(WG_BIGLOOK.length-1,m.look||0):Math.floor(Math.random()*WG_BIGLOOK.length),look=WG_BIGLOOK[lookI],T=THREE,mesh=WG_PPL?wgRig(look.h>175?"big2":"big",look.h):wgPersonMesh("dad",look.col);if(!mesh.isRig)mesh.g.scale.setScalar(look.h);mesh.g.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});WG.scene.add(mesh.g);
   const kin=(hx,hy,hz)=>{const b=new CANNON.Body({mass:0,type:CANNON.Body.KINEMATIC,allowSleep:false,material:WG.pm.ground});b.addShape(new CANNON.Box(new CANNON.Vec3(hx,hy,hz)));b.position.set(0,-500,0);b.isBig=1;b.collisionFilterGroup=8;WG.world.addBody(b);return b};
-  const B={mesh,h:look.h,pos:new T.Vector3(WG.door.x,0,-90),yaw:0,path:[],st:"walk",t:0,ph:0,spd:0,sit:0,bend:0,reach:0,bodies:{fl:kin(5.5,4.5,13),fr:kin(5.5,4.5,13),sl:kin(5.5,20,5.5),sr:kin(5.5,20,5.5),lap:kin(24,14,26)}};
+  const B={mesh,h:look.h,lookI,uid:m?m.uid:Date.now()+Math.random(),mirror:m?1:0,pos:new T.Vector3(m?m.x:WG.door.x,0,m?m.z:-90),yaw:m?m.yaw||0:0,path:[],st:"walk",t:0,ph:0,spd:0,sit:0,bend:0,reach:0,bodies:{fl:kin(5.5,4.5,13),fr:kin(5.5,4.5,13),sl:kin(5.5,20,5.5),sr:kin(5.5,20,5.5),lap:kin(24,14,26)}};
+  if(m){B.act=m.act;if(B.act==="hoover")wgHooverMake(B);WG.big=B;WG.eye=0;wgMsg(B.act==="hoover"?"😱 Here comes the HOOVER! Get off the floor!":"👣 Footsteps! Someone's coming - hide!",2.6);wgSfx("thud");return B}
   /* they only hoover if YOU'VE made a mess since they last tidied */const spots=wgMessSpots(),made=wgMess()-(WG.messBase||0);B.act=made>=6&&spots.length?"hoover":wgPick(["tv","toast","tv","window","toast"]);
   const into=[[WG.door.x,40]],toLiving=[[575,200],[505,205],[430,240]];
   if(B.act==="tv")B.path=[...into,...toLiving,[226,300]];else if(B.act==="toast")B.path=[...into,[598,322]];else if(B.act==="window")B.path=[...into,...toLiving,[250,60]];
@@ -13380,7 +13389,7 @@ function wgBigGone(){const B=WG.big;if(!B)return;/* whatever's left on the floor
 /* ---------------- each frame ---------------- */
 function wgBigStep(dt){const T=THREE;wgGlassStep(dt);let B=WG.big;
   if(!B){WG.bigT-=dt;if(WG.bigT<0&&!(WG.P.stuck))B=wgBigSpawn();else return}
-  const P=WG.P,pp=P.b.position;B.t+=dt;
+  const chasing=B.st==="spot"||B.st==="card"||B.st==="back",P=chasing&&B.tgt&&(B.tgt===WG.P||B.tgt===WGL.q)?B.tgt:WG.P,pp=P===WG.P?P.b.position:P.vp;B.t+=dt;
   /* walking along the path */const walkTo=(spd)=>{const tg=B.path[0];if(!tg)return true;const dx=tg.x-B.pos.x,dz=tg.z-B.pos.z,L=Math.hypot(dx,dz);if(L<6){B.path.shift();return!B.path.length}const want=Math.atan2(dx,dz);let d=want-B.yaw;d=Math.atan2(Math.sin(d),Math.cos(d));B.yaw+=Math.max(-2.6*dt,Math.min(2.6*dt,d));const go=Math.abs(d)<1.2?spd:spd*.3;B.pos.x+=Math.sin(B.yaw)*go*dt;B.pos.z+=Math.cos(B.yaw)*go*dt;B.spd=go;return false};
   B.spd=0;
   if(B.st==="walk"){const spd=B.act==="hoover"?42:95;if(walkTo(spd)){B.st=B.act==="hoover"?"leave":B.act;B.t=0;if(B.act==="tv"){B.yaw=Math.PI}if(B.act==="toast"){B.yaw=0;WG.toaster.st=WG.toaster.st==="idle"||WG.toaster.st==="in"?"giant":WG.toaster.st;WG.toaster.t=0;B.toastT=0}if(B.act==="window")B.yaw=Math.PI}}
@@ -13390,18 +13399,18 @@ function wgBigStep(dt){const T=THREE;wgGlassStep(dt);let B=WG.big;
   else if(B.st==="leave"){if(B.sit>0&&B.act==="tv")B.pos.z+=(298-B.pos.z)*Math.min(1,dt*2.4);B.sit=Math.max(0,B.sit-dt*1.2);if(WG.tv)WG.tv.on=0;if(B.sit<=0){if(!B.out){B.out=1;const here=[B.pos.x,B.pos.z];B.path=(B.pos.x<500?[[430,240],[505,205],[575,200]]:[]).concat([[WG.door.x,30],[WG.door.x,-110]]).map(([x,z])=>new T.Vector3(x,0,z))}if(walkTo(95)){wgBigGone();return}}}
   else if(B.st==="spot"){/* "What's THAT?!" - walk over, bend down with a glass */const dx=pp.x-B.pos.x,dz=pp.z-B.pos.z,L=Math.hypot(dx,dz);B.yaw+=(Math.atan2(dx,dz)-B.yaw)*Math.min(1,dt*3);
     if(L>62&&B.t<6){const go=Math.min(110,(L-60)*3),fx=Math.sin(B.yaw),fz=Math.cos(B.yaw),rr=new CANNON.RaycastResult();WG.world.raycastClosest(new CANNON.Vec3(B.pos.x,30,B.pos.z),new CANNON.Vec3(B.pos.x+fx*45,30,B.pos.z+fz*45),{collisionFilterMask:1,skipBackfaces:true},rr);if(!rr.hasHit){B.pos.x+=fx*go*dt;B.pos.z+=fz*go*dt;B.spd=go}}
-    else{B.bend=Math.min(1,B.bend+dt*1.4);if(B.bend>=1){if(L<120&&wgOpenAbove(pp)&&!wgInWall(pp)&&wgBigLOS(B)&&!P.stuck&&pp.y<110){wgGlassDrop(pp.x,pp.y-P.r,pp.z);B.st="card";B.t=0;wgMsg("😨 A GLASS! You're trapped!<br>Push against it, side to side, to rock it over!",3.5)}else{B.st="search";B.t=0;wgMsg("“Where did it go…?”",1.6)}}}}
+    else{B.bend=Math.min(1,B.bend+dt*1.4);if(B.bend>=1){if(L<120&&wgOpenAbove(pp)&&!wgInWall(pp)&&wgBigLOS(B,P)&&!P.stuck&&pp.y<110){if(P===WG.P){wgGlassDrop(pp.x,pp.y-P.r,pp.z);wgMsg("😨 A GLASS! You're trapped!<br>Push against it, side to side, to rock it over!",3.5)}else{/* over the other wee guy: they get trapped on their phone */wgGlassDrop(pp.x,pp.y-P.r,pp.z,1);wgLiveEv({e:"glass",x:pp.x,y:pp.y-P.r,z:pp.z});wgMsg(`😨 They've trapped ${wgThemNm()} under a glass! Help them rock it over…`,3)}B.st="card";B.t=0}else{B.st="search";B.t=0;wgMsg("“Where did it go…?”",1.6)}}}}
   else if(B.st==="search"){B.bend=Math.max(0,B.bend-dt);B.yaw+=Math.sin(B.t*1.3)*dt*1.2;if(B.t>5){B.st="leave";B.t=0;WG.eye=.4}}
   else if(B.st==="card"){/* gone for a bit of card to slide under the glass */B.bend=Math.max(0,B.bend-dt);if(!B.out2){B.out2=1;B.path=[[WG.door.x,30],[WG.door.x,-110]].map(([x,z])=>new T.Vector3(x,0,z))}if(B.path.length)walkTo(110);else if(B.t>22){B.st="back";B.path=[[WG.door.x,30],[WG.glass?WG.glass.x:pp.x,WG.glass?WG.glass.z-60:pp.z-60]].map(([x,z])=>new T.Vector3(x,0,z))}}
   else if(B.st==="back"){if(walkTo(100)||!WG.glass){if(WG.glass){wgGlassCaught()}else{wgMsg("“Huh?! It's escaped!”",1.6)}B.st="search";B.t=0}}
   /* hoovering: the head sweeps in front, sucking up everything small - including you */
   if(B.hoov)wgHooverStep(B,dt);
-  /* being seen */if(B.st!=="spot"&&B.st!=="card"&&B.st!=="back"&&!P.stuck){const s=wgBigSees(B);if(s>0){const mv=P.spd>2?(P.sprinting?1.7:1):.3;WG.eye+=s*mv*dt*(B.st==="tv"?.55:1)*(P.kid?.7:1)*1.15}else WG.eye-=dt*.22;WG.eye=Math.max(0,Math.min(1,WG.eye));
-    if(WG.eye>=1){B.st="spot";B.t=0;B.sit=0;wgSfx("gasp");wgMsg("❗ “What's THAT?!” - they've seen you! RUN and HIDE!",2.2)}}
+  /* being seen: each of you has your own meter */if(B.st!=="spot"&&B.st!=="card"&&B.st!=="back")for(const T of wgPlayers()){if(T.stuck)continue;const s=wgBigSees(B,T);let e=T===WG.P?WG.eye:WGL.eye2;if(s>0){const mv=T.spd>2?(T.sprinting?1.7:1):.3;e+=s*mv*dt*(B.st==="tv"?.55:1)*(T.kid?.7:1)*1.15}else e-=dt*.22;e=Math.max(0,Math.min(1,e));if(T===WG.P)WG.eye=e;else WGL.eye2=e;
+    if(e>=1&&B.st!=="spot"){B.st="spot";B.t=0;B.sit=0;B.tgt=T;wgSfx("gasp");wgMsgTo(T,"❗ “What's THAT?!” - they've seen you! RUN and HIDE!",2.2);if(T!==WG.P)wgMsg(`❗ They've spotted ${wgThemNm()}!`,2)}}
   const ey=$("#wgeye");if(ey){ey.style.display="";ey.firstChild.style.width=(WG.eye*100)+"%";ey.classList.toggle("hot",WG.eye>.6)}
   wgBigAnim(B,dt)}
 /* can they see you? 0 = no, else how clearly */
-function wgBigSees(B){const P=WG.P,p=P.b.position,T=THREE,head=new T.Vector3();B.mesh.head.getWorldPosition(head);const tgt=new T.Vector3(p.x,p.y-P.r+P.h*.5,p.z),d=tgt.clone().sub(head),L=d.length();if(L>750)return 0;d.multiplyScalar(1/L);
+function wgBigSees(B,P){P=P||WG.P;const p=P===WG.P?P.b.position:P.vp,T=THREE,head=new T.Vector3();B.mesh.head.getWorldPosition(head);const tgt=new T.Vector3(p.x,p.y-P.r+P.h*.5,p.z),d=tgt.clone().sub(head),L=d.length();if(L>750)return 0;d.multiplyScalar(1/L);
   const f=new T.Vector3(Math.sin(B.yaw),-.45-B.bend*.6,Math.cos(B.yaw)).normalize();if(f.dot(d)<.38)return 0;
   const r=new CANNON.RaycastResult();WG.world.raycastClosest(new CANNON.Vec3(head.x+d.x*8,head.y+d.y*8,head.z+d.z*8),new CANNON.Vec3(tgt.x,tgt.y,tgt.z),{collisionFilterMask:1,skipBackfaces:false},r);if(r.hasHit&&r.distance<L-12)return 0;
   if(wgInWall(p))return 0;let k=Math.max(.25,Math.min(1.8,260/(L+40)));if(wgOnRug(p))k*=.75;if(P.sh!=null&&P.sh<.3)k*=.5;return k}
@@ -13421,34 +13430,35 @@ function wgBigAnim(B,dt){const M=B.mesh,T=THREE,s=B.spd;M.g.position.set(B.pos.x
   for(const[leg,fb,sb]of[[M.L,B.bodies.fl,B.bodies.sl],[M.R,B.bodies.fr,B.bodies.sr]]){leg.shoe.getWorldPosition(v);leg.knee.getWorldPosition(kn);put(fb,v.x,Math.max(4.5,v.y),v.z,B.yaw);put(sb,(v.x+kn.x)/2,Math.max(24,(v.y+kn.y)/2),(v.z+kn.z)/2,B.yaw)}
   if(B.sit>.8)put(B.bodies.lap,B.pos.x,56,B.pos.z+6,B.yaw);else put(B.bodies.lap,0,-500,0,0);
   if(WG.tv&&WG.tv.on){const c=new T.Color().setHSL((WG.t*.13)%1,.5,.25+Math.sin(WG.t*5)*.06+Math.sin(WG.t*13)*.04);WG.tv.sc.material.color.copy(c)}}
-function wgHooverStep(B,dt){const H=B.hoov,f=new THREE.Vector3(Math.sin(B.yaw),0,Math.cos(B.yaw)),hx=B.pos.x+f.x*62,hz=B.pos.z+f.z*62;H.g.position.set(hx,0,hz);H.g.rotation.y=B.yaw;const b=H.b;b.velocity.set((hx-b.position.x)/Math.max(dt,.008),0,(hz-b.position.z)/Math.max(dt,.008));if(b.position.y<-100)b.position.set(hx,3.6,hz);b.quaternion.setFromEuler(0,B.yaw,0);
+function wgHooverStep(B,dt,mirror){const H=B.hoov,f=new THREE.Vector3(Math.sin(B.yaw),0,Math.cos(B.yaw)),hx=B.pos.x+f.x*62,hz=B.pos.z+f.z*62;H.g.position.set(hx,0,hz);H.g.rotation.y=B.yaw;const b=H.b;b.velocity.set((hx-b.position.x)/Math.max(dt,.008),0,(hz-b.position.z)/Math.max(dt,.008));if(b.position.y<-100)b.position.set(hx,3.6,hz);b.quaternion.setFromEuler(0,B.yaw,0);
   WG.hoovD=WG.P.b.position.distanceTo(new CANNON.Vec3(hx,4,hz));
   const inZone=(x,y,z,m)=>{const dx=x-hx,dz=z-hz,lx=dx*Math.cos(B.yaw)-dz*Math.sin(B.yaw),lz=dx*Math.sin(B.yaw)+dz*Math.cos(B.yaw);return y<9&&Math.abs(lx)<16+m&&lz>-12-m&&lz<16+m};
-  for(const o of WG.dyn){if(o.gone)continue;const q=o.b.position;if(o.b.mass<=45&&inZone(q.x,q.y,q.z,1)){wgSuck(o)}}
+  if(!mirror)for(const o of WG.dyn){if(o.gone)continue;const q=o.b.position;if(o.b.mass<=45&&inZone(q.x,q.y,q.z,1)){wgSuck(o)}}
   const P=WG.P,p=P.b.position;if(!P.stuck&&inZone(p.x,p.y-P.r,p.z,1.5)){wgSucked()}}
 function wgSucked(){const P=WG.P;P.stuck="bag";P.mesh.g.visible=false;P.rope=null;P.climb=0;if(P.carry){wgSuck(P.carry);P.carry=null}wgMsg("🌪️ SUCKED UP BY THE HOOVER!!",2.5);wgSfx("thud");
   setTimeout(()=>{if(!WG||!WG.P)return;wgMsg("You crawled out of the dust bag, covered in fluff… back home to clean up.",3);wgHome();P.stuck=0;P.mesh.g.visible=true},3200)}
 /* ---------------- the glass ---------------- */
-function wgGlassDrop(x,y,z){const T=THREE,g=new T.Group(),gm=new T.MeshStandardMaterial({color:0xe8f4ff,roughness:.02,metalness:.1,transparent:true,opacity:.28,side:T.DoubleSide,depthWrite:false});
+function wgGlassDrop(x,y,z,remote){const T=THREE,g=new T.Group(),gm=new T.MeshStandardMaterial({color:0xe8f4ff,roughness:.02,metalness:.1,transparent:true,opacity:.28,side:T.DoubleSide,depthWrite:false});
   const wall=new T.Mesh(new T.CylinderGeometry(4.6,4.2,12,32,1,true),gm);wall.position.y=6;g.add(wall);const base=new T.Mesh(new T.CylinderGeometry(4.65,4.65,1.2,32),new T.MeshStandardMaterial({color:0xe8f4ff,roughness:.05,transparent:true,opacity:.45}));base.position.y=12;g.add(base);
   const rim=new T.Mesh(new T.TorusGeometry(4.2,.18,6,32),gm);rim.rotation.x=Math.PI/2;g.add(rim);g.position.set(x,y+40,z);WG.scene.add(g);
   const bodies=[];for(let i=0;i<14;i++){const a=i/14*Math.PI*2,b=new CANNON.Body({mass:0,material:WG.pm.ground});b.addShape(new CANNON.Box(new CANNON.Vec3(1.1,7,.25)));b.position.set(x+Math.cos(a)*4.5,y+7,z+Math.sin(a)*4.5);b.quaternion.setFromEuler(0,-a+Math.PI/2,0);WG.world.addBody(b);bodies.push(b)}
   const lid=new CANNON.Body({mass:0,material:WG.pm.ground});lid.addShape(new CANNON.Box(new CANNON.Vec3(4.6,.6,4.6)));lid.position.set(x,y+12.6,z);WG.world.addBody(lid);bodies.push(lid);
+  if(remote){WG.glass={g,bodies,x,y,z,rock:0,drop:1,last:null,fall:0,ax:null,remote:1};return}
   const P=WG.P;P.stuck="glass";P.rope=null;P.climb=0;if(P.carry){P.carry.b.collisionResponse=true;P.carry=null}P.b.position.set(x,y+P.r+.1,z);P.b.velocity.set(0,0,0);
   WG.glass={g,bodies,x,y,z,rock:0,drop:1,last:null,fall:0,ax:null};wgSfx("clink")}
 function wgGlassStep(dt){const G=WG.glass;if(!G)return;if(G.drop>0){G.drop=Math.max(0,G.drop-dt*2.5);G.g.position.y=G.y+G.drop*40;if(G.drop===0)wgSfx("clink")}
   if(G.fall>0){/* tipping over */G.fall+=dt*2;const k=Math.min(1,G.fall);G.g.rotation.set(G.ax.z*k*1.45,0,-G.ax.x*k*1.45);G.g.position.set(G.x+G.ax.x*k*5,G.y+k*4,G.z+G.ax.z*k*5);if(G.fall>4){WG.scene.remove(G.g);WG.glass=null}return}
-  const P=WG.P,I=WG.in,m=Math.hypot(I.mx,I.my);if(P.stuck!=="glass")return;
+  if(G.remote)return;const P=WG.P,I=WG.in,m=Math.hypot(I.mx,I.my);if(P.stuck!=="glass")return;
   if(m>.55){const cy=WG.cam.yaw,dx=I.mx*Math.cos(cy)-I.my*Math.sin(cy),dz=-I.mx*Math.sin(cy)-I.my*Math.cos(cy),L=Math.hypot(dx,dz)||1,d={x:dx/L,z:dz/L};if(G.last&&d.x*G.last.x+d.z*G.last.z<-.3){G.rock+=P.kid?.085:.065;wgSfx("clink")}G.rock+=dt*.03;G.last=d;G.ax=d}
   const wob=Math.sin(WG.t*12)*G.rock*.12;G.g.rotation.set(G.ax?G.ax.z*wob:0,0,G.ax?-G.ax.x*wob:0);
-  if(G.rock>=1&&G.ax){G.fall=.01;for(const b of G.bodies)WG.world.removeBody(b);P.stuck=0;P.b.velocity.set(G.ax.x*60,40,G.ax.z*60);wgMsg("💥 You tipped the glass over! RUN!",2);wgSfx("thud")}}
-function wgGlassCaught(){const G=WG.glass;if(!G)return;wgMsg("They slid a card under the glass and carried you out to the garden…<br>You sneak back home through the gap under the door.",4);
+  if(G.rock>=1&&G.ax){G.fall=.01;wgLiveEv({e:"glassfall",ax:[G.ax.x,G.ax.z]});for(const b of G.bodies)WG.world.removeBody(b);P.stuck=0;P.b.velocity.set(G.ax.x*60,40,G.ax.z*60);wgMsg("💥 You tipped the glass over! RUN!",2);wgSfx("thud")}}
+function wgGlassCaught(){const G=WG.glass;if(!G)return;if(G.remote){/* it was the other wee guy under it */wgLiveEv({e:"caught"});for(const b of G.bodies)WG.world.removeBody(b);WG.scene.remove(G.g);WG.glass=null;wgMsg(`They carried ${wgThemNm()} out to the garden under the glass… they'll sneak back in`,3);return}wgMsg("They slid a card under the glass and carried you out to the garden…<br>You sneak back home through the gap under the door.",4);
   for(const b of G.bodies)WG.world.removeBody(b);WG.scene.remove(G.g);WG.glass=null;const P=WG.P;P.stuck=0;setTimeout(()=>{if(WG&&WG.P)wgHome()},400)}
 /* nothing over your head (not under a table or the sofa)? then a hand can reach you */
 function wgOpenAbove(p){const r=new CANNON.RaycastResult();WG.world.raycastClosest(new CANNON.Vec3(p.x,p.y+90,p.z),new CANNON.Vec3(p.x,p.y+WG.P.h,p.z),{collisionFilterMask:1,skipBackfaces:false},r);return!r.hasHit}
 
 /* a clear line from their eyes to you - no trapping you under furniture or through a wall */
-function wgBigLOS(B){const P=WG.P,p=P.b.position,h=new THREE.Vector3();B.mesh.head.getWorldPosition(h);const t=new THREE.Vector3(p.x,p.y-P.r+P.h*.5,p.z),d=t.clone().sub(h),L=d.length();d.multiplyScalar(1/L);const r=new CANNON.RaycastResult();WG.world.raycastClosest(new CANNON.Vec3(h.x+d.x*8,h.y+d.y*8,h.z+d.z*8),new CANNON.Vec3(t.x,t.y,t.z),{collisionFilterMask:1,skipBackfaces:false},r);return!(r.hasHit&&r.distance<L-12)}
+function wgBigLOS(B,P){P=P||WG.P;const p=P===WG.P?P.b.position:P.vp,h=new THREE.Vector3();B.mesh.head.getWorldPosition(h);const t=new THREE.Vector3(p.x,p.y-P.r+P.h*.5,p.z),d=t.clone().sub(h),L=d.length();d.multiplyScalar(1/L);const r=new CANNON.RaycastResult();WG.world.raycastClosest(new CANNON.Vec3(h.x+d.x*8,h.y+d.y*8,h.z+d.z*8),new CANNON.Vec3(t.x,t.y,t.z),{collisionFilterMask:1,skipBackfaces:false},r);return!(r.hasHit&&r.distance<L-12)}
 
 /* ---------- THE WEE GUYS: the cat gets up - prowls, spots you, stalks, chases, pounces, bats you about ----------
    Under the sofa she can only reach in with a paw. Up high she can only watch. Stand on her back and you ride her. */
@@ -13499,15 +13509,222 @@ function wgCatUpAnim(U,dt){const T=THREE,g=U.g;g.position.set(U.pos.x,U.jump-U.c
   /* the solid parts follow her */g.updateMatrixWorld(true);const v=new T.Vector3(),put=(b,o,x,y,z)=>{v.set(x,y,z);o.localToWorld(v);b.velocity.set((v.x-b.position.x)/Math.max(dt,.008),(v.y-b.position.y)/Math.max(dt,.008),(v.z-b.position.z)/Math.max(dt,.008));if(b.position.y<-100||Math.abs(v.x-b.position.x)>60)b.position.set(v.x,v.y,v.z);b.quaternion.setFromEuler(0,U.yaw,0)};
   const B=U.bodies;put(B.b0,U.torso,0,0,11);put(B.b1,U.torso,0,0,0);put(B.b2,U.torso,0,0,-11);put(B.hd,U.head,0,0,0);U.legs.forEach((L,i)=>put(B["l"+i],L.kn,0,-2,0));const fl=U.legs[0];put(B.paw,fl.kn,0,-9.5,1)}
 
+/* ================= THE WEE GUYS, TOGETHER: both phones in the same house =================
+   Starts from the app's challenge pop-up (🤝 TEAM UP). games/wgl holds the session: its id, when it started, who left.
+   Each phone moves its own wee guy and sends about 20 times a second, straight to the other phone (a WebRTC link set up
+   through games/wgsig_X|O; if that can't be made, through Firebase games/wgp_X|O a couple of times a second):
+   where you are and what you're doing, the things you've moved, and what happened (found the hook, collected a match…).
+   Dad's phone runs the big people, the cat and the robot hoover and sends where they are, so you both see the same ones
+   and they can come after either of you. Bugs are each phone's own. */
+const WGL={on:0,lid:null,host:0,q:null,sid:Math.random().toString(36).slice(2,9),k:0,ev:[],seq:0,inSeq:0,inSid:null,inK:-1,lastIn:0,hostIn:0,netT:0,eye2:0,met:0,np:null,npT:0,swap:null,doc:null,wasGuest:0};
+const wgThem=()=>me()==="X"?"O":"X";
+const wgThemNm=()=>{try{return ON0()}catch(e){return me()==="X"?"Cass":"Dad"}};
+const wgPlayers=()=>WGL.q&&WGL.q.live?[WG.P,WGL.q]:[WG.P];
+/* Cass's phone shows what Dad's phone runs (while Dad's phone is there) */
+const wgGuest=()=>WGL.on&&!WGL.host&&performance.now()-WGL.hostIn<5000;
+const wgDoneIds=()=>{try{return JSON.parse(localStorage.getItem("wgl_done")||"[]")}catch(e){return[]}};
+const wgDocFresh=L=>!!(L&&L.id&&!L.qX&&!L.qO&&Date.now()-(L.at||0)<3*3600e3&&!wgDoneIds().includes(L.id));
+const _r1=x=>Math.round(x*10)/10,_r2=x=>Math.round(x*100)/100,_r3=x=>Math.round(x*1000)/1000;
+
+/* ---------- the session ---------- */
+function wgListen(){if(typeof GNAME!=="undefined")GNAME.wee="THE WEE GUYS";
+  db.doc("games/wgl").onSnapshot(s=>{WGL.doc=s.exists?s.data():null;wgOnLiveDoc()},er);
+  for(const k of["X","O"]){db.doc("games/wgp_"+k).onSnapshot(s=>{if(k!==me()&&s.exists)wgOnPkt(s.data())},er);db.doc("games/wgsig_"+k).onSnapshot(s=>{if(k!==me()&&s.exists)wgP2PSig(s.data())},er)}}
+function wgLiveNew(c){return db.doc("games/wgl").set({id:c&&c.id||Date.now(),at:Date.now(),qX:0,qO:0})}
+function wgLiveAsk(){if(typeof chSend!=="function"||typeof db==="undefined"||!db){wgMsg("Can't reach "+wgThemNm()+"'s phone right now",2);return}$("#wglistp")&&$("#wglistp").classList.remove("on");chSend("wee",{mode:"team"})}
+function wgOnLiveDoc(){const L=WGL.doc;if(typeof WG==="undefined"||!WG||WG.dead||!WG.P||typeof g==="undefined"||g!=="wee")return;
+  if(WGL.on){if(L&&L.id===WGL.lid){if(L["q"+wgThem()])wgCoopOff(`👋 ${wgThemNm()} has gone - you're on your own now`)}else if(wgDocFresh(L))wgCoopOn(L.id);else wgCoopOff();return}
+  if(wgDocFresh(L))wgCoopOn(L.id)}
+function wgCoopOn(lid){if(WGL.on&&WGL.lid===lid)return;if(WGL.on)wgCoopOff();Object.assign(WGL,{on:1,lid,host:me()==="X",k:0,ev:[],seq:0,inSeq:0,inSid:null,inK:-1,lastIn:0,hostIn:0,eye2:0,met:0,np:null});
+  for(const o of WG.dyn)o.sentSl=0;wgMsg(`👥 <b>Playing together!</b> ${wgThemNm()} is in the house too - follow the green arrow to find each other`,4);wgListHud();wgCoopHud()}
+function wgCoopOff(msg){if(!WGL.on)return;const lid=WGL.lid;WGL.on=0;wgP2PStop();wgPuppetGone();if(WG&&WG.big&&WG.big.mirror)wgBigGone();
+  try{const d=wgDoneIds();d.push(lid);localStorage.setItem("wgl_done",JSON.stringify(d.slice(-20)))}catch(e){}
+  if(msg&&WG&&!WG.dead)wgMsg(msg,3);if(WG&&!WG.dead){wgListHud();wgCoopHud()}}
+function wgLiveLeave(quiet){if(!WGL.on)return;try{db.doc("games/wgl").update({["q"+me()]:1}).catch(er)}catch(e){}wgCoopOff(quiet?null:"You're playing on your own now")}
+
+/* ---------- each frame ---------- */
+function wgLiveStep(dt){if(!WGL.on)return;wgP2PTick(WGL.lid);
+  /* lost touch with Dad's phone: run your own house until it comes back */const gs=wgGuest();if(WGL.wasGuest&&!gs&&WG.big&&WG.big.mirror)wgBigGone();WGL.wasGuest=gs;
+  wgPuppetStep(dt);wgLiveSend();wgCoopHud()}
+function wgLiveSend(){const now=performance.now(),dir=WGP2P.open&&WGP2P.lid===WGL.lid,gap=dir?50:420;if(now-WGL.netT<gap)return;WGL.netT=now;const pk=wgPack(dir);
+  if(dir&&wgP2PSend(pk))return;try{if(typeof db!=="undefined"&&db)db.doc("games/wgp_"+me()).set(pk).catch(er)}catch(e){console.error("wg send",e)}}
+function wgWearSig(Wr){Wr=Wr||WG.wear||{on:{}};return[Wr.top,Wr.bot,Wr.shirt||"",Object.keys(Wr.on||{}).filter(k=>Wr.on[k]).join("+")].join(",")}
+function wgPack(dir){const P=WG.P,b=P.b,p=b.position,v=b.velocity;
+  const pk={id:WGL.lid,sid:WGL.sid,k:++WGL.k,h:WGL.host?1:0,a:WGL.inSeq,p:[_r1(p.x),_r2(p.y),_r1(p.z)],v:[_r1(v.x),_r1(v.y),_r1(v.z)],y:_r2(P.yaw),
+    f:(P.gT<.1?1:0)|(P.climb?2:0)|(P.pole?4:0)|(P.sprinting?8:0)|(P.block?16:0)|(P.guardT>0?32:0)|(P.mesh.g.visible?64:0)|(P.land>.05?128:0)|(P.throwT>0?256:0)|(P.atk>0?512:0),
+    st:P.stuck||0,ra:P.rope?[_r1(P.rope.a.x),_r1(P.rope.a.y),_r1(P.rope.a.z)]:0,c:P.carry?P.carry.id:0,fx:P.fx?[P.fx.k,_r2(P.fx.t)]:0,hp:P.hp,sh:_r2(P.sh==null?1:P.sh),spd:_r1(P.spd||0),
+    kit:Object.keys(WG.kit||{}).filter(k=>WG.kit[k]).join(),wr:wgWearSig(),ev:WGL.ev,it:wgItemStates(dir?14:6)};
+  if(WGL.host)pk.n=wgNpcPack();return pk}
+/* something happened that the other phone needs to know about: it's resent until they say they've got it */
+function wgLiveEv(e){if(!WGL.on)return;e.s=++WGL.seq;WGL.ev.push(e);if(WGL.ev.length>80)WGL.ev.shift()}
+
+/* ---------- a packet from the other phone ---------- */
+function wgOnPkt(d){if(!WGL.on||!d||d.id!==WGL.lid||typeof WG==="undefined"||!WG||WG.dead||!WG.P||!WG.ready)return;
+  if(d.sid!==WGL.inSid){/* they (re)joined */WGL.inSid=d.sid;WGL.inSeq=0;WGL.inK=-1;WGL.met=0}
+  const now=performance.now();WGL.lastIn=now;if(d.h)WGL.hostIn=now;
+  WGL.ev=WGL.ev.filter(e=>e.s>(d.a||0));
+  for(const e of d.ev||[])if(e.s>WGL.inSeq){WGL.inSeq=e.s;try{wgOnEv(e)}catch(x){console.error("wg ev",e.e,x)}}
+  if(!WGL.met){WGL.met=1;wgHello();if(WGL.q)WGL.q.said=0}
+  if(d.k<=WGL.inK)return;/* an older one arriving late (direct and Firebase can cross) */WGL.inK=d.k;
+  if(!WGL.q)wgPuppetMake();const Q=WGL.q;Q.net=d;Q.rt=now;
+  if(d.kit!==Q.kitS){Q.kitS=d.kit;Q.kit={};for(const k of(d.kit||"").split(","))if(k)Q.kit[k]=1;wgPuppetEquip()}
+  if(d.wr!==Q.wrS){Q.wrS=d.wr;const[t,b,s,on]=(d.wr||"").split(",");Object.assign(Q.wear,{top:t||Q.wear.top,bot:b||Q.wear.bot,shirt:s||Q.wear.shirt,on:{}});for(const k of(on||"").split("+"))if(k)Q.wear.on[k]=1;try{wgOutfitApply(Q.mesh)}catch(x){console.error(x)}}
+  for(const s of d.it||[])wgItemIn(s);
+  if(d.n&&!WGL.host){WGL.np=d.n;WGL.npT=now}}
+function wgOnEv(e){const nm=wgThemNm(),P=WG.P;
+  if(e.e==="hello")return wgHelloIn(e);
+  if(e.e==="found"){const K=WG.keys.find(x=>x.k===e.k&&!x.got);if(K){K.got=1;WG.scene.remove(K.m);WG.scene.remove(K.gl)}if(WG.kit[e.k]&&!WG_WEAR[e.k])return;WG.kit[e.k]=1;wgFound(e.k);const m=$("#wgmsg");if(m)m.innerHTML=`👥 <b>${nm} found it - one for you too!</b><br>`+m.innerHTML;return}
+  if(e.e==="gone")return wgItemGone(e.id);
+  if(e.e==="back")return wgItemBack(e.id,e.p);
+  if(e.e==="spawn"){let o=wgItemById(e.id);if(!o)o=wgThing(e.k,e.p[0],e.p[1],e.p[2],{id:e.id,net:1,color:e.c,ry:0});o.b.position.set(e.p[0],e.p[1],e.p[2]);o.b.previousPosition.copy(o.b.position);if(e.v)o.b.velocity.set(e.v[0],e.v[1],e.v[2]);o.own=wgThem();o.ownT=WG.t;return}
+  if(e.e==="mis")return wgMisDone(e.k,1);
+  if(e.e==="base"){WG.base=e.b;WG.bed=null;wgBaseMarker();wgMisDone("base",1);wgListHud();wgMsg(`🏠 <b>${nm} made your base here</b> - home for you both now`,3);return}
+  if(e.e==="msg")return wgMsg(e.h,e.d);
+  if(e.e==="knock"){/* the cat batted you about on the other phone */P.climb=0;P.rope=null;if(P.carry){P.carry.b.collisionResponse=true;P.carry=null}P.b.velocity.set(e.v[0],e.v[1],e.v[2]);return}
+  if(e.e==="glass"){if(!WG.glass&&!P.stuck){wgGlassDrop(e.x,e.y,e.z);wgMsg("😨 A GLASS! You're trapped!<br>Push against it, side to side, to rock it over!",3.5)}return}
+  if(e.e==="glassfall"){const G=WG.glass;if(G&&G.remote&&!G.fall){G.ax={x:e.ax[0],z:e.ax[1]};G.fall=.01;for(const b of G.bodies)WG.world.removeBody(b)}return}
+  if(e.e==="caught"){if(WG.glass&&!WG.glass.remote)wgGlassCaught();return}}
+/* first contact: tell them what you've found, done and moved; Dad's phone's house is the one you both play in */
+function wgHello(){const it=[];for(const o of WG.dyn){if(o.gone)continue;if(!WGL.host&&/^i/.test(o.id))continue;const b=o.b,p=b.position,q=b.quaternion;const c=o.m.material&&o.m.material.color?o.m.material.color.getHex():null;it.push([o.id,o.k,_r2(p.x),_r2(p.y),_r2(p.z),_r3(q.x),_r3(q.y),_r3(q.z),_r3(q.w),c]);o.sentSl=1}
+  wgLiveEv({e:"hello",keys:WG.keys.filter(K=>K.got).map(K=>K.k),mis:Object.keys(WG.mis||{}).filter(k=>WG.mis[k]),base:WG.base||null,gone:WG.dyn.filter(o=>o.gone&&!o.bagged).map(o=>o.id),bag:WG.dyn.filter(o=>o.bagged).map(o=>o.id),it})}
+function wgHelloIn(e){const got=[];
+  for(const k of e.keys||[]){const K=WG.keys.find(x=>x.k===k&&!x.got);if(!K)continue;K.got=1;WG.scene.remove(K.m);WG.scene.remove(K.gl);WG.kit[k]=1;if(WG_WEAR[k]){const Wr=WG.wear;Wr.have[k]=1}else if((k==="string"||k==="hook")&&WG.kit.string&&WG.kit.hook)WG.kit.grapple=1;else if(k==="needle")WG.kit.sword=1;else if(k==="cap")WG.kit.shield=1;got.push((WG_KIT[k]||WG_WEAR[k]||{nm:k}).nm)}
+  if(WG.kit.sword||WG.kit.shield)wgEquip();wgKitHud();try{wgOutfitApply(WG.P.mesh)}catch(x){}
+  for(const k of e.mis||[])wgMisDone(k,1);
+  if(e.base&&!WG.base){WG.base=e.base;WG.bed=null;wgBaseMarker()}
+  for(const id of(e.gone||[]).concat(e.bag||[])){const o=wgItemById(id);if(o&&!o.bagged)wgItemGone(id)}
+  for(const s of e.it||[]){const[id,k,x,y,z,qx,qy,qz,qw,c]=s;let o=wgItemById(id);if(!o){o=wgThing(k,x,y,z,{id,net:1,color:c,ry:0})}else if(WGL.host&&/^i/.test(id))continue;/* Dad's house wins */if(o.gone||o.bagged)continue;
+    const b=o.b;b.position.set(x,y,z);b.previousPosition.copy(b.position);b.quaternion.set(qx,qy,qz,qw);b.velocity.set(0,0,0);b.angularVelocity.set(0,0,0);o.fresh=1;b.wakeUp()}
+  wgListHud();if(got.length)wgMsg(`👥 ${wgThemNm()} shared: ${got.join(", ")}`,3)}
+
+/* ---------- things in the house: whoever touched it last says where it is ---------- */
+function wgItemById(id){return WG.byId&&WG.byId.get(id)}
+function wgTouch(o){if(!o)return;o.own=me();o.ownT=WG.t;o.sentSl=0}
+function wgItemStates(max){const out=[],th=wgThem(),me_=me();if(!WG.dyn)return out;
+  for(const o of WG.dyn){if(o.gone||o===WG.P.carry)continue;const b=o.b,mine=o.own===me_,dflt=WGL.host&&o.own!==th;if(!mine&&!dflt)continue;
+    const sl=b.sleepState===2;if(sl){if(o.sentSl){if(mine)o.own=null;continue}o.sentSl=1}else o.sentSl=0;
+    const p=b.position,q=b.quaternion,v=b.velocity;out.push([o.id,_r2(p.x),_r2(p.y),_r2(p.z),_r3(q.x),_r3(q.y),_r3(q.z),_r3(q.w),_r1(v.x),_r1(v.y),_r1(v.z),sl?1:0]);if(out.length>=max)break}
+  return out}
+function wgItemIn(s){const o=wgItemById(s[0]);if(!o||o.gone||o===WG.P.carry||(WGL.q&&WGL.q.carry===o))return;if(o.own===me()&&WG.t-o.ownT<.6)return;/* you're moving it right now */
+  const b=o.b;b.position.set(s[1],s[2],s[3]);b.previousPosition.copy(b.position);b.quaternion.set(s[4],s[5],s[6],s[7]);b.velocity.set(s[8],s[9],s[10]);b.angularVelocity.set(0,0,0);if(s[11]){b.velocity.set(0,0,0);b.sleep()}else b.wakeUp();
+  o.own=wgThem();o.ownT=WG.t;o.sentSl=1;o.fresh=1}
+function wgItemGone(id){const o=wgItemById(id);if(!o||o.gone)return;const P=WG.P;if(P.carry===o)P.carry=null;if(WGL.q&&WGL.q.carry===o)WGL.q.carry=null;o.gone=1;o.b.collisionResponse=false;WG.world.removeBody(o.b);o.m.visible=false}
+function wgItemBack(id,p){const o=wgItemById(id);if(!o)return;o.gone=0;o.bagged=0;if(!o.m.parent)WG.scene.add(o.m);o.m.visible=true;o.b.collisionResponse=true;o.b.position.set(p[0],p[1],p[2]);o.b.previousPosition.copy(o.b.position);o.b.velocity.set(0,0,0);o.b.angularVelocity.set(0,0,0);if(!WG.world.bodies.includes(o.b))WG.world.addBody(o.b);o.b.wakeUp();o.fresh=1}
+
+/* ---------- the other wee guy, on your screen ---------- */
+function wgPuppetMake(){const T=THREE,kind=me()==="X"?"cass":"dad",kid=kind==="cass",h=kid?5.3:6.2,r=kid?.95:1;
+  const Q={who:kind,kid,h,r,yaw:0,remote:1,kit:{},wear:{have:{},on:{},top:kid?"sockblue":"sockgrey",bot:"hblue",shirt:"towel"},gT:0,spd:0,land:0,atk:0,throwT:0,turn:0,stepT:0,ph:0,hp:3,live:1,stuck:0,climb:0,rope:null,carry:null,fx:null,block:0,guardT:0,sh:1};
+  Q.mesh=wgRig(kind,h,Q.wear);WG.scene.add(Q.mesh.g);
+  /* solid, so you can bump into each other - and stand on each other's heads */
+  const b=new CANNON.Body({mass:0,type:CANNON.Body.KINEMATIC,allowSleep:false,material:WG.pm.player});const top=h-2*r;for(const oy of[0,top/2,top])b.addShape(new CANNON.Sphere(r*.92),new CANNON.Vec3(0,oy,0));
+  b.collisionFilterGroup=2;b.collisionFilterMask=2|4;b.isPuppet=1;b.position.set(0,-300,0);WG.world.addBody(b);Q.b=b;Q.vp=b.interpolatedPosition;
+  const rl=new T.Line(new T.BufferGeometry().setFromPoints([new T.Vector3(),new T.Vector3(0,1,0)]),new T.LineBasicMaterial({color:0xe8dcc0}));rl.frustumCulled=false;rl.visible=false;WG.scene.add(rl);Q.ropeL=rl;
+  const hk=wgKeyMesh("hook");hk.children.slice(3).forEach(c=>hk.remove(c));hk.visible=false;WG.scene.add(hk);Q.hookM=hk;
+  WGL.q=Q;return Q}
+function wgPuppetEquip(){const Q=WGL.q;if(!Q)return;if(Q.kit.needle||Q.kit.sword)Q.kit.sword=1;if(Q.kit.cap)Q.kit.shield=1;
+  if(Q.kit.sword&&!Q.swordM){Q.swordM=wgKeyMesh("needle");WG.scene.add(Q.swordM)}if(Q.kit.shield&&!Q.shieldM){Q.shieldM=wgKeyMesh("cap");Q.shieldM.scale.setScalar(.85);WG.scene.add(Q.shieldM)}}
+function wgPuppetGone(){const Q=WGL.q;if(!Q)return;WGL.q=null;if(!WG||!WG.scene)return;for(const m of[Q.mesh.g,Q.ropeL,Q.hookM,Q.swordM,Q.shieldM])if(m)WG.scene.remove(m);WG.world.removeBody(Q.b);if(Q.carry&&!Q.carry.gone){Q.carry.b.collisionResponse=true;Q.carry.b.wakeUp()}
+  const f=$("#wgpal");if(f)f.style.display="none"}
+function wgPuppetStep(dt){const Q=WGL.q;if(!Q||!Q.net)return;const N=Q.net,b=Q.b,now=performance.now(),age=Math.min(.25,(now-Q.rt)/1000);Q.live=now-Q.rt<6000;
+  const vis=Q.live&&!!(N.f&64);Q.mesh.g.visible=vis;
+  /* where they are now: their last report, carried on at the speed they were going */
+  const tx=N.p[0]+N.v[0]*age,ty=N.p[1]+(N.f&1?0:N.v[1]*age),tz=N.p[2]+N.v[2]*age,p=b.position,dx=tx-p.x,dy=ty-p.y,dz=tz-p.z,D=Math.hypot(dx,dy,dz);
+  if(!vis||D>60){p.set(vis?tx:0,vis?ty:-300,vis?tz:0);b.previousPosition.copy(p);b.velocity.set(0,0,0)}else{const k=Math.min(1,dt*8);p.x+=dx*k;p.y+=dy*k;p.z+=dz*k;b.velocity.set(N.v[0],N.f&1?0:N.v[1],N.v[2])}
+  let dyaw=N.y-Q.yaw;dyaw=Math.atan2(Math.sin(dyaw),Math.cos(dyaw));Q.turn=dyaw/Math.max(dt,1e-3)*.02;Q.yaw+=dyaw*Math.min(1,dt*14);
+  const f=N.f;Q.gT=f&1?0:1;Q.climb=f&2?1:0;Q.pole=f&4?1:0;Q.sprinting=!!(f&8);Q.block=f&16?1:0;Q.guardT=f&32?1:0;if(f&128)Q.land=Math.max(Q.land,.5);if(f&256)Q.throwT=Math.max(Q.throwT,.2);if(f&512)Q.atk=Math.max(Q.atk,.2);
+  Q.stuck=N.st||0;Q.sh=N.sh;Q.spd=N.spd;Q.hp=N.hp;Q.rope=N.ra?{a:new THREE.Vector3(N.ra[0],N.ra[1],N.ra[2])}:null;
+  if(N.fx){const[k,t]=N.fx;if(!Q.fx||Q.fx.k!==k||t<Q.fx.t-.2)Q.fx={k,m:WG_MOVES[k]||WG_MOVES.s1,t,hitDone:true};else Q.fx.t=Math.min(Q.fx.m.d||1,Q.fx.t+dt)}else Q.fx=null;
+  /* what they're carrying, held up over their head */
+  const c=N.c?wgItemById(N.c):null;if(c!==Q.carry){if(Q.carry&&!Q.carry.gone){Q.carry.b.collisionResponse=true;Q.carry.b.wakeUp()}Q.carry=c&&!c.gone?c:null;if(Q.carry)Q.carry.b.collisionResponse=false}
+  if(Q.carry){const cb=Q.carry.b,vp=Q.vp;cb.position.set(vp.x,vp.y-Q.r+Q.h+Q.carry.rad*.9+.3,vp.z);cb.previousPosition.copy(cb.position);cb.velocity.set(0,0,0);cb.quaternion.setFromEuler(0,Q.yaw,0);Q.carry.fresh=1;cb.wakeUp()}
+  if(vis){wgAnimRig(Q,dt);wgEquipFollow(Q)}else{if(Q.swordM)Q.swordM.visible=false;if(Q.shieldM)Q.shieldM.visible=false}
+  if(Q.rope&&vis){const vp=Q.vp,h=new THREE.Vector3(vp.x,vp.y-Q.r+Q.h*.85,vp.z);Q.ropeL.geometry.setFromPoints([h,Q.rope.a]);Q.ropeL.visible=true;Q.hookM.position.copy(Q.rope.a);Q.hookM.visible=true}else{Q.ropeL.visible=false;Q.hookM.visible=false}
+  /* under furniture they look a bit darker, like you do */if(!Q.mats){Q.mats=[];Q.mesh.g.traverse(o=>{if(!o.isMesh||!o.material)return;for(const m of[].concat(o.material))if(m&&!Q.mats.includes(m)&&m.emissiveIntensity!=null){Q.mats.push(m);m.userData.ei=m.emissiveIntensity}})}
+  Q.shS=(Q.shS==null?1:Q.shS)+((Q.sh==null?1:Q.sh)-(Q.shS==null?1:Q.shS))*Math.min(1,dt*4);for(const m of Q.mats)m.emissiveIntensity=m.userData.ei*(.45+.55*Q.shS)}
+/* a chip saying who's with you, and an arrow to them when they're off the screen */
+function wgCoopHud(){const c=$("#wgcoop"),f=$("#wgpal");if(!c||!f)return;if(!WGL.on||!WG||!WG.P){c.style.display="none";f.style.display="none";return}
+  const Q=WGL.q,nm=wgThemNm();c.style.display="";
+  if(!Q||!Q.live||!Q.net){const t=`👥 Waiting for ${nm}…`;if(c.textContent!==t)c.textContent=t;c.classList.remove("on");f.style.display="none";return}
+  const p=WG.P.b.position,vp=Q.vp,d=Math.hypot(vp.x-p.x,vp.y-p.y,vp.z-p.z),ds=d<100?Math.round(d)+" cm":(d/100).toFixed(1)+" m",dir=WGP2P.open?"":" ·🐢";
+  const t=`👥 ${nm} · ${Q.stuck==="glass"?"trapped!":Q.stuck==="bag"?"in the hoover!":ds}${dir}`;if(c.textContent!==t)c.textContent=t;c.classList.add("on");
+  if(!Q.mesh.g.visible){f.style.display="none";return}
+  const v=new THREE.Vector3(vp.x,vp.y-Q.r+Q.h+1.6,vp.z).project(WG.camera),W=WG.W,H=WG.H,on=v.z<1&&Math.abs(v.x)<.92&&Math.abs(v.y)<.88;let x=(v.x+1)/2*W,y=(1-v.y)/2*H,ang=0;
+  if(v.z>=1){x=W-x;y=H-y}if(!on){const cx=W/2,cy=H/2,dx=x-cx,dy=y-cy,k=Math.min((W/2-80)/Math.max(1,Math.abs(dx)),(H/2-70)/Math.max(1,Math.abs(dy)));x=cx+dx*k;y=cy+dy*k;ang=Math.atan2(dy,dx)}
+  f.style.display="";f.style.left=x+"px";f.style.top=y+"px";f.classList.toggle("on",on);f.firstChild.style.transform=on?"rotate(90deg)":`rotate(${ang}rad)`;const tt=on?nm:nm+" · "+ds;if(f.lastChild.textContent!==tt)f.lastChild.textContent=tt}
+
+/* ---------- Dad's phone runs the big people, the cat and the robot hoover ---------- */
+function wgNpcPack(){const n={e:_r2(WGL.eye2||0)},B=WG.big;
+  if(B)n.b=[B.uid,B.lookI||0,B.act,_r1(B.pos.x),_r1(B.pos.z),_r2(B.yaw),_r2(B.sit),_r2(B.bend),_r1(B.spd),B.st,WG.tv&&WG.tv.on?1:0];
+  const C=WG.cat;if(C&&C.head){const U=C.up,up=U&&U.g.visible?1:0;n.c=[up,_r1(C.x),_r1(C.z),C.st,_r2(C.head.rotation.x),_r2(C.head.rotation.y),_r2(C.head.rotation.z),_r2(C.eyes[0].scale.y),_r2(C.paw.rotation.x),_r2(C.paw.rotation.y)];
+    if(up)n.c.push(_r1(U.pos.x),_r1(U.pos.z),_r2(U.yaw),_r1(U.spd||0),_r2(U.jump||0),_r2(U.crouch||0),_r2(U.sit||0),_r2(U.reach||0))}
+  const R=WG.robot;if(R)n.r=[_r1(R.b.position.x),_r1(R.b.position.z),_r2(R.yaw),R.st,_r1(R.b.velocity.x),_r1(R.b.velocity.z)];return n}
+/* run one of them with "you" being whoever it's after; anything it does to them goes to their phone */
+function wgWithFocus(F,fn){if(!F||F===WG.P)return fn();const P0=WG.P,v0=F.b.velocity.clone();WG.P=F;WGL.swap=F;try{fn()}finally{WG.P=P0;WGL.swap=null}
+  const v=F.b.velocity;if(Math.hypot(v.x-v0.x,v.y-v0.y,v.z-v0.z)>5){wgLiveEv({e:"knock",v:[_r1(v.x),_r1(v.y),_r1(v.z)]});v.copy(v0)}}
+/* a message for one player: on your screen, or sent to theirs */
+function wgMsgTo(T,h,d){if(!T||T===WG.P)return wgMsg(h,d);wgLiveEv({e:"msg",h,d})}
+/* the cat goes after whoever is nearest - but (never shown) she'd rather chase Dad than Cass */
+function wgCatFocus(){const C=WG.cat,Q=WGL.q;if(!Q||!Q.live||!WGL.on)return WG.P;
+  if(["stalk","chase","pounce","play","reach","watch","wake","swat","settle"].includes(C.st)&&(C.focus===WG.P||C.focus===Q))return C.focus;
+  const cp=C.up&&C.up.g.visible?C.up.pos:{x:C.x,z:C.z},d=T=>{const p=T===Q?Q.vp:T.b.position;return Math.hypot(p.x-cp.x,p.z-cp.z)*(T.kid?1.35:1)+(T.stuck||!T.mesh.g.visible?1e6:0)};C.focus=d(Q)<d(WG.P)?Q:WG.P;return C.focus}
+function wgCoopCat(dt){if(!WG.cat)return;if(wgGuest())return wgCatMirror(dt);wgWithFocus(wgCatFocus(),()=>wgCatStep(dt))}
+function wgCoopBig(dt){if(wgGuest()){wgGlassStep(dt);return wgBigMirror(dt)}wgBigStep(dt)}
+function wgCoopRobot(dt){if(wgGuest())return wgRobotMirror(dt);wgRobotStep(dt)}
+const wgNpcAge=()=>Math.min(.3,(performance.now()-WGL.npT)/1000);
+function wgBigMirror(dt){const n=WGL.np&&WGL.np.b;let B=WG.big;const ey=$("#wgeye");
+  if(!n){if(B)wgBigGone();WG.eye=0;if(ey)ey.style.display="none";return}
+  if(B&&B.uid!==n[0]){wgBigGone();B=null}if(!B)B=wgBigSpawn({uid:n[0],look:n[1],act:n[2],x:n[3],z:n[4],yaw:n[5]});
+  const a=wgNpcAge(),tx=n[3]+Math.sin(n[5])*n[8]*a,tz=n[4]+Math.cos(n[5])*n[8]*a,dx=tx-B.pos.x,dz=tz-B.pos.z;if(Math.hypot(dx,dz)>90){B.pos.x=tx;B.pos.z=tz}else{const k=Math.min(1,dt*8);B.pos.x+=dx*k;B.pos.z+=dz*k}
+  let dy=n[5]-B.yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));B.yaw+=dy*Math.min(1,dt*10);const k=Math.min(1,dt*8);B.sit+=(n[6]-B.sit)*k;B.bend+=(n[7]-B.bend)*k;B.spd=n[8];B.st=n[9];
+  if(WG.tv){if(WG.tv.on&&!n[10])WG.tv.sc.material.color.setHex(0x050608);WG.tv.on=n[10]}
+  if(B.hoov)wgHooverStep(B,dt,1);
+  WG.eye=WGL.np.e||0;if(ey){ey.style.display="";ey.firstChild.style.width=(WG.eye*100)+"%";ey.classList.toggle("hot",WG.eye>.6)}
+  wgBigAnim(B,dt)}
+function wgCatMirror(dt){const C=WG.cat,n=WGL.np&&WGL.np.c;if(!n)return;const k=Math.min(1,dt*10);
+  if(n[0]){if(!C.up||!C.up.g.visible){if(!C.up)wgBuildCatUp();const U=C.up;U.pos.set(n[10],0,n[11]);U.yaw=n[12];C.g.visible=false;U.g.visible=true;for(const b of C.bodies)b.position.y-=500;U.jump=U.jump||0;U.crouch=U.crouch||0;U.sit=U.sit||0;U.reach=U.reach||0;U.spd=0;if(U.ph==null)U.ph=0}
+    const U=C.up,a=wgNpcAge(),tx=n[10]+Math.sin(n[12])*n[13]*a,tz=n[11]+Math.cos(n[12])*n[13]*a;if(Math.hypot(tx-U.pos.x,tz-U.pos.z)>70)U.pos.set(tx,0,tz);else{U.pos.x+=(tx-U.pos.x)*k;U.pos.z+=(tz-U.pos.z)*k}
+    let dy=n[12]-U.yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));U.yaw+=dy*k;U.spd=n[13];U.jump=n[14];U.crouch+=(n[15]-U.crouch)*k;U.sit+=(n[16]-U.sit)*k;U.reach+=(n[17]-U.reach)*k;C.st=n[3];wgCatUpAnim(U,dt);return}
+  if(C.up&&C.up.g.visible){C.up.pos.set(n[1],0,n[2]);wgCatCurl()}
+  C.st=n[3];C.t+=dt;C.body.scale.y=1+Math.sin(C.t*2.3)*.025;C.tail.rotation.y=Math.sin(C.t*.7)*.04;const h=C.head.rotation;h.x+=(n[4]-h.x)*k;h.y+=(n[5]-h.y)*k;h.z+=(n[6]-h.z)*k;C.eyes.forEach(e=>e.scale.y+=(n[7]-e.scale.y)*k);C.paw.rotation.x+=(n[8]-C.paw.rotation.x)*k;C.paw.rotation.y+=(n[9]-C.paw.rotation.y)*k}
+function wgRobotMirror(dt){const R=WG.robot,n=WGL.np&&WGL.np.r;if(!R||!n)return;const b=R.b,p=b.position,a=wgNpcAge(),tx=n[0]+n[4]*a,tz=n[1]+n[5]*a;
+  if(Math.hypot(tx-p.x,tz-p.z)>40){p.x=tx;p.z=tz;b.previousPosition.copy(p)}else{const k=Math.min(1,dt*6);p.x+=(tx-p.x)*k;p.z+=(tz-p.z)*k}p.y=4.3;b.velocity.set(n[4],0,n[5]);
+  let dy=n[2]-R.yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));R.yaw+=dy*Math.min(1,dt*10);R.st=n[3];if(R.st!=="dock")R.brush.rotation.y+=dt*14;
+  b.quaternion.setFromEuler(0,R.yaw,0);R.g.position.set(p.x,0,p.z);R.g.rotation.y=R.yaw;R.led.material.color.setHex(R.st==="dock"?0x40ff70:Math.sin(WG.t*6)>0?0x40a0ff:0x103060)}
+
+/* ---------- a direct phone-to-phone link (as in SKY ACES): Dad's phone offers, Cass's answers ---------- */
+const WGP2P={pc:null,dc:null,lid:null,n:0,open:0,t0:0,pend:null,tries:0,said:0};
+const WG_ICE=[{urls:["stun:stun.l.google.com:19302","stun:stun1.l.google.com:19302"]},{urls:"stun:stun.cloudflare.com:3478"}];
+function wgP2POk(){return typeof RTCPeerConnection!=="undefined"&&typeof db!=="undefined"&&db}
+function wgP2PStop(){const P=WGP2P;try{if(P.dc)P.dc.close()}catch(e){}try{if(P.pc)P.pc.close()}catch(e){}P.pc=P.dc=null;P.open=0;P.lid=null}
+function wgP2PGather(pc){return new Promise(ok=>{const t0=Date.now();let done=0;const fin=()=>{if(!done){done=1;clearInterval(iv);ok()}};
+  const iv=setInterval(()=>{const sdp=(pc.localDescription&&pc.localDescription.sdp)||"",dt=Date.now()-t0;if(pc.iceGatheringState==="complete"||dt>2500&&/typ (srflx|relay)/.test(sdp)||dt>10000&&/a=candidate/.test(sdp)||dt>20000)fin()},250);
+  pc.addEventListener("icegatheringstatechange",()=>{if(pc.iceGatheringState==="complete")fin()})})}
+function wgP2PNew(lid,n){const P=WGP2P;try{if(P.dc)P.dc.close()}catch(e){}try{if(P.pc)P.pc.close()}catch(e){}P.lid=lid;P.n=n;P.open=0;P.t0=Date.now();
+  const pc=new RTCPeerConnection({iceServers:WG_ICE});P.pc=pc;pc.onconnectionstatechange=()=>{if(P.pc===pc&&(pc.connectionState==="failed"||pc.connectionState==="closed"||pc.connectionState==="disconnected"))P.open=0};return pc}
+function wgP2PWire(dc){const P=WGP2P;P.dc=dc;dc.onopen=()=>{if(P.dc!==dc)return;P.open=1};dc.onclose=()=>{if(P.dc===dc)P.open=0};dc.onmessage=e=>{try{wgOnPkt(JSON.parse(e.data))}catch(x){console.error("wg p2p",x)}}}
+async function wgP2POffer(lid){const P=WGP2P;P.tries++;const n=Date.now(),pc=wgP2PNew(lid,n);wgP2PWire(pc.createDataChannel("wg",{ordered:false,maxRetransmits:0}));
+  try{await pc.setLocalDescription(await pc.createOffer());await wgP2PGather(pc);if(P.pc!==pc)return;await db.doc("games/wgsig_"+me()).set({id:lid,n,t:"offer",sdp:pc.localDescription.sdp,at:Date.now()})}catch(e){console.error("wg p2p offer",e)}}
+async function wgP2PAnswer(d){const P=WGP2P,pc=wgP2PNew(d.id,d.n);pc.ondatachannel=e=>wgP2PWire(e.channel);
+  try{await pc.setRemoteDescription({type:"offer",sdp:d.sdp});await pc.setLocalDescription(await pc.createAnswer());await wgP2PGather(pc);if(P.pc!==pc)return;await db.doc("games/wgsig_"+me()).set({id:d.id,n:d.n,t:"answer",sdp:pc.localDescription.sdp,at:Date.now()})}catch(e){console.error("wg p2p answer",e)}}
+function wgP2PSig(d){const P=WGP2P;if(!d||!d.sdp)return;
+  if(d.t==="offer"){if(Date.now()-(d.at||0)>10*60*1000)return;if(!WGL.on||P.lid!==d.id){P.pend=d;return}if(P.n===d.n&&P.pc)return;P.pend=null;wgP2PAnswer(d);return}
+  if(d.t==="answer"&&P.pc&&d.id===P.lid&&d.n===P.n&&P.pc.signalingState==="have-local-offer")P.pc.setRemoteDescription({type:"answer",sdp:d.sdp}).catch(e=>console.error("wg p2p",e))}
+function wgP2PTick(lid){const P=WGP2P;if(!wgP2POk()||!lid)return;
+  if(P.lid!==lid){wgP2PStop();P.lid=lid;P.n=0;P.tries=0;P.t0=Date.now();if(me()==="X")wgP2POffer(lid);else if(P.pend&&P.pend.id===lid){const d=P.pend;P.pend=null;wgP2PAnswer(d)}return}
+  if(me()==="O"&&!P.pc&&P.pend&&P.pend.id===lid){const d=P.pend;P.pend=null;wgP2PAnswer(d);return}
+  /* not up yet (or dropped): try again, but never while an attempt is still getting going */
+  if(me()==="X"&&!P.open&&P.tries<6&&Date.now()-P.t0>(P.tries<3?20000:60000)){const c=P.pc&&P.pc.connectionState;if(c==="connecting"&&Date.now()-P.t0<40000)return;wgP2POffer(lid)}}
+function wgP2PSend(d){const P=WGP2P,c=P.dc;if(!P.open||!c||c.readyState!=="open")return false;if(c.bufferedAmount>131072)return true;try{c.send(JSON.stringify(d));return true}catch(e){P.open=0;return false}}
+
 /* ---------- THE WEE GUYS: the game page, the loop, the camera, controls, sound ---------- */
 function vWee(){g2Shell("wgc",`<div class="wgload" id="wgload">Shrinking you down… <b id="wgpct"></b></div><div class="wgver">build ${typeof WG_BUILD!=="undefined"?WG_BUILD.slice(4,12):""}</div><div class="wgmsg" id="wgmsg"></div><div class="wgmenu" id="wgm"></div>
-  <div class="wgflash" id="wgflash"></div><div class="wghud"><div class="wghp" id="wghp"></div><div class="wgen" id="wgen"><i></i><span>⚡</span></div><div class="wginv" id="wginv" style="display:none"></div></div><div class="wgeye" id="wgeye" style="display:none"><i></i><span>👁️</span></div>
+  <div class="wgflash" id="wgflash"></div><div class="wghud"><div class="wghp" id="wghp"></div><div class="wgen" id="wgen"><i></i><span>⚡</span></div><div class="wginv" id="wginv" style="display:none"></div><div class="wgcoop" id="wgcoop" style="display:none"></div></div><div class="wgeye" id="wgeye" style="display:none"><i></i><span>👁️</span></div>
   <div class="wgctl" id="wgctl"><div class="wgstk" id="wgstk"><i></i></div><button class="wgb wgjump" id="wgjump">JUMP</button><button class="wgb wggrab" id="wggrab">✋<small>GRAB</small></button><button class="wgb wgspr" id="wgspr">🏃<small>SPRINT</small></button><button class="wgb wgclimb" id="wgclimb" style="display:none">🧗<small>CLIMB</small></button><button class="wgb wghook" id="wghook" style="display:none">🪝<small>HOOK</small></button><button class="wgb wglower" id="wglower" style="display:none">⏬<small>LET OUT</small></button><button class="wgb wgletgo" id="wgletgo" style="display:none">✊<small>LET GO</small></button><div class="wgaim" id="wgaim"><b></b><i></i></div><button class="wgb wgsword" id="wgsword" style="display:none">⚔️<small>SWING</small></button><button class="wgb wgstab" id="wgstab" style="display:none">🗡️<small>STAB</small></button><button class="wgb wgblock" id="wgblock" style="display:none">🛡️<small>BLOCK</small></button><button class="wgb wgview" id="wgview">🎥<small>VIEW</small></button><button class="wgb wghome" id="wghome">🏠<small>HOME</small></button><button class="wgb wglist" id="wglist">📜<small>LIST</small></button><button class="wgb wgsleep" id="wgsleep" style="display:none">💤<small>SLEEP</small></button><button class="wgb wgward" id="wgward" style="display:none">👕<small>CLOTHES</small></button></div>
-  <div class="wglistp" id="wglistp"></div><div class="wglistp wgwardp" id="wgwardp" style="display:none"></div><div class="wgfind" id="wgfind"><b>➤</b><span></span></div><div class="wgzz" id="wgzz">Z z z…</div>`);
+  <div class="wglistp" id="wglistp"></div><div class="wglistp wgwardp" id="wgwardp" style="display:none"></div><div class="wgfind" id="wgfind"><b>➤</b><span></span></div><div class="wgfind wgpal" id="wgpal" style="display:none"><b>➤</b><span></span></div><div class="wgzz" id="wgzz">Z z z…</div>`);
   $("#g2q").onclick=()=>wgQuit();hpThree(()=>{if(!$("#wgc"))return;setTimeout(()=>{try{wgStart()}catch(e){console.error(e);const m=$("#wgload");if(m)m.textContent="Something went wrong shrinking you down."}},30)})}
-function wgQuit(){g2Stop();if(WG){WG.dead=1;wgSound(0)}WG=null;window.onkeydown=window.onkeyup=null;g=null;view()}
+function wgQuit(){try{wgLiveLeave(1)}catch(e){}g2Stop();if(WG){WG.dead=1;wgSound(0)}WG=null;window.onkeydown=window.onkeyup=null;g=null;view()}
 const wgWho=()=>me()==="X"?"dad":"cass";
-function wgMsg(t,s){const m=$("#wgmsg");if(!m)return;m.innerHTML=t;m.classList.add("on");clearTimeout(wgMsg.t);wgMsg.t=setTimeout(()=>m.classList.remove("on"),(s||1.6)*1000)}
+function wgMsg(t,s){if(typeof WGL!=="undefined"&&WGL.swap){wgLiveEv({e:"msg",h:t,d:s});return}const m=$("#wgmsg");if(!m)return;m.innerHTML=t;m.classList.add("on");clearTimeout(wgMsg.t);wgMsg.t=setTimeout(()=>m.classList.remove("on"),(s||1.6)*1000)}
 let WG_LIBS=0;
 function wgStart(){const T=THREE;if(!WG_LIBS){wgLibs();WG_LIBS=1}
   if(!WGR){const r=new T.WebGLRenderer({antialias:true,powerPreference:"high-performance"});r.setPixelRatio(Math.min(1.5,window.devicePixelRatio||1));r.outputEncoding=T.sRGBEncoding;r.toneMapping=T.ACESFilmicToneMapping;r.toneMappingExposure=.95;r.shadowMap.enabled=true;r.shadowMap.type=T.PCFSoftShadowMap;r.physicallyCorrectLights=false;WGR={r}}
@@ -13532,13 +13749,13 @@ function wgReady(){const T=THREE;$("#wgload")&&$("#wgload").remove();
   WG.world.addEventListener("preStep",()=>{if(WG&&WG.P){wgPlayerSweepStart(WG.P);wgPlayerForces(WG.P,WG.fdt);wgPlayerStepUp(WG.P)}});WG.world.addEventListener("postStep",()=>{if(WG&&WG.P){const v=WG.P.b.velocity,sp=v.length();if(sp>650){v.scale(650/sp,v);WG.vclamp=(WG.vclamp||0)+1}{const P=WG.P;/* the crisp-packet cape: a gentle glide down */if(WG.wear&&WG.wear.on.cape&&!P.rope&&!P.climb&&!P.pole&&P.gT>.15&&v.y<-70)v.y+=(-70-v.y)*.2;wgRopeConstrain(P);wgPlayerSweep(P);wgPlayerDepen(P)}wgPlayerContacts(WG.P);wgCarryStep(WG.P)}});
   /* the room's bounce light is softer than the sun; much softer at home behind the wall */WG.scene.traverse(o=>{const ms=o.material?(Array.isArray(o.material)?o.material:[o.material]):[];for(const m of ms)if(m.isMeshStandardMaterial&&m.userData.env==null)m.envMapIntensity=.5});for(const k of["rough","red","cream","card","cavity","brick","timber"])wgBinMat(k).envMapIntensity=.1;
   /* everything you can see is solid */wgAutoSolids();
-  /* let everything settle where it was dropped */for(let i=0;i<240;i++)WG.world.step(1/120);for(const o of WG.dyn){o.fresh=1;o.home=new T.Vector3(o.b.position.x,o.b.position.y,o.b.position.z)}WG.messBase=wgMess();/* the mess that was already there doesn't count */
+  /* let everything settle where it was dropped */for(let i=0;i<240;i++)WG.world.step(1/120);for(const o of WG.dyn){o.fresh=1;o.home=new T.Vector3(o.b.position.x,o.b.position.y,o.b.position.z)}WG.messBase=wgMess();WG.ready=1;/* the mess that was already there doesn't count */
   wgPlaceKit();wgPlaceWear();wgBigInit();wgBaseInit();{const rl=new T.Line(new T.BufferGeometry().setFromPoints([new T.Vector3(),new T.Vector3(0,1,0)]),new T.LineBasicMaterial({color:0xe8dcc0}));rl.frustumCulled=false;rl.visible=false;WG.scene.add(rl);WG.ropeL=rl;const hk=wgKeyMesh("hook");hk.children.slice(3).forEach(c=>hk.remove(c));hk.visible=false;WG.scene.add(hk);WG.hookM=hk}
   wgInput();wgSize();window.addEventListener("resize",wgSize);window.addEventListener("orientationchange",()=>setTimeout(wgSize,250));wgPostInit();
   wgMsg(`<b>THE WEE GUYS</b><br>You're ${who==="cass"?"Wee Cass":"Wee Dad"}, ${who==="cass"?"5":"6"} cm tall, inside the wall with nothing. Find somewhere to live - tap 📜 for the borrowing list.`,6);
   setTimeout(()=>{if(WG&&!WG.dead)wgMsg("Left side: walk (push far to run) · Right side: drag to look<br>Walk into curtains, blankets, cloth or cables to climb them",6)},5600);
   /* now and then, an idea of something to try */WG.tips=["💡 Tap 📜 LIST to make a base wherever you are - inside the walls is safest","💡 Bounce on the sofa cushions - JUMP as you land to go higher","💡 Something glints under the armchair…","💡 Drop into a toaster slot on the kitchen worktop","💡 Stand in the spoon on the kitchen table and JUMP","💡 Poke the sleeping cat a few times…","💡 Jump on the robot hoover and ride it","💡 There's a needle stuck in the blanket on the sofa arm","💡 Footsteps? Hide under the sofa or a table - don't let them see you!","💡 A fishing tin on the bottom bookshelf…"];WG.tipT=40;
-  g2Loop(wgFrame)}
+  g2Loop(wgFrame);/* already asked to play together? */setTimeout(()=>{try{wgOnLiveDoc()}catch(e){console.error(e)}},300)}
 function wgSize(){if(!WG||!WGR)return;const el=$("#wgc"),w=el.clientWidth,h=el.clientHeight;WGR.r.setSize(w,h,false);WG.camera.aspect=w/h;WG.camera.updateProjectionMatrix();WG.W=w;WG.H=h;if(WG.post)wgPostSize(w,h)}
 /* ---------------- the loop ---------------- */
 function wgFrame(dt){try{wgFrame0(dt)}catch(e){console.error("wee frame",e)}}
@@ -13549,7 +13766,7 @@ function wgFrame0(dt){const G=WG;if(!G||G.dead||!G.P)return;dt=Math.max(0,dt);G.
   for(const o of G.dyn){const b=o.b;if(b.sleepState===2&&!o.fresh)continue;o.fresh=0;o.m.position.copy(b.interpolatedPosition);o.m.quaternion.copy(b.interpolatedQuaternion)}
   /* fell out of the world somehow? back home */
   if(P.b.position.y<-30||!isFinite(P.b.position.x)){wgHome();return}
-  wgShade(P,dt);wgAnimPlayer(P,dt);wgBugsStep(dt);wgCatStep(dt);wgDustStep(dt);wgClockStep();wgKitStep(dt);wgFightStep(dt);wgAimStep(dt);wgFinderStep();wgEquipFollow();wgEnergyStep(dt);{/* the CLIMB button shows when there's something to grab onto */if(!G.cbT||G.t-G.cbT>.2){G.cbT=G.t;const c=$("#wgclimb");if(c){const on=!!P.pole||P.climb||(!P.stuck&&(wgPoleNear(P)||P.wallT<.4));c.style.display=on?"":"none";c.classList.toggle("on",!!(P.pole||P.climb))}}}wgMisStep(dt);wgToasterStep(dt);wgSpoonStep(dt);wgRobotStep(dt);wgBigStep(dt);wgCamera(dt);wgRugNear();
+  wgLiveStep(dt);wgShade(P,dt);wgAnimPlayer(P,dt);wgBugsStep(dt);wgCoopCat(dt);wgDustStep(dt);wgClockStep();wgKitStep(dt);wgFightStep(dt);wgAimStep(dt);wgFinderStep();wgEquipFollow();wgEnergyStep(dt);{/* the CLIMB button shows when there's something to grab onto */if(!G.cbT||G.t-G.cbT>.2){G.cbT=G.t;const c=$("#wgclimb");if(c){const on=!!P.pole||P.climb||(!P.stuck&&(wgPoleNear(P)||P.wallT<.4));c.style.display=on?"":"none";c.classList.toggle("on",!!(P.pole||P.climb))}}}wgMisStep(dt);wgToasterStep(dt);wgSpoonStep(dt);wgCoopRobot(dt);wgCoopBig(dt);wgCamera(dt);wgRugNear();
   /* the sun's shadow follows you, so it is sharp at your size */
   const p=P.b.position,sd=G.sunDir;/* no window inside the walls: just what light leaks in, and your eyes getting used to the dark */const inH=wgInWall(p)?1:0;if(!G.eyeL){G.eyeL=new THREE.PointLight(0xd8c8a8,0,70,2);G.scene.add(G.eyeL)}G.eyeL.position.set(p.x,p.y+14,p.z);G.eyeL.intensity=(G.homeK||0)*.5;G.homeK=(G.homeK==null?inH:G.homeK)+(inH-(G.homeK==null?inH:G.homeK))*Math.min(1,dt*3);G.sun.intensity=1.9*(1-G.homeK*.93);G.hemi.intensity=.18*(1-G.homeK*.8);G.sun.position.set(p.x+sd.x*400,p.y+sd.y*400,p.z+sd.z*400);G.sun.target.position.set(p.x,p.y,p.z);G.sun.target.updateMatrixWorld();
   if(G.tips&&G.tips.length&&!G.big){G.tipT-=dt;if(G.tipT<0){G.tipT=45;wgMsg(G.tips.shift(),4)}}
@@ -14833,7 +15050,7 @@ const sclone=d=>d==null?d:JSON.parse(JSON.stringify(d));
 function sput(n,d){SD[n]=d;GV[n](d);refresh()}
 function GD(n){if(!SOLO)return db.doc("games/"+n);
   return{set:async d=>{sput(n,sclone(d));soloBot(n)},update:async d=>{sput(n,{...(SD[n]||{}),...sclone(d)});soloBot(n)}}}
-function soloStart(n){if(n==="dr"){chClose("chc");tab="play";g="dr";view();return}chClose("chc");SOLO=1;SOLO_G=n;clearInterval(SRT);SD[n]=null;GV[n](null);Object.keys(MEMK).forEach(k=>delete MEMK[k]);tab="play";g=n;
+function soloStart(n){if(n==="wee"){chClose("chc");chClose("chx");return}if(n==="dr"){chClose("chc");tab="play";g="dr";view();return}chClose("chc");SOLO=1;SOLO_G=n;clearInterval(SRT);SD[n]=null;GV[n](null);Object.keys(MEMK).forEach(k=>delete MEMK[k]);tab="play";g=n;
   if(n==="ttt"){SD.ttt={b:Array(9).fill(""),turn:me()};T=SD.ttt}
   view()}
 function soloEnd(){SOLO=0;if(typeof HP_ALONE!=="undefined")HP_ALONE=0;SOLO_G=null;clearInterval(SRT);Object.keys(GV).forEach(n=>GV[n](REALG[n]??null))}
@@ -14891,9 +15108,9 @@ function chReset(n,to,mode){const r=db.doc("games/"+n);
   if(n==="mem")return r.set(memNew())
   if(n==="rx")return r.set({id:Date.now(),go:Date.now()+4500+R(2500)});
   if(n==="gw")return r.set(gwNew());
-  if(n==="dr")return drLiveNew(CHD);if(n==="rw")return rwLiveNew(CHD);if(n==="jet")return fjLiveNew(CHD);
+  if(n==="dr")return drLiveNew(CHD);if(n==="rw")return rwLiveNew(CHD);if(n==="jet")return fjLiveNew(CHD);if(n==="wee")return wgLiveNew(CHD);
   if(n==="race")return r.set({s:Date.now()+5000,pX:0,pO:0,yX:270,yO:270,w:""});if(n==="zt")return db.doc("games/zt").set(ztNew(to,mode));if(n==="hoop"||n==="sm"||n==="pen")return g2Reset(n,to)}
-function chGo(n){if(SOLO)soloEnd();chClose("chx");chClose("chi");chClose("chc");B=null;tab="play";g=n;shell()}
+function chGo(n){if(n==="wee"&&g==="wee"&&typeof WG!=="undefined"&&WG&&!WG.dead){chClose("chx");chClose("chi");chClose("chc");setTimeout(wgOnLiveDoc,60);return}if(SOLO)soloEnd();chClose("chx");chClose("chi");chClose("chc");B=null;tab="play";g=n;shell()}
 function chUI(){const c=CHD;
   if(!c||!chFresh(c)){chClose("chx");chClose("chi");return}
   /* my challenge */
@@ -19086,7 +19303,7 @@ function wbSnd(k,v){const a=wbAC();if(!a)return;const n=a.currentTime,out=a.dest
 
 /* the two new tiles on the Play page, and starting a fresh game when a challenge is accepted */
 const g2Reset=(n,to)=>n==="zt"?db.doc("games/zt").set(ztNew(to)):n==="pen"?db.doc("games/pen").set(pkNew(to)):n==="hoop"?db.doc("games/hoop").set(hpNew(to)):n==="sm"?db.doc("games/sm").set(smNew(to)):null;
-function g2Listen(){try{fjListen()}catch(e){console.error(e)}try{rwListen()}catch(e){console.error(e)}try{drListen()}catch(e){console.error(e)}db.doc("games/wbd").onSnapshot(s=>{try{wbdDoc(s.exists?s.data():null)}catch(e){console.error(e)}},er);db.doc("games/zt").onSnapshot(s=>{REALG.zt=s.exists?s.data():null;if(!SOLO){ZTD=REALG.zt;if(g==="zt"&&ZTG&&!ZTG.solo)ztOnDoc(ZTD);else refresh()}},er);for(const k of ["X","O"])db.doc("games/zp_"+k).onSnapshot(s=>{if(s.exists&&ZTG&&!ZTG.solo)ztOnPos(k,s.data())},er);db.doc("games/pen").onSnapshot(s=>{REALG.pen=s.exists?s.data():null;if(!SOLO){PKD=REALG.pen;refresh()}},er);db.doc("games/hoop").onSnapshot(s=>{REALG.hoop=s.exists?s.data():null;if(!SOLO){HPD=REALG.hoop;refresh()}},er);
+function g2Listen(){try{wgListen()}catch(e){console.error(e)}try{fjListen()}catch(e){console.error(e)}try{rwListen()}catch(e){console.error(e)}try{drListen()}catch(e){console.error(e)}db.doc("games/wbd").onSnapshot(s=>{try{wbdDoc(s.exists?s.data():null)}catch(e){console.error(e)}},er);db.doc("games/zt").onSnapshot(s=>{REALG.zt=s.exists?s.data():null;if(!SOLO){ZTD=REALG.zt;if(g==="zt"&&ZTG&&!ZTG.solo)ztOnDoc(ZTD);else refresh()}},er);for(const k of ["X","O"])db.doc("games/zp_"+k).onSnapshot(s=>{if(s.exists&&ZTG&&!ZTG.solo)ztOnPos(k,s.data())},er);db.doc("games/pen").onSnapshot(s=>{REALG.pen=s.exists?s.data():null;if(!SOLO){PKD=REALG.pen;refresh()}},er);db.doc("games/hoop").onSnapshot(s=>{REALG.hoop=s.exists?s.data():null;if(!SOLO){HPD=REALG.hoop;refresh()}},er);
   db.doc("games/sm").onSnapshot(s=>{REALG.sm=s.exists?s.data():null;if(!SOLO){SMD=REALG.sm;if(g==="sm"&&SM&&!SM.solo)smOn(SMD);else refresh()}},er);
   db.doc("games/smh").onSnapshot(s=>{if(!s.exists||!SM||SM.solo)return;const o=s.data()[me()==="X"?"O":"X"];if(o&&o.i===SM.id)SM.oppT=[o.x,o.y]},er)}
 
